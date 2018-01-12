@@ -460,20 +460,23 @@ def do_search(search_query, offset, result_count, new_domains, framework_slug):
         results.append(result)
 
     sliced_results = results[offset:(offset + result_count)]
+    code_to_pos = {}
+    for idx, sr in enumerate(sliced_results):
+        code_to_pos[sliced_results.id] = idx
 
     q = db.session.query(Supplier.code, Supplier.name, Supplier.summary,
                          Supplier.is_recruiter, Supplier.data, Domain.name.label('domain_name'))\
         .join(SupplierDomain, Domain)\
         .filter(Supplier.id.in_([sr.id for sr in sliced_results]))
 
-    suppliers = [dict(code=s.code, name=s.name, summary=s.summary, is_recruiter=s.is_recruiter,
+    suppliers = [dict(id=s.id, code=s.code, name=s.name, summary=s.summary, is_recruiter=s.is_recruiter,
                       seller_type=s.data.get('seller_type', {}), domain_name=s.domain_name) for s in q]
 
-    sliced_results = []
+    sliced_results = [{}] * len(sliced_results)
     for key, group in groupby(suppliers, key=itemgetter('code')):
         group = list(group)
         supplier = group[0]
-        sliced_results.append(dict(code=supplier['code'], name=supplier['name'], summary=supplier['summary'],
+        sliced_results[code_to_pos[supplier.id]] = (dict(code=supplier['code'], name=supplier['name'], summary=supplier['summary'],
                                    seller_type=supplier['seller_type'], is_recruiter=supplier['is_recruiter'],
                                    domains=[d['domain_name'] for d in group]))
 
