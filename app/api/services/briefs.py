@@ -34,39 +34,13 @@ class BriefsService(Service):
 
         return [r._asdict() for r in responses]
 
-    def get_user_briefs(self, current_user_id):
-        """Returns summary of a user's briefs with the total number of sellers that applied."""
-        results = (db.session.query(Brief.id, Brief.data['title'].astext.label('name'),
-                                    Brief.closed_at, Brief.status, func.count(BriefResponse.id).label('applications'),
-                                    Framework.slug.label('framework'), Lot.slug.label('lot'),
-                                    WorkOrder.id.label('work_order'))
-                   .join(BriefUser, Framework, Lot)
-                   .filter(current_user_id == BriefUser.user_id)
-                   .outerjoin(BriefResponse, Brief.id == BriefResponse.brief_id)
-                   .outerjoin(WorkOrder)
-                   .group_by(Brief.id, Framework.slug, Lot.slug, WorkOrder.id)
-                   .order_by(sql_case([
-                       (Brief.status == 'draft', 1),
-                       (Brief.status == 'live', 2),
-                       (Brief.status == 'closed', 3)]), Brief.closed_at.desc().nullslast())
-                   .all())
+    def get_brief_responses(self, brief_id, supplier_code):
+        responses = db.session.query(BriefResponse.created_at,
+                                     BriefResponse.data,
+                                     BriefResponse.id,
+                                     BriefResponse.brief_id,
+                                     BriefResponse.supplier_code)\
+            .filter(BriefResponse.supplier_code == supplier_code, BriefResponse.brief_id == brief_id)\
+            .all()
 
-        return [r._asdict() for r in results]
-
-    def get_team_briefs(self, current_user_id, domain):
-        """Returns summary of live and closed briefs submitted by the user's team."""
-        team_ids = db.session.query(User.id).filter(User.id != current_user_id,
-                                                    User.email_address.endswith(concat('@', domain)))
-
-        team_brief_ids = db.session.query(BriefUser.brief_id).filter(BriefUser.user_id.in_(team_ids))
-
-        results = (db.session.query(Brief.id, Brief.data['title'].astext.label('name'), Brief.closed_at, Brief.status,
-                                    Framework.slug.label('framework'), Lot.slug.label('lot'), User.name.label('author'))
-                   .join(BriefUser, Framework, Lot, User)
-                   .filter(Brief.id.in_(team_brief_ids), or_(Brief.status == 'live', Brief.status == 'closed'))
-                   .order_by(sql_case([
-                       (Brief.status == 'live', 1),
-                       (Brief.status == 'closed', 2)]), Brief.closed_at.desc().nullslast())
-                   .all())
-
-        return [r._asdict() for r in results]
+        return [r._asdict() for r in responses]

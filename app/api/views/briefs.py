@@ -3,10 +3,7 @@ import os
 from flask import jsonify, request, current_app, Response
 from flask_login import current_user, login_required
 from app.api import api
-from app.api.services import (briefs, brief_responses_service,
-                              lots_service,
-                              audit_service)
-from app.api.helpers import role_required, abort, forbidden, not_found
+from app.api.services import briefs
 from app.emails import send_brief_response_received_email
 from dmapiclient.audit import AuditTypes
 from ...models import (db, AuditEvent, Brief, BriefResponse,
@@ -144,6 +141,52 @@ def get_brief_responses(brief_id):
 
     return jsonify(brief=brief.serialize(with_users=False), briefResponses=brief_responses)
 
+@api.route('/brief/<int:brief_id>/responses', methods=['GET'])
+@login_required
+def get_brief_responses(brief_id):
+    """All brief responses (role=supplier)
+    ---
+    tags:
+      - "Brief Responses"
+    security:
+      - basicAuth: []
+    parameters:
+      - name: brief_id
+        in: path
+        type: number
+        required: true
+    definitions:
+      BriefResponses:
+        properties:
+          briefResponses:
+            type: array
+            items:
+              $ref: '#/definitions/BriefResponse'
+      BriefResponse:
+        type: object
+        properties:
+          id:
+            type: number
+          data:
+            type: object
+          brief_id: 
+            type: number
+          supplier_code:
+            type: number
+    responses:
+      200:
+        description: A list of brief responses
+        schema:
+          $ref: '#/definitions/BriefResponse'
+      404:
+        description: brief_id not found
+    """
+    brief_responses = briefs.get_brief_responses(brief_id, current_user.supplier_code)
+    
+    if not brief_responses:
+        abort(make_response(jsonify(errorMessage="Invalid brief id '{}'".format(brief_id)), 404))
+
+    return jsonify(briefResponses=brief_responses)
 
 @api.route('/brief/<int:brief_id>/respond/documents/<string:supplier_code>/<slug>', methods=['POST'])
 @login_required
