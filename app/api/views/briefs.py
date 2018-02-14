@@ -6,8 +6,7 @@ from app.api import api
 from app.api.services import briefs
 from app.emails import send_brief_response_received_email
 from dmapiclient.audit import AuditTypes
-from ...models import (db, AuditEvent, Brief, BriefResponse,
-                       Supplier, Framework, ValidationError)
+from ...models import db, AuditEvent, Brief, BriefResponse, Lot, Supplier, Framework, ValidationError
 from sqlalchemy.exc import DataError
 from ...utils import (
     get_json_from_request
@@ -71,20 +70,18 @@ def _can_do_brief_response(brief_id):
             errorMessage="Supplier does not have Digital Marketplace framework "
                          "or does not have at least one assessed domain"), 400))
 
-    if brief.lot_id == 10:  # TODO magic number
-        # Check if brief response already exists from this supplier when outcome
+    if brief.lot_id == Lot.query(Lot.id).filter(Lot.slug == 'digital-professionals').first():
+        # Check if there are more than 3 brief response already from this supplier when professional aka specialists
+        brief_response_count = (BriefResponse.query.filter(BriefResponse.supplier == supplier,
+                                BriefResponse.brief == brief).count())
+        if brief_response_count > 2:
+            abort(make_response(jsonify(
+                errorMessage="There are already 3 brief response for supplier '{}'".format(supplier.code)), 400))
+    else:
+        # Check if brief response already exists from this supplier when outcome for all other types
         if BriefResponse.query.filter(BriefResponse.supplier == supplier, BriefResponse.brief == brief).first():
             abort(make_response(jsonify(
                 errorMessage="Brief response already exists for supplier '{}'".format(supplier.code)), 400))
-    elif brief.lot_id == 9:  # TODO magic number
-        # Check if there are more than 3 brief response already from this supplier when professional aka specialists
-        if (
-            BriefResponse.query.filter(BriefResponse.supplier == supplier,
-                                       BriefResponse.brief == brief)
-            .count() >= 2  # TODO magic number, store in config
-        ):
-            abort(make_response(jsonify(
-                errorMessage="There are already 3 brief response for supplier '{}'".format(supplier.code)), 400))
 
     return supplier, brief
 

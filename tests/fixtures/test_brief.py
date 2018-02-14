@@ -124,18 +124,18 @@ def test_create_brief_response_with_object(client, supplier_user,
     }), content_type='application/json')
     assert res.status_code == 200
 
-    res = client.post(
-        '/2/brief/1/respond',
-        data=json.dumps({
-            'essentialRequirements': {'0': 'ABC', '1': 'XYZ'},
-            'availability': '01/01/2018',
-            'respondToEmailAddress': 'supplier@email.com',
-            'specialistName': 'Test Specialist Name',
-            'dayRate': '100',
-        }),
-        content_type='application/json'
-    )
-    assert res.status_code == 201
+    for i in range(0, 3):
+        res = client.post(
+            '/2/brief/1/respond',
+            data=json.dumps({
+                'essentialRequirements': ['ABC', 'XYZ'],
+                'availability': '01/01/2018',
+                'respondToEmailAddress': 'supplier@email.com',
+                'dayRate': '100',
+            }),
+            content_type='application/json'
+        )
+        assert res.status_code == 201
 
 
 def test_cannot_respond_to_a_brief_more_than_three_times_from_the_same_supplier(client, supplier_user,
@@ -172,7 +172,7 @@ def test_cannot_respond_to_a_brief_more_than_three_times_from_the_same_supplier(
         content_type='application/json'
     )
     assert res.status_code == 400
-    assert 'There are already 3 brief responses for supplier' in res.get_data(as_text=True)
+    assert 'There are already 3 brief response for supplier' in res.get_data(as_text=True)
 
 
 def test_cannot_respond_to_a_brief_with_wrong_number_of_essential_reqs(client, supplier_user,
