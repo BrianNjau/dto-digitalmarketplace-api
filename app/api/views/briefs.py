@@ -3,7 +3,7 @@ import os
 from flask import jsonify, request, current_app, Response
 from flask_login import current_user, login_required
 from app.api import api
-from app.api.services import briefs
+from app.api.services import briefs, lots
 from app.emails import send_brief_response_received_email
 from dmapiclient.audit import AuditTypes
 from ...models import db, AuditEvent, Brief, BriefResponse, Lot, Supplier, Framework, ValidationError
@@ -70,11 +70,12 @@ def _can_do_brief_response(brief_id):
             errorMessage="Supplier does not have Digital Marketplace framework "
                          "or does not have at least one assessed domain"), 400))
 
-    if brief.lot_id == Lot.query(Lot.id).filter(Lot.slug == 'digital-professionals').first():
+    lot = lots.first(slug='digital-professionals')
+    if brief.lot_id == lot.id:
         # Check if there are more than 3 brief response already from this supplier when professional aka specialists
         brief_response_count = (BriefResponse.query.filter(BriefResponse.supplier == supplier,
                                 BriefResponse.brief == brief).count())
-        if brief_response_count > 2:
+        if brief_response_count > 2:  # TODO magic number
             abort(make_response(jsonify(
                 errorMessage="There are already 3 brief response for supplier '{}'".format(supplier.code)), 400))
     else:
