@@ -73,10 +73,10 @@ def _can_do_brief_response(brief_id):
 
     # Check if there are more than 3 brief response already from this supplier
     if (
-        BriefResponse.query.filter(BriefResponse.supplier == supplier, 
+        BriefResponse.query.filter(BriefResponse.supplier == supplier,
                                    BriefResponse.brief == brief)
-                                   .count() >= 2 #TODO magic number, store in config
-        ):
+        .count() >= 2  # TODO magic number, store in config
+    ):
         abort(make_response(jsonify(
             errorMessage="Brief response already exists for supplier '{}'".format(supplier.code)), 400))
 
@@ -136,6 +136,7 @@ def get_brief_responses(brief_id):
 
     return jsonify(brief=brief.serialize(with_users=False), briefResponses=brief_responses)
 
+
 @api.route('/brief/<int:brief_id>/responses', methods=['GET'])
 @login_required
 def get_brief_responses(brief_id):
@@ -164,7 +165,7 @@ def get_brief_responses(brief_id):
             type: number
           data:
             type: object
-          brief_id: 
+          brief_id:
             type: number
           supplier_code:
             type: number
@@ -177,11 +178,11 @@ def get_brief_responses(brief_id):
         description: brief_id not found
     """
     brief_responses = briefs.get_brief_responses(brief_id, current_user.supplier_code)
-    
     if not brief_responses:
         abort(make_response(jsonify(errorMessage="Invalid brief id '{}'".format(brief_id)), 404))
 
     return jsonify(briefResponses=brief_responses)
+
 
 @api.route('/brief/<int:brief_id>/respond/documents/<string:supplier_code>/<slug>', methods=['POST'])
 @login_required
