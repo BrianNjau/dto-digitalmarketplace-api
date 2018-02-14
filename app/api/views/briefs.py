@@ -67,23 +67,18 @@ def _can_do_brief_response(brief_id):
     if len(supplier.frameworks) == 0 \
             or 'digital-marketplace' != supplier.frameworks[0].framework.slug \
             or len(supplier.assessed_domains) == 0:
-        abort("Supplier does not have Digital Marketplace framework "
-              "or does not have at least one assessed domain")
+        abort(make_response(jsonify(
+            errorMessage="Supplier does not have Digital Marketplace framework "
+                         "or does not have at least one assessed domain"), 400))
 
-    lot = lots_service.first(slug='digital-professionals')
-    if brief.lot_id == lot.id:
-        # Check if there are more than 3 brief response already from this supplier when professional aka specialists
-        brief_response_count = brief_responses_service.find(supplier_code=supplier.code,
-                                                            brief_id=brief.id,
-                                                            withdrawn_at=None).count()
-        if (brief_response_count > 2):  # TODO magic number
-            abort("There are already 3 brief responses for supplier '{}'".format(supplier.code))
-    else:
-        # Check if brief response already exists from this supplier when outcome for all other types
-        if brief_responses_service.find(supplier_code=supplier.code,
-                                        brief_id=brief.id,
-                                        withdrawn_at=None).one_or_none():
-            abort("Brief response already exists for supplier '{}'".format(supplier.code))
+    # Check if there are more than 3 brief response already from this supplier
+    if (
+        BriefResponse.query.filter(BriefResponse.supplier == supplier, 
+                                   BriefResponse.brief == brief)
+                                   .count() >= 2 #TODO magic number, store in config
+        ):
+        abort(make_response(jsonify(
+            errorMessage="Brief response already exists for supplier '{}'".format(supplier.code)), 400))
 
     return supplier, brief
 
