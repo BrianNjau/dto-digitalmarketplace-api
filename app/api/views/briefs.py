@@ -71,14 +71,20 @@ def _can_do_brief_response(brief_id):
             errorMessage="Supplier does not have Digital Marketplace framework "
                          "or does not have at least one assessed domain"), 400))
 
-    # Check if there are more than 3 brief response already from this supplier
-    if (
-        BriefResponse.query.filter(BriefResponse.supplier == supplier,
-                                   BriefResponse.brief == brief)
-        .count() >= 2  # TODO magic number, store in config
-    ):
-        abort(make_response(jsonify(
-            errorMessage="Brief response already exists for supplier '{}'".format(supplier.code)), 400))
+    if brief.lot_id == 10:  # TODO magic number
+        # Check if brief response already exists from this supplier when outcome
+        if BriefResponse.query.filter(BriefResponse.supplier == supplier, BriefResponse.brief == brief).first():
+            abort(make_response(jsonify(
+                errorMessage="Brief response already exists for supplier '{}'".format(supplier.code)), 400))
+    elif brief.lot_id == 9:  # TODO magic number
+        # Check if there are more than 3 brief response already from this supplier when professional aka specialists
+        if (
+            BriefResponse.query.filter(BriefResponse.supplier == supplier,
+                                       BriefResponse.brief == brief)
+            .count() >= 2  # TODO magic number, store in config
+        ):
+            abort(make_response(jsonify(
+                errorMessage="There are already 3 brief response for supplier '{}'".format(supplier.code)), 400))
 
     return supplier, brief
 
@@ -178,6 +184,7 @@ def get_brief_responses(brief_id):
         description: brief_id not found
     """
     brief_responses = briefs.get_brief_responses(brief_id, current_user.supplier_code)
+
     if not brief_responses:
         abort(make_response(jsonify(errorMessage="Invalid brief id '{}'".format(brief_id)), 404))
 
