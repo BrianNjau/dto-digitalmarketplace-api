@@ -104,45 +104,6 @@ def get_brief(brief_id):
 
 @api.route('/brief/<int:brief_id>/responses', methods=['GET'])
 @login_required
-@role_required('supplier')
-def get_brief_responses(brief_id):
-    """All brief responses (role=supplier)
-    ---
-    tags:
-      - "Brief"
-    security:
-      - basicAuth: []
-    parameters:
-      - name: brief_id
-        in: path
-        type: number
-        required: true
-    definitions:
-      BriefResponses:
-        properties:
-          briefResponses:
-            type: array
-            items:
-              id: BriefResponse
-    responses:
-      200:
-        description: A list of brief responses
-        schema:
-          id: BriefResponses
-      404:
-        description: brief_id not found
-    """
-    brief = briefs.get(brief_id)
-    if not brief:
-        not_found("Invalid brief id '{}'".format(brief_id))
-
-    brief_responses = brief_responses_service.get_brief_responses(brief_id, current_user.supplier_code)
-
-    return jsonify(brief=brief.serialize(with_users=False), briefResponses=brief_responses)
-
-
-@api.route('/brief/<int:brief_id>/responses', methods=['GET'])
-@login_required
 def get_brief_responses(brief_id):
     """All brief responses (role=supplier)
     ---
