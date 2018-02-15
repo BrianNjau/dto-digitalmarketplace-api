@@ -5,6 +5,39 @@ from ...models import BriefResponse, Supplier
 from sqlalchemy.exc import DataError
 
 
+@api.route('/brief-response/<int:brief_response_id>/withdraw', methods=['POST'])
+def withdraw_brief_response(brief_response_id):
+    """Withdraw brief responses (role=supplier)
+    ---
+    tags:
+      - "Brief Responses"
+    security:
+      - basicAuth: []
+    parameters:
+      - name: brief_response_id
+        in: path
+        type: number
+        required: true
+    definitions:
+      BriefResponse:
+        type: object
+        properties:
+          id:
+            type: number
+          data:
+            type: object
+          brief_id:
+            type: number
+          supplier_code:
+            type: number
+    responses:
+      200:
+        description: Successfully withdrawn a candidate
+      404:
+        description: brief_response_id not found
+    """
+    return jsonify(success=True), 200
+
 @api.route('/brief-response/<int:brief_response_id>', methods=['GET'])
 @login_required
 def get_brief_response(brief_response_id):
