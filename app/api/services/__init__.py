@@ -5,6 +5,7 @@ from .domain import DomainService
 from .briefs import BriefsService
 from .suppliers import SuppliersService
 from .lots import LotsService
+from .brief_responses import BriefResponsesService
 
 prices = PricesService()
 audit_service = AuditService()
@@ -14,3 +15,4 @@ domain_service = DomainService()
 briefs = BriefsService()
 suppliers = SuppliersService()
 lots = LotsService()
+brief_responses_service = BriefResponsesService()

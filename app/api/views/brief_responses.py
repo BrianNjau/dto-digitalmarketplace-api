@@ -38,6 +38,7 @@ def withdraw_brief_response(brief_response_id):
     """
     return jsonify(success=True), 200
 
+
 @api.route('/brief-response/<int:brief_response_id>', methods=['GET'])
 @login_required
 def get_brief_response(brief_response_id):

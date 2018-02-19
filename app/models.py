@@ -2061,6 +2061,7 @@ class BriefResponse(db.Model):
     __tablename__ = 'brief_response'
 
     id = db.Column(db.Integer, primary_key=True)
+
     data = db.Column(JSON, nullable=False)
 
     brief_id = db.Column(db.Integer, db.ForeignKey('brief.id'), nullable=False)
@@ -2071,6 +2072,7 @@ class BriefResponse(db.Model):
 
     brief = db.relationship('Brief')
     supplier = db.relationship('Supplier', lazy='joined')
+    brief_response_answers = db.relationship('BriefResponseAnswer')
 
     @validates('data')
     def validates_data(self, key, data):
@@ -2184,6 +2186,60 @@ class BriefResponse(db.Model):
         })
 
         return data
+
+
+class BriefResponseAnswer(db.Model):
+    __tablename__ = 'brief_response_answer'
+
+    id = db.Column(db.Integer, primary_key=True)
+    brief_response_id = db.Column(db.Integer, db.ForeignKey('brief_response.id'), nullable=False)
+    question_enum = db.Column(db.String, index=True, nullable=False)
+    answer = db.Column(db.String, index=True, nullable=False)
+
+    brief_response = db.relationship('BriefResponse')
+
+    def validate(self):
+        errs = None
+
+        if errs:
+            raise ValidationError(errs)
+
+    def serialize(self):
+        return {
+            "id": self.brief_response_id,
+            "questionEnum": self.question_enum,
+            "answer": answer
+        }
+
+
+class BriefResponseContact(db.Model):
+    __tablename__ = 'brief_response_contact'
+
+    id = db.Column(db.Integer, primary_key=True)
+    brief_id = db.Column(db.Integer, db.ForeignKey('brief.id'), nullable=False)
+    supplier_code = db.Column(db.BigInteger, db.ForeignKey('supplier.code'), nullable=False)
+    email_address = db.Column(db.String, index=True, nullable=False)
+
+    brief = db.relationship('Brief')
+    supplier = db.relationship('Supplier', lazy='joined')
+
+    @validates('email_address')
+    def validates_email_address(self, key, value):
+        return value.strip() if isinstance(value, string_types) else value
+
+    def validate(self):
+        errs = None
+
+        if errs:
+            raise ValidationError(errs)
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "brief_id": self.brief_id,
+            "supplier_code": self.supplier_code,
+            "emailAddress": self.email_address
+        }
 
 
 class BriefClarificationQuestion(db.Model):

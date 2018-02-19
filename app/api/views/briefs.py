@@ -3,10 +3,11 @@ import os
 from flask import jsonify, request, current_app, Response
 from flask_login import current_user, login_required
 from app.api import api
-from app.api.services import briefs, lots
+from app.api.services import briefs, brief_responses_service, lots
 from app.emails import send_brief_response_received_email
 from dmapiclient.audit import AuditTypes
-from ...models import db, AuditEvent, Brief, BriefResponse, Lot, Supplier, Framework, ValidationError
+from ...models import (db, AuditEvent, Brief, BriefResponse, BriefResponseAnswer,
+                       BriefResponseContact, Lot, Supplier, Framework, ValidationError)
 from sqlalchemy.exc import DataError
 from ...utils import (
     get_json_from_request
@@ -73,14 +74,13 @@ def _can_do_brief_response(brief_id):
     lot = lots.first(slug='digital-professionals')
     if brief.lot_id == lot.id:
         # Check if there are more than 3 brief response already from this supplier when professional aka specialists
-        brief_response_count = (BriefResponse.query.filter(BriefResponse.supplier == supplier,
-                                BriefResponse.brief == brief).count())
-        if brief_response_count > 2:  # TODO magic number
+        brief_response_count = brief_responses_service.find(supplier_code=supplier.code, brief_id=brief.id).count()
+        if (brief_response_count > 2):  # TODO magic number
             abort(make_response(jsonify(
                 errorMessage="There are already 3 brief response for supplier '{}'".format(supplier.code)), 400))
     else:
         # Check if brief response already exists from this supplier when outcome for all other types
-        if BriefResponse.query.filter(BriefResponse.supplier == supplier, BriefResponse.brief == brief).first():
+        if brief_responses_service.find(supplier_code=supplier.code, brief_id=brief.id).one_or_none():
             abort(make_response(jsonify(
                 errorMessage="Brief response already exists for supplier '{}'".format(supplier.code)), 400))
 
@@ -183,9 +183,9 @@ def download_brief_response_file(brief_id, supplier_code, slug):
 @api.route('/brief/<int:brief_id>/respond', methods=["POST"])
 @login_required
 def post_brief_response(brief_id):
-
     brief_response_json = get_json_from_request()
     supplier, brief = _can_do_brief_response(brief_id)
+
     try:
         brief_response = BriefResponse(
             data=brief_response_json,
@@ -195,6 +195,43 @@ def post_brief_response(brief_id):
 
         brief_response.validate()
         db.session.add(brief_response)
+
+# create this when it doesn't exist
+    # brief_response_contact = BriefResponseContact(
+    #     supplier=supplier,
+    #     brief=brief,
+    #     email_address=current_user.email_address
+    # )
+        for attr, value in brief_response_json.items():
+            if (attr == 'essentialRequirements'):
+                for v in value:
+                    brief_response_answer = BriefResponseAnswer(
+                        brief_response=brief_response,
+                        question_enum=attr,
+                        answer=v
+                    )
+                    brief_response_answer.validate()
+                    db.session.add(brief_response_answer)
+            elif (attr == 'niceToHaveRequirements'):
+                for v in value:
+                    brief_response_answer = BriefResponseAnswer(
+                        brief_response=brief_response,
+                        question_enum=attr,
+                        answer=v
+                    )
+                    brief_response_answer.validate()
+                    db.session.add(brief_response_answer)
+            elif (attr == 'respondToEmailAddress'):
+                pass  # new tables stores this somewhere else
+            else:
+                brief_response_answer = BriefResponseAnswer(
+                    brief_response=brief_response,
+                    question_enum=attr,
+                    answer=value
+                )
+                brief_response_answer.validate()
+                db.session.add(brief_response_answer)
+
         db.session.flush()
 
     except ValidationError as e:
