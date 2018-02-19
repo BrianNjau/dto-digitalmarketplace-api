@@ -209,7 +209,7 @@ def post_brief_response(brief_id):
             brief_response_answer = BriefResponseAnswer(
                 brief_response=brief_response,
                 question_enum=attr,
-                answer=v
+                answer=value
             )
             brief_response_answer.validate()
             db.session.add(brief_response_answer)
