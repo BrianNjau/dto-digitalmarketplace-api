@@ -31,8 +31,7 @@
   },
   "required": [
     "availability",
-    "essentialRequirements",
-    "respondToEmailAddress"
+    "essentialRequirements"
   ],
   "title": "Digital Outcome Brief Response Schema",
   "type": "object"
