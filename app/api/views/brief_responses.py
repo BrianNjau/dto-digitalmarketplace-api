@@ -48,7 +48,7 @@ def withdraw_brief_response(brief_response_id):
 @api.route('/brief-response/<int:brief_response_id>', methods=['GET'])
 @login_required
 def get_brief_response(brief_response_id):
-    """All brief responses (role=supplier)
+    """Get brief response (role=supplier)
     ---
     tags:
       - "Brief Responses"
