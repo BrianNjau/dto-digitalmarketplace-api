@@ -2074,99 +2074,93 @@ class BriefResponse(db.Model):
     supplier = db.relationship('Supplier', lazy='joined')
     brief_response_answers = db.relationship('BriefResponseAnswer')
 
-    @validates('data')
-    def validates_data(self, key, data):
-        data = drop_foreign_fields(data, [
-            'supplierCode', 'briefId'
-        ])
+    # @validates('data')
+    # def validates_data(self, key, data):
+    #     data = drop_foreign_fields(data, [
+    #         'supplierCode', 'briefId',
+    #     ])
 
-        NTF = 'niceToHaveRequirements'
-        excluded_keys = [NTF]
-        excluded = dict()
+    #     NTF = 'niceToHaveRequirements'
+    #     excluded_keys = [NTF]
+    #     excluded = dict()
 
-        for k in excluded_keys:
-            if k in data:
-                excluded[k] = data.pop(NTF)
+    #     for k in excluded_keys:
+    #         if k in data:
+    #             excluded[k] = data.pop(NTF)
 
-        data = strip_whitespace_from_data(data)
+    #     data = strip_whitespace_from_data(data)
 
-        data.update(excluded)
+    #     data.update(excluded)
 
-        data = purge_nulls_from_data(data)
+    #     data = purge_nulls_from_data(data)
 
-        return data
+    #     return data
 
     def validate(self, enforce_required=True, required_fields=None, max_day_rate=None):
-        def clean_non_strings():
-            # short term hacky fix for frontend yaml-parsing bug
+        # def clean_non_strings():
+        #     # short term hacky fix for frontend yaml-parsing bug
 
-            def to_text(x):
-                if isinstance(x, binary_type):
-                    return x.decode('utf-8')
-                else:
-                    return text_type(x)
+        #     def to_text(x):
+        #         if isinstance(x, binary_type):
+        #             return x.decode('utf-8')
+        #         else:
+        #             return text_type(x)
 
-            def clean(answers):
-                if type(answers) is list:
-                    return [to_text(x) for x in answers]
-                if type(answers) is dict:
-                    result = []
-                    keys = sorted([int(x) for x in answers.iterkeys()])
-                    max_key = max(keys)
-                    for i in range(0, max_key+1):
-                        if i in keys:
-                            result.append(to_text(answers[str(i)]))
-                        else:
-                            result.append('')
-                    return result
+        #     def clean(answers):
+        #         if type(answers) is list:
+        #             return [to_text(x) for x in answers]
+        #         if type(answers) is dict:
+        #             result = []
+        #             keys = sorted([int(x) for x in answers.iterkeys()])
+        #             max_key = max(keys)
+        #             for i in range(0, max_key+1):
+        #                 if i in keys:
+        #                     result.append(to_text(answers[str(i)]))
+        #                 else:
+        #                     result.append('')
+        #             return result
 
-            try:
-                self.data['essentialRequirements'] = \
-                    clean(self.data['essentialRequirements'])
-            except KeyError:
-                pass
+        #     try:
+        #         self.data['essentialRequirements'] = \
+        #             clean(self.data['essentialRequirements'])
+        #     except KeyError:
+        #         pass
 
-            try:
-                self.data['niceToHaveRequirements'] = \
-                    clean(self.data['niceToHaveRequirements'])
-            except KeyError:
-                pass
+        #     try:
+        #         self.data['niceToHaveRequirements'] = \
+        #             clean(self.data['niceToHaveRequirements'])
+        #     except KeyError:
+        #         pass
 
-            try:
-                self.data['attachedDocumentURL'] = \
-                    filter(None, clean(self.data['attachedDocumentURL']))
-            except KeyError:
-                pass
+        #     try:
+        #         self.data['attachedDocumentURL'] = \
+        #             filter(None, clean(self.data['attachedDocumentURL']))
+        #     except KeyError:
+        #         pass
 
-        try:
-            clean_non_strings()
-        except TypeError:
-            pass
+        # try:
+        #     clean_non_strings()
+        # except TypeError:
+        #     pass
 
-        # if the UI is sending back the dayRate. remove it from data
-        if self.brief.lot.slug == 'digital-outcome':
-            self.data = drop_foreign_fields(self.data, [
-                'dayRate'
-            ])
+        # errs = get_validation_errors(
+        #     'brief-responses-{}-{}'.format(self.brief.framework.slug, self.brief.lot.slug),
+        #     self.data,
+        #     enforce_required=enforce_required,
+        #     required_fields=required_fields
+        # )
 
-        errs = get_validation_errors(
-            'brief-responses-{}-{}'.format(self.brief.framework.slug, self.brief.lot.slug),
-            self.data,
-            enforce_required=enforce_required,
-            required_fields=required_fields
-        )
+        # if (
+        #     'essentialRequirements' not in errs and
+        #     len(filter(None, self.data.get('essentialRequirements', []))) !=
+        #     len(self.brief.data['essentialRequirements'])
+        # ):
+        #     errs['essentialRequirements'] = 'answer_required'
 
-        if (
-            'essentialRequirements' not in errs and
-            len(filter(None, self.data.get('essentialRequirements', []))) !=
-            len(self.brief.data['essentialRequirements'])
-        ):
-            errs['essentialRequirements'] = 'answer_required'
-
-        if max_day_rate and 'dayRate' not in errs:
-            if float(self.data['dayRate']) > float(max_day_rate):
-                errs['dayRate'] = 'max_less_than_min'
-
+        # if max_day_rate and 'dayRate' not in errs:
+        #     if float(self.data['dayRate']) > float(max_day_rate):
+        #         errs['dayRate'] = 'max_less_than_min'
+        errs = None
         if errs:
             raise ValidationError(errs)
 
@@ -2175,14 +2169,13 @@ class BriefResponse(db.Model):
         niceToHaveRequirements = []
         data = {}
 
-        for brs in self.brief_response_answers:
-            print brs.id
-            if brs.question_enum == 'essentialRequirements':
-                essentialRequirements.append(brs.answer)
-            elif brs.question_enum == 'niceToHaveRequirements':
-                niceToHaveRequirements.append(brs.answer)
+        for bra in self.brief_response_answers:
+            if bra.question_enum == 'essentialRequirements':
+                essentialRequirements.append(bra.answer)
+            elif bra.question_enum == 'niceToHaveRequirements':
+                niceToHaveRequirements.append(bra.answer)
             else:
-                data[brs.question_enum] = brs.answer
+                data[bra.question_enum] = bra.answer
 
         data.update({
             'essentialRequirements': essentialRequirements,
