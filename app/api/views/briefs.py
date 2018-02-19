@@ -3,7 +3,7 @@ import os
 from flask import jsonify, request, current_app, Response
 from flask_login import current_user, login_required
 from app.api import api
-from app.api.services import briefs, brief_responses_service, lots
+from app.api.services import briefs, brief_responses_service, brief_responses_contact_service, lots
 from app.emails import send_brief_response_received_email
 from dmapiclient.audit import AuditTypes
 from ...models import (db, AuditEvent, Brief, BriefResponse, BriefResponseAnswer,
@@ -196,12 +196,15 @@ def post_brief_response(brief_id):
         brief_response.validate()
         db.session.add(brief_response)
 
-# create this when it doesn't exist
-    # brief_response_contact = BriefResponseContact(
-    #     supplier=supplier,
-    #     brief=brief,
-    #     email_address=current_user.email_address
-    # )
+        if brief_responses_contact_service.find(supplier_code=supplier.code, brief_id=brief.id).one_or_none() is None:
+            # create a brief response contact when it doesn't exist
+            brief_response_contact = BriefResponseContact(
+                supplier=supplier,
+                brief=brief,
+                email_address=current_user.email_address
+            )
+            db.session.add(brief_response_contact)
+
         for attr, value in brief_response_json.items():
             if (attr == 'essentialRequirements'):
                 for v in value:

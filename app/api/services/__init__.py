@@ -6,6 +6,7 @@ from .briefs import BriefsService
 from .suppliers import SuppliersService
 from .lots import LotsService
 from .brief_responses import BriefResponsesService
+from .brief_responses_contact import BriefResponseContactService
 
 prices = PricesService()
 audit_service = AuditService()
@@ -16,3 +17,4 @@ briefs = BriefsService()
 suppliers = SuppliersService()
 lots = LotsService()
 brief_responses_service = BriefResponsesService()
+brief_responses_contact_service = BriefResponseContactService()
