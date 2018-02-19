@@ -226,13 +226,7 @@ def post_brief_response(brief_id):
             elif (attr == 'respondToEmailAddress'):
                 pass  # new tables stores this somewhere else
             else:
-                brief_response_answer = BriefResponseAnswer(
-                    brief_response=brief_response,
-                    question_enum=attr,
-                    answer=value
-                )
-                brief_response_answer.validate()
-                db.session.add(brief_response_answer)
+                add_brief_response_answer_to_session(brief_response, attr, value)
 
         db.session.flush()
 
