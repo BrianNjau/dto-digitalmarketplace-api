@@ -142,7 +142,7 @@ def get_brief_responses(brief_id):
       404:
         description: brief_id not found
     """
-    brief_responses = briefs.get_brief_responses(brief_id, current_user.supplier_code)
+    brief_responses = brief_responses_service.get_brief_responses(brief_id, current_user.supplier_code)
 
     if not brief_responses:
         abort(make_response(jsonify(errorMessage="Invalid brief id '{}'".format(brief_id)), 404))
