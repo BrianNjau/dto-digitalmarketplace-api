@@ -2171,7 +2171,24 @@ class BriefResponse(db.Model):
             raise ValidationError(errs)
 
     def serialize(self):
-        data = self.data.copy()
+        essentialRequirements = []
+        niceToHaveRequirements = []
+        data = {}
+
+        for brs in self.brief_response_answers:
+            print brs.id
+            if brs.question_enum == 'essentialRequirements':
+                essentialRequirements.append(brs.answer)
+            elif brs.question_enum == 'niceToHaveRequirements':
+                niceToHaveRequirements.append(brs.answer)
+            else:
+                data[brs.question_enum] = brs.answer
+
+        data.update({
+            'essentialRequirements': essentialRequirements,
+            'niceToHaveRequirements': niceToHaveRequirements
+        })
+
         data.update({
             'id': self.id,
             'briefId': self.brief_id,

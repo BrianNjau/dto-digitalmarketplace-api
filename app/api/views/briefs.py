@@ -205,25 +205,24 @@ def post_brief_response(brief_id):
             )
             db.session.add(brief_response_contact)
 
+        def add_brief_response_answer_to_session(brief_response, attr, value):
+            brief_response_answer = BriefResponseAnswer(
+                brief_response=brief_response,
+                question_enum=attr,
+                answer=v
+            )
+            brief_response_answer.validate()
+            db.session.add(brief_response_answer)
+
         for attr, value in brief_response_json.items():
-            if (attr == 'essentialRequirements'):
-                for v in value:
-                    brief_response_answer = BriefResponseAnswer(
-                        brief_response=brief_response,
-                        question_enum=attr,
-                        answer=v
-                    )
-                    brief_response_answer.validate()
-                    db.session.add(brief_response_answer)
-            elif (attr == 'niceToHaveRequirements'):
-                for v in value:
-                    brief_response_answer = BriefResponseAnswer(
-                        brief_response=brief_response,
-                        question_enum=attr,
-                        answer=v
-                    )
-                    brief_response_answer.validate()
-                    db.session.add(brief_response_answer)
+            if (attr == 'essentialRequirements' or attr == 'niceToHaveRequirements'):
+                # interestingly, these two variables can come in as an array or object
+                if (type(value) is dict):
+                    for k, v in sorted(value.items()):
+                        add_brief_response_answer_to_session(brief_response, attr, v)
+                else:
+                    for v in value:
+                        add_brief_response_answer_to_session(brief_response, attr, v)
             elif (attr == 'respondToEmailAddress'):
                 pass  # new tables stores this somewhere else
             else:

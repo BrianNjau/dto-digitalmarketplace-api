@@ -1,7 +1,8 @@
 from flask import abort, jsonify, make_response
 from flask_login import current_user, login_required
 from app.api import api
-from ...models import BriefResponse, Supplier
+from ...models import BriefResponse, BriefResponseAnswer, Supplier
+from app.api.services import brief_responses_service
 from sqlalchemy.exc import DataError
 
 
@@ -36,7 +37,12 @@ def withdraw_brief_response(brief_response_id):
       404:
         description: brief_response_id not found
     """
-    return jsonify(success=True), 200
+    brief_response = (brief_responses_service
+                      .find(id=brief_response_id)
+                      .order_by(BriefResponseAnswer.id)
+                      .one_or_none())
+
+    return jsonify(briefResponses=brief_response.serialize()), 200
 
 
 @api.route('/brief-response/<int:brief_response_id>', methods=['GET'])
