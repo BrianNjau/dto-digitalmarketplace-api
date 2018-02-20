@@ -215,7 +215,7 @@ def post_brief_response(brief_id):
             db.session.add(brief_response_answer)
 
         for attr, value in brief_response_json.items():
-            if (attr == 'essentialRequirements' or attr == 'niceToHaveRequirements'):
+            if (attr == 'essentialRequirements' or attr == 'niceToHaveRequirements' or attr == 'attachedDocumentURL'):
                 # interestingly, these two variables can come in as an array or object
                 if (type(value) is dict):
                     for k, v in sorted(value.items()):

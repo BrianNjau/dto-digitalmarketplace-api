@@ -2167,6 +2167,7 @@ class BriefResponse(db.Model):
     def serialize(self):
         essentialRequirements = []
         niceToHaveRequirements = []
+        attachedDocumentURL = []
         data = {}
 
         for bra in self.brief_response_answers:
@@ -2174,6 +2175,8 @@ class BriefResponse(db.Model):
                 essentialRequirements.append(bra.answer)
             elif bra.question_enum == 'niceToHaveRequirements':
                 niceToHaveRequirements.append(bra.answer)
+            elif bra.question_enum == 'attachedDocumentURL':
+                attachedDocumentURL.append(bra.answer)
             else:
                 data[bra.question_enum] = bra.answer
 
@@ -2208,8 +2211,22 @@ class BriefResponseAnswer(db.Model):
 
     brief_response = db.relationship('BriefResponse')
 
+    # @validates('brief')
+    # def validates_brief(self, key, brief):
+    #     if brief.status != "live":
+    #         raise ValidationError("Brief status must be 'live', not '{}'".format(brief.status))
+    #     return brief
+
     def validate(self):
         errs = None
+        brief = self.brief_response.brief
+        brief_data = brief.data
+        print brief_data, len(brief_data['essentialRequirements'])
+
+        if self.question_enum == 'essentialRequirements' or self.question_enum == 'niceToHaveRequirements':
+            pass
+        else:
+            pass
 
         if errs:
             raise ValidationError(errs)
@@ -2314,6 +2331,7 @@ class WorkOrder(db.Model):
     supplier_code = db.Column(db.BigInteger, db.ForeignKey('supplier.code'), nullable=False)
 
     created_at = db.Column(DateTime, index=True, nullable=False, default=utcnow)
+    withdrawn_at = db.Column(DateTime, index=True, nullable=True)
 
     brief = db.relationship('Brief')
     supplier = db.relationship('Supplier', lazy='joined')
