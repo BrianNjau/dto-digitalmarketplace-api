@@ -2074,6 +2074,14 @@ class BriefResponse(db.Model):
     supplier = db.relationship('Supplier', lazy='joined')
     brief_response_answers = db.relationship('BriefResponseAnswer')
 
+    @validates('withdrawn_at')
+    def validates_withdrawn_at(self, key, value):
+        if value:
+            if value < date.today():
+                raise ValidationError("Withdrawn date cannot be set before today")
+            
+        return value
+
     # @validates('data')
     # def validates_data(self, key, data):
     #     data = drop_foreign_fields(data, [
@@ -2149,41 +2157,34 @@ class BriefResponse(db.Model):
         #     enforce_required=enforce_required,
         #     required_fields=required_fields
         # )
+        errs = {}
+        if (
+            'essentialRequirements' not in errs and
+            len(filter(None, self.data.get('essentialRequirements', []))) !=
+            len(self.brief.data['essentialRequirements'])
+        ):
+            errs['essentialRequirements'] = 'answer_required'
 
-        # if (
-        #     'essentialRequirements' not in errs and
-        #     len(filter(None, self.data.get('essentialRequirements', []))) !=
-        #     len(self.brief.data['essentialRequirements'])
-        # ):
-        #     errs['essentialRequirements'] = 'answer_required'
+        if max_day_rate and 'dayRate' not in errs:
+            if float(self.data['dayRate']) > float(max_day_rate):
+                errs['dayRate'] = 'max_less_than_min'
 
-        # if max_day_rate and 'dayRate' not in errs:
-        #     if float(self.data['dayRate']) > float(max_day_rate):
-        #         errs['dayRate'] = 'max_less_than_min'
-        errs = None
         if errs:
             raise ValidationError(errs)
 
     def serialize(self):
-        essentialRequirements = []
-        niceToHaveRequirements = []
-        attachedDocumentURL = []
         data = {}
-
         for bra in self.brief_response_answers:
-            if bra.question_enum == 'essentialRequirements':
-                essentialRequirements.append(bra.answer)
-            elif bra.question_enum == 'niceToHaveRequirements':
-                niceToHaveRequirements.append(bra.answer)
-            elif bra.question_enum == 'attachedDocumentURL':
-                attachedDocumentURL.append(bra.answer)
+            if (bra.question_enum == 'essentialRequirements' or
+               bra.question_enum == 'niceToHaveRequirements' or
+               bra.question_enum == 'attachedDocumentURL'):
+
+                if bra.question_enum not in data:
+                    data[bra.question_enum] = []
+                data[bra.question_enum].append(bra.answer)
+
             else:
                 data[bra.question_enum] = bra.answer
-
-        data.update({
-            'essentialRequirements': essentialRequirements,
-            'niceToHaveRequirements': niceToHaveRequirements
-        })
 
         data.update({
             'id': self.id,
@@ -2211,22 +2212,34 @@ class BriefResponseAnswer(db.Model):
 
     brief_response = db.relationship('BriefResponse')
 
-    # @validates('brief')
-    # def validates_brief(self, key, brief):
-    #     if brief.status != "live":
-    #         raise ValidationError("Brief status must be 'live', not '{}'".format(brief.status))
-    #     return brief
+    @validates('answer')
+    def validates_answer(self, key, value):
+        # required fields
+        if (self.question_enum == 'essentialRequirements' or
+           self.question_enum == 'dayRate' or
+           self.question_enum == 'availability'):
+
+            if not value.strip():
+                raise ValidationError('{} must is required'.format(self.question_enum))
+
+        if self.question_enum == 'dayRate':
+            num_format = re.compile('^\\d{1,15}(?:\\.\\d{1,5})?$')
+            is_number = re.match(num_format, value)
+            if (not is_number):
+                raise ValidationError('Day Rate must be a number')
+
+        return value
 
     def validate(self):
         errs = None
-        brief = self.brief_response.brief
-        brief_data = brief.data
-        print brief_data, len(brief_data['essentialRequirements'])
+        # brief = self.brief_response.brief
+        # brief_data = brief.data
+        # print brief_data, len(brief_data['essentialRequirements'])
 
-        if self.question_enum == 'essentialRequirements' or self.question_enum == 'niceToHaveRequirements':
-            pass
-        else:
-            pass
+        # if self.question_enum == 'essentialRequirements' or self.question_enum == 'niceToHaveRequirements':
+        #     pass
+        # else:
+        #     pass
 
         if errs:
             raise ValidationError(errs)
