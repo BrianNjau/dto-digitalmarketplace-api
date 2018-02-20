@@ -16,7 +16,7 @@ from app.models import (
     User, Lot, Framework, Service,
     Supplier, SupplierFramework,
     SupplierDomain, Domain, Product,
-    Brief, BriefResponse, BriefResponseAnswer, 
+    Brief, BriefResponse, BriefResponseAnswer,
     Address, ValidationError,
     BriefClarificationQuestion,
     WorkOrder, ServiceCategory, ServiceRole, Application,
@@ -677,11 +677,15 @@ class TestBriefResponses(BaseApplicationTest):
             db.session.commit()
             brief_response = BriefResponse(data=FIELDS, brief=self.brief, supplier=self.supplier)
 
-            brief_response_answer_1 = BriefResponseAnswer(question_enum='essentialRequirements', answer='be cool', brief_response=brief_response)
+            brief_response_answer_1 = BriefResponseAnswer(question_enum='essentialRequirements',
+                                                          answer='be cool',
+                                                          brief_response=brief_response)
             brief_response.brief_response_answers.append(brief_response_answer_1)
             db.session.add(brief_response_answer_1)
 
-            brief_response_answer_2 = BriefResponseAnswer(question_enum='essentialRequirements', answer='be rad', brief_response=brief_response)
+            brief_response_answer_2 = BriefResponseAnswer(question_enum='essentialRequirements',
+                                                          answer='be rad',
+                                                          brief_response=brief_response)
             brief_response.brief_response_answers.append(brief_response_answer_2)
             db.session.add(brief_response_answer_2)
 
@@ -726,7 +730,9 @@ class TestBriefResponses(BaseApplicationTest):
     def test_brief_response_can_be_serialized(self):
         with self.app.app_context():
             brief_response = BriefResponse(data={'foo': 'bar'}, brief=self.brief, supplier=self.supplier)
-            brief_response_answer = BriefResponseAnswer(question_enum='foo', answer='bar', brief_response=brief_response)
+            brief_response_answer = BriefResponseAnswer(question_enum='foo',
+                                                        answer='bar',
+                                                        brief_response=brief_response)
             db.session.add(brief_response_answer)
             db.session.add(brief_response)
             db.session.commit()
