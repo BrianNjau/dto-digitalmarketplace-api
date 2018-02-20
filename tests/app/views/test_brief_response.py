@@ -174,7 +174,7 @@ class TestCreateBriefResponse(BaseBriefResponseTest, JSONUpdateTestMixin):
 
         assert res.status_code == 400
         assert data['error']['essentialRequirements'] == 'answer_required'
-        assert 'niceToHaveRequirements' in data['error']
+        assert 'niceToHaveRequirements' not in data['error']
 
     def test_cannot_create_brief_response_without_supplier_code(self, live_framework):
         res = self.create_brief_response({

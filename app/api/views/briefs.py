@@ -203,38 +203,35 @@ def post_brief_response(brief_id):
             db.session.add(brief_response_contact)
 
         def add_brief_response_answer_to_session(brief_response, attr, value):
-            brief_response_answer = BriefResponseAnswer(
-                brief_response=brief_response,
-                question_enum=attr,
-                answer=value
-            )
-            brief_response_answer.validate()
-            db.session.add(brief_response_answer)
-            return brief_response_answer
+            if value:
+                brief_response_answer = BriefResponseAnswer(
+                    brief_response=brief_response,
+                    question_enum=attr,
+                    answer=value
+                )
+                brief_response_answer.validate()
+                db.session.add(brief_response_answer)
+                brief_response.brief_response_answers.append(brief_response_answer)
 
         for attr, value in brief_response_json.items():
             if (attr == 'essentialRequirements' or attr == 'niceToHaveRequirements' or attr == 'attachedDocumentURL'):
                 # interestingly, these two variables can come in as an array or object
                 if (type(value) is dict):
                     for k, v in sorted(value.items()):
-                        brief_response.brief_response_answers.append(
-                            add_brief_response_answer_to_session(brief_response, attr, v))
+                        add_brief_response_answer_to_session(brief_response, attr, v)
                 else:
                     for v in value:
-                        brief_response.brief_response_answers.append(
-                            add_brief_response_answer_to_session(brief_response, attr, v))
+                        add_brief_response_answer_to_session(brief_response, attr, v)
             elif (attr == 'respondToEmailAddress'):
                 pass  # new tables stores this somewhere else
             else:
-                brief_response.brief_response_answers.append(
-                    add_brief_response_answer_to_session(brief_response, attr, value))
+                add_brief_response_answer_to_session(brief_response, attr, value)
 
         brief_response.validate()
         db.session.add(brief_response)
         db.session.flush()
 
     except ValidationError as e:
-        print e
         brief_response_json['brief_id'] = brief_id
         rollbar.report_exc_info(extra_data=brief_response_json)
         message = ""
@@ -245,7 +242,6 @@ def post_brief_response(brief_id):
             message += json.dumps(e.message)
         return jsonify(errorMessage=message), 400
     except Exception as e:
-        print e
         brief_response_json['brief_id'] = brief_id
         rollbar.report_exc_info(extra_data=brief_response_json)
         return jsonify(errorMessage=e.message), 400

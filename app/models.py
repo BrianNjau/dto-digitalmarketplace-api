@@ -2152,12 +2152,12 @@ class BriefResponseAnswer(db.Model):
     @validates('answer')
     def validates_answer(self, key, value):
         # required fields
+        value = value.strip()
         if (self.question_enum == 'essentialRequirements' or
            self.question_enum == 'dayRate' or
            self.question_enum == 'availability'):
-
-            if not value.strip():
-                raise ValidationError('{} must is required'.format(self.question_enum))
+            if not value:
+                raise ValidationError('{} is required'.format(self.question_enum))
 
         if self.question_enum == 'dayRate':
             num_format = re.compile('^\\d{1,15}(?:\\.\\d{1,5})?$')

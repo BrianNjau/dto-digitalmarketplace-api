@@ -131,6 +131,7 @@ def test_create_brief_response_with_object(client, supplier_user,
                 'essentialRequirements': ['ABC', 'XYZ'],
                 'availability': '01/01/2018',
                 'respondToEmailAddress': 'supplier@email.com',
+                'specialistName': 'Test Specialist Name',
                 'dayRate': '100',
             }),
             content_type='application/json'
