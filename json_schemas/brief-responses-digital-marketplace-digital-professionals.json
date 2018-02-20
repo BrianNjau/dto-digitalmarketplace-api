@@ -35,10 +35,6 @@
       "type": "array"
     },
     "specialistName": {
-      "type": "string"
-    },
-    "respondToEmailAddress": {
-      "format": "email",    
       "minLength": 1,
       "type": "string"
     }
@@ -47,7 +43,7 @@
     "availability",
     "dayRate",
     "essentialRequirements",
-    "respondToEmailAddress"
+    "specialistName"
   ],
   "title": "Digital Service Professionals Brief Response Schema",
   "type": "object"

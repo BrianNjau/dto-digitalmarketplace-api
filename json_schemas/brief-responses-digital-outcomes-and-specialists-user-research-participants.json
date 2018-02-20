@@ -18,15 +18,14 @@
       "minItems": 0,
       "type": "array"
     },
-    "respondToEmailAddress": {
-      "format": "email",
+    "specialistName": {
       "minLength": 1,
       "type": "string"
     }
   },
   "required": [
     "essentialRequirements",
-    "respondToEmailAddress"
+    "specialistName"
   ],
   "title": "Digital Outcomes and Specialists User research participants Brief Response Schema",
   "type": "object"

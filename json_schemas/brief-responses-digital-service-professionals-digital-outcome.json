@@ -23,8 +23,7 @@
       "minItems": 0,
       "type": "array"
     },
-    "respondToEmailAddress": {
-      "format": "email",
+    "specialistName": {
       "minLength": 1,
       "type": "string"
     }
@@ -32,7 +31,7 @@
   "required": [
     "availability",
     "essentialRequirements",
-    "respondToEmailAddress"
+    "specialistName"
   ],
   "title": "Digital Outcome Brief Response Schema",
   "type": "object"
