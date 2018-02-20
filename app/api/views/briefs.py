@@ -16,6 +16,7 @@ from dmutils.file import s3_upload_file_from_request, s3_download_file
 import mimetypes
 import rollbar
 import json
+from six import text_type, binary_type
 
 
 def _can_do_brief_response(brief_id):
@@ -185,8 +186,13 @@ def download_brief_response_file(brief_id, supplier_code, slug):
 def post_brief_response(brief_id):
     brief_response_json = get_json_from_request()
     supplier, brief = _can_do_brief_response(brief_id)
-
+    # interestingly, these variables can come in as an array or object
+    array_fields = ['essentialRequirements', 'niceToHaveRequirements', 'attachedDocumentURL']
     try:
+        for af in array_fields:
+            if (af in brief_response_json):
+                brief_response_json[af] = _clean(brief_response_json[af])
+
         brief_response = BriefResponse(
             data=brief_response_json,
             supplier=supplier,
@@ -202,30 +208,14 @@ def post_brief_response(brief_id):
             )
             db.session.add(brief_response_contact)
 
-        def add_brief_response_answer_to_session(brief_response, attr, value):
-            if value:
-                brief_response_answer = BriefResponseAnswer(
-                    brief_response=brief_response,
-                    question_enum=attr,
-                    answer=value
-                )
-                brief_response_answer.validate()
-                db.session.add(brief_response_answer)
-                brief_response.brief_response_answers.append(brief_response_answer)
-
         for attr, value in brief_response_json.items():
-            if (attr == 'essentialRequirements' or attr == 'niceToHaveRequirements' or attr == 'attachedDocumentURL'):
-                # interestingly, these two variables can come in as an array or object
-                if (type(value) is dict):
-                    for k, v in sorted(value.items()):
-                        add_brief_response_answer_to_session(brief_response, attr, v)
-                else:
-                    for v in value:
-                        add_brief_response_answer_to_session(brief_response, attr, v)
+            if (attr in array_fields):
+                for v in value:
+                    _add_brief_response_answer_to_session(brief_response, attr, v)
             elif (attr == 'respondToEmailAddress'):
                 pass  # new tables stores this somewhere else
             else:
-                add_brief_response_answer_to_session(brief_response, attr, value)
+                _add_brief_response_answer_to_session(brief_response, attr, value)
 
         brief_response.validate()
         db.session.add(brief_response)
@@ -274,3 +264,37 @@ def get_framework(framework_slug):
     ).first_or_404()
 
     return jsonify(framework.serialize())
+
+
+def _to_text(x):
+    if isinstance(x, binary_type):
+        return x.decode('utf-8')
+    else:
+        return text_type(x)
+
+
+def _clean(answers):
+    if type(answers) is list:
+        return [_to_text(x) for x in answers]
+    if type(answers) is dict:
+        result = []
+        keys = sorted([int(x) for x in answers.iterkeys()])
+        max_key = max(keys)
+        for i in range(0, max_key+1):
+            if i in keys:
+                result.append(_to_text(answers[str(i)]))
+            else:
+                result.append('')
+        return result
+
+
+def _add_brief_response_answer_to_session(brief_response, attr, value):
+    if value:
+        brief_response_answer = BriefResponseAnswer(
+            brief_response=brief_response,
+            question_enum=attr,
+            answer=value
+        )
+        brief_response_answer.validate()
+        db.session.add(brief_response_answer)
+        brief_response.brief_response_answers.append(brief_response_answer)
