@@ -2136,7 +2136,24 @@ class BriefResponseAnswer(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     brief_response_id = db.Column(db.Integer, db.ForeignKey('brief_response.id'), nullable=False)
-    question_enum = db.Column(db.String, index=True, nullable=False)
+    question_enum = db.Column(
+        db.Enum(
+            *[
+                'essentialRequirements',
+                'niceToHaveRequirements',
+                'availability',
+                'dayRate',
+                'specialistName',
+                'attachedDocumentURL'
+            ],
+            name='brief_response_answer_question_enum'
+        ),
+        default='saved',
+        index=True,
+        unique=False,
+        nullable=False
+    )
+
     answer = db.Column(db.String, index=True, nullable=False)
 
     brief_response = db.relationship('BriefResponse')

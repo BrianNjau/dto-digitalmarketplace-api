@@ -718,19 +718,19 @@ class TestBriefResponses(BaseApplicationTest):
             assert brief_response.data == {}
 
     def test_whitespace_is_stripped_from_brief_response_answer(self):
-        brief_response_answer_1 = BriefResponseAnswer(question_enum='foo', answer=' bar ')
+        brief_response_answer_1 = BriefResponseAnswer(question_enum='essentialRequirements', answer=' bar ')
         assert brief_response_answer_1.answer == 'bar'
 
-        brief_response_answer_2 = BriefResponseAnswer(question_enum='bar', answer='foo    ')
+        brief_response_answer_2 = BriefResponseAnswer(question_enum='niceToHaveRequirements', answer='foo    ')
         assert brief_response_answer_2.answer == 'foo'
 
-        brief_response_answer_3 = BriefResponseAnswer(question_enum='bar', answer='   foo')
+        brief_response_answer_3 = BriefResponseAnswer(question_enum='availability', answer='   foo')
         assert brief_response_answer_3.answer == 'foo'
 
     def test_brief_response_can_be_serialized(self):
         with self.app.app_context():
             brief_response = BriefResponse(data={'foo': 'bar'}, brief=self.brief, supplier=self.supplier)
-            brief_response_answer = BriefResponseAnswer(question_enum='foo',
+            brief_response_answer = BriefResponseAnswer(question_enum='availability',
                                                         answer='bar',
                                                         brief_response=brief_response)
             db.session.add(brief_response_answer)
@@ -745,7 +745,7 @@ class TestBriefResponses(BaseApplicationTest):
                     'supplierCode': 0,
                     'supplierName': 'Supplier 0',
                     'createdAt': mock.ANY,
-                    'foo': 'bar',
+                    'availability': 'bar',
                     'links': {
                         'self': (('.get_brief_response',), {'brief_response_id': brief_response.id}),
                         'brief': (('.get_brief',), {'brief_id': self.brief.id}),
