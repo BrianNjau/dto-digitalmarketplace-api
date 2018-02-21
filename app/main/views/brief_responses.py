@@ -135,15 +135,17 @@ def list_brief_responses():
         per_page=current_app.config['DM_API_BRIEF_RESPONSES_PAGE_SIZE']
     )
 
-    brief_response_contacts = brief_response_contacts.all()
-    brief_responses = [brief_response.serialize() for brief_response in brief_responses.items]
-    for br in brief_responses:
+    if brief_response_contacts is None:
+        brief_response_contacts = brief_responses_contact_service.get_all_by_brief_id([br.brief_id for br in brief_responses.items])
+
+    brief_responses_json = [brief_response.serialize() for brief_response in brief_responses.items]
+    for br in brief_responses_json:
         br.update({'respondToEmailAddress': next((brc.email_address for brc in brief_response_contacts
                                                   if brc.brief_id == br['briefId'] and
                                                   brc.supplier_code == br['supplierCode']), '')})
 
     return jsonify(
-        briefResponses=brief_responses,
+        briefResponses=brief_responses_json,
         links=pagination_links(
             brief_responses,
             '.list_brief_responses',
