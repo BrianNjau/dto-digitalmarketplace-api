@@ -10,7 +10,6 @@ from .brief_responses_contact import BriefResponseContactService
 
 prices = PricesService()
 audit_service = AuditService()
-audit_types = AuditTypes
 assessments = AssessmentsService()
 domain_service = DomainService()
 briefs = BriefsService()

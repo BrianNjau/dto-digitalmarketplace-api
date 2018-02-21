@@ -1,12 +1,16 @@
 from flask import abort, jsonify, make_response
 from flask_login import current_user, login_required
 from app.api import api
-from ...models import BriefResponse, BriefResponseAnswer, Supplier
-from app.api.services import brief_responses_service
+from ...models import AuditEvent, BriefResponse, BriefResponseAnswer, Supplier
+from app.api.services import brief_responses_service, audit_service
 from sqlalchemy.exc import DataError
+from ...datetime_utils import utcnow
+from dmapiclient.audit import AuditTypes
+import rollbar
 
 
 @api.route('/brief-response/<int:brief_response_id>/withdraw', methods=['POST'])
+@login_required
 def withdraw_brief_response(brief_response_id):
     """Withdraw brief responses (role=supplier)
     ---
@@ -34,13 +38,34 @@ def withdraw_brief_response(brief_response_id):
     responses:
       200:
         description: Successfully withdrawn a candidate
-      404:
+      400:
         description: brief_response_id not found
     """
     brief_response = (brief_responses_service
-                      .find(id=brief_response_id)
-                      .order_by(BriefResponseAnswer.id)
+                      .find(id=brief_response_id, supplier_code=current_user.supplier_code)
                       .one_or_none())
+
+    withdrawn_at = utcnow()
+    if brief_response:
+        brief_response.withdrawn_at = withdrawn_at
+        brief_responses_service.save(brief_response)
+    else:
+        abort(make_response(jsonify(errorMessage="Invalid brief response id '{}'".format(brief_response_id)), 400))
+
+    try:
+        audit = AuditEvent(
+            audit_type=AuditTypes.update_brief_response,
+            user=current_user.email_address,
+            data={
+                'briefResponseId': brief_response.id,
+                'withdrawn_at': withdrawn_at
+            },
+            db_object=brief_response
+        )
+        audit_service.save(audit)
+    except Exception as e:
+        extra_data = {'audit_type': AuditTypes.update_brief_response, 'briefResponseId': brief_response.id}
+        rollbar.report_exc_info(extra_data=extra_data)
 
     return jsonify(briefResponses=brief_response.serialize()), 200
 

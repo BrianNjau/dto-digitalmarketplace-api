@@ -10,12 +10,6 @@ class AuditService(Service):
     def __init__(self, *args, **kwargs):
         super(AuditService, self).__init__(*args, **kwargs)
 
-    def log_audit_event(self, audit, extra_data):
-        try:
-            self.save(audit)
-        except Exception:
-            rollbar.report_exc_info(extra_data=extra_data)
-
 
 class AuditTypes(Enum):
     update_price = 'update_price'

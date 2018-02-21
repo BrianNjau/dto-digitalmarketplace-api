@@ -2074,14 +2074,6 @@ class BriefResponse(db.Model):
     supplier = db.relationship('Supplier', lazy='joined')
     brief_response_answers = db.relationship('BriefResponseAnswer')
 
-    @validates('withdrawn_at')
-    def validates_withdrawn_at(self, key, value):
-        if value:
-            if value < date.today():
-                raise ValidationError("Withdrawn date cannot be set before today")
-
-        return value
-
     def validate(self, enforce_required=True, required_fields=None, max_day_rate=None):
         data = self.get_data_blob(self.brief_response_answers)
         errs = get_validation_errors(
