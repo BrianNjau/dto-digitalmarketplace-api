@@ -136,7 +136,8 @@ def list_brief_responses():
     )
 
     if brief_response_contacts is None:
-        brief_response_contacts = brief_responses_contact_service.get_all_by_brief_id([br.brief_id for br in brief_responses.items])
+        brief_response_contacts = (brief_responses_contact_service.
+                                   get_all_by_brief_id([br.brief_id for br in brief_responses.items]))
 
     brief_responses_json = [brief_response.serialize() for brief_response in brief_responses.items]
     for br in brief_responses_json:
