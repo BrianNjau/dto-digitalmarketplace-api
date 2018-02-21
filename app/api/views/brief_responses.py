@@ -1,9 +1,8 @@
-from flask import abort, jsonify, make_response
+from flask import abort, jsonify
 from flask_login import current_user, login_required
 from app.api import api
-from ...models import AuditEvent, BriefResponse, BriefResponseAnswer, Supplier
+from ...models import AuditEvent
 from app.api.services import brief_responses_service, audit_service
-from sqlalchemy.exc import DataError
 from ...datetime_utils import utcnow
 from dmapiclient.audit import AuditTypes
 import rollbar
@@ -105,20 +104,9 @@ def get_brief_response(brief_response_id):
         description: brief_response_id not found
     """
 
-    brief_response = BriefResponse.query.filter(
-        BriefResponse.id == brief_response_id
-    ).first_or_404()
+    brief_response = brief_responses_service.find(id=brief_response_id, supplier_code=current_user.supplier_code).one_or_none()
 
-    try:
-        supplier = Supplier.query.filter(
-            Supplier.code == current_user.supplier_code
-        ).first()
-    except DataError:
-        supplier = None
-
-    if not supplier:
-        abort(make_response(jsonify(errorMessage="Invalid supplier Code '{}'".format(current_user.supplier_code)), 400))
-    if supplier.code != brief_response.supplier_code:
-        abort(make_response(jsonify(errorMessage="Unauthorised"), 403))
+    if brief_response is None:
+        abort(404)
 
     return jsonify(briefResponses=brief_response.serialize())
