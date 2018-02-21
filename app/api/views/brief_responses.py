@@ -49,7 +49,7 @@ def withdraw_brief_response(brief_response_id):
         brief_response.withdrawn_at = withdrawn_at
         brief_responses_service.save(brief_response)
     else:
-        abort(make_response(jsonify(errorMessage="Invalid brief response id '{}'".format(brief_response_id)), 400))
+        abort(404)
 
     try:
         audit = AuditEvent(
