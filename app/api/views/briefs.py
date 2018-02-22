@@ -4,6 +4,7 @@ from flask import jsonify, request, current_app, Response
 from flask_login import current_user, login_required
 from app.api import api
 from app.api.services import briefs, brief_responses_service, brief_responses_contact_service, lots_service
+from app.api.helpers import role_required
 from app.emails import send_brief_response_received_email
 from dmapiclient.audit import AuditTypes
 from ...models import (db, AuditEvent, Brief, BriefResponse, BriefResponseAnswer,
@@ -109,6 +110,7 @@ def get_brief(brief_id):
 
 @api.route('/brief/<int:brief_id>/responses', methods=['GET'])
 @login_required
+@role_required('supplier')
 def get_brief_responses(brief_id):
     """All brief responses (role=supplier)
     ---

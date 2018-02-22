@@ -3,6 +3,7 @@ from flask_login import current_user, login_required
 from app.api import api
 from ...models import AuditEvent
 from app.api.services import brief_responses_service, audit_service
+from app.api.helpers import role_required
 from ...datetime_utils import utcnow
 from dmapiclient.audit import AuditTypes
 import rollbar
@@ -10,6 +11,7 @@ import rollbar
 
 @api.route('/brief-response/<int:brief_response_id>/withdraw', methods=['POST'])
 @login_required
+@role_required('supplier')
 def withdraw_brief_response(brief_response_id):
     """Withdraw brief responses (role=supplier)
     ---
@@ -73,6 +75,7 @@ def withdraw_brief_response(brief_response_id):
 
 @api.route('/brief-response/<int:brief_response_id>', methods=['GET'])
 @login_required
+@role_required('supplier')
 def get_brief_response(brief_response_id):
     """Get brief response (role=supplier)
     ---
