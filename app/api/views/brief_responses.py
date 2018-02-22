@@ -41,7 +41,9 @@ def withdraw_brief_response(brief_response_id):
         description: brief_response_id not found
     """
     brief_response = (brief_responses_service
-                      .find(id=brief_response_id, supplier_code=current_user.supplier_code)
+                      .find(id=brief_response_id,
+                            supplier_code=current_user.supplier_code,
+                            withdrawn_at=None)
                       .one_or_none())
 
     withdrawn_at = utcnow()
@@ -105,7 +107,8 @@ def get_brief_response(brief_response_id):
     """
 
     brief_response = brief_responses_service.find(id=brief_response_id,
-                                                  supplier_code=current_user.supplier_code).one_or_none()
+                                                  supplier_code=current_user.supplier_code,
+                                                  withdrawn_at=None).one_or_none()
 
     if brief_response is None:
         abort(404)

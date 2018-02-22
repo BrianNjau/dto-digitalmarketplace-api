@@ -3,7 +3,7 @@ import os
 from flask import jsonify, request, current_app, Response
 from flask_login import current_user, login_required
 from app.api import api
-from app.api.services import briefs, brief_responses_service, brief_responses_contact_service, lots
+from app.api.services import briefs, brief_responses_service, brief_responses_contact_service, lots_service
 from app.emails import send_brief_response_received_email
 from dmapiclient.audit import AuditTypes
 from ...models import (db, AuditEvent, Brief, BriefResponse, BriefResponseAnswer,
@@ -72,16 +72,20 @@ def _can_do_brief_response(brief_id):
             errorMessage="Supplier does not have Digital Marketplace framework "
                          "or does not have at least one assessed domain"), 400))
 
-    lot = lots.first(slug='digital-professionals')
+    lot = lots_service.first(slug='digital-professionals')
     if brief.lot_id == lot.id:
         # Check if there are more than 3 brief response already from this supplier when professional aka specialists
-        brief_response_count = brief_responses_service.find(supplier_code=supplier.code, brief_id=brief.id).count()
+        brief_response_count = brief_responses_service.find(supplier_code=supplier.code,
+                                                            brief_id=brief.id,
+                                                            withdrawn_at=None).count()
         if (brief_response_count > 2):  # TODO magic number
             abort(make_response(jsonify(
                 errorMessage="There are already 3 brief response for supplier '{}'".format(supplier.code)), 400))
     else:
         # Check if brief response already exists from this supplier when outcome for all other types
-        if brief_responses_service.find(supplier_code=supplier.code, brief_id=brief.id).one_or_none():
+        if brief_responses_service.find(supplier_code=supplier.code,
+                                        brief_id=brief.id,
+                                        withdrawn_at=None).one_or_none():
             abort(make_response(jsonify(
                 errorMessage="Brief response already exists for supplier '{}'".format(supplier.code)), 400))
 
@@ -186,7 +190,7 @@ def download_brief_response_file(brief_id, supplier_code, slug):
 def post_brief_response(brief_id):
     brief_response_json = get_json_from_request()
     supplier, brief = _can_do_brief_response(brief_id)
-    # interestingly, these variables can come in as an array or object
+    # TODO fix frontend to only send arrays for these three properties
     array_fields = ['essentialRequirements', 'niceToHaveRequirements', 'attachedDocumentURL']
     try:
         for af in array_fields:

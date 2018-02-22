@@ -97,7 +97,7 @@ def list_brief_responses():
     brief_id = get_int_or_400(request.args, 'brief_id')
     supplier_code = get_int_or_400(request.args, 'supplier_code')
 
-    brief_responses = BriefResponse.query
+    brief_responses = BriefResponse.query.filter(BriefResponse.withdrawn_at.is_(None))
     brief_response_contacts = None
     if supplier_code is not None:
         brief_responses = brief_responses.filter(BriefResponse.supplier_code == supplier_code)

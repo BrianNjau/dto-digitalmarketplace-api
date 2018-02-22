@@ -1,6 +1,6 @@
 from app.api.helpers import Service
 from app import db
-from app.models import Brief, BriefResponse, Supplier
+from app.models import Brief, BriefResponse
 
 
 class BriefsService(Service):
@@ -14,7 +14,8 @@ class BriefsService(Service):
                                       Brief.id, Brief.data['title'].astext.label('name'),
                                       Brief.closed_at)
                      .join(Brief)
-                     .filter(BriefResponse.supplier_code == code)
+                     .filter(BriefResponse.supplier_code == code,
+                             BriefResponse.withdrawn_at.is_(None))
                      .order_by(Brief.closed_at)
                      .all())
 

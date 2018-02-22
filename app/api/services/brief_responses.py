@@ -16,7 +16,9 @@ class BriefResponsesService(Service):
                                       BriefResponse.supplier_code,
                                       Supplier.name.label('supplier_name'))
                      .join(Supplier)
-                     .filter(BriefResponse.supplier_code == supplier_code, BriefResponse.brief_id == brief_id)
+                     .filter(BriefResponse.supplier_code == supplier_code,
+                             BriefResponse.brief_id == brief_id,
+                             BriefResponse.withdrawn_at.is_(None))
                      .all())
 
         return [r._asdict() for r in responses]
