@@ -2072,34 +2072,99 @@ class BriefResponse(db.Model):
 
     brief = db.relationship('Brief')
     supplier = db.relationship('Supplier', lazy='joined')
-    brief_response_answers = db.relationship('BriefResponseAnswer')
+
+    @validates('data')
+    def validates_data(self, key, data):
+        data = drop_foreign_fields(data, [
+            'supplierCode', 'briefId', 'respondToEmailAddress'
+        ])
+
+        NTF = 'niceToHaveRequirements'
+        excluded_keys = [NTF]
+        excluded = dict()
+
+        for k in excluded_keys:
+            if k in data:
+                excluded[k] = data.pop(NTF)
+
+        data = strip_whitespace_from_data(data)
+
+        data.update(excluded)
+
+        data = purge_nulls_from_data(data)
+
+        return data
 
     def validate(self, enforce_required=True, required_fields=None, max_day_rate=None):
-        data = self.get_data_blob(self.brief_response_answers)
+        def clean_non_strings():
+            # short term hacky fix for frontend yaml-parsing bug
+
+            def to_text(x):
+                if isinstance(x, binary_type):
+                    return x.decode('utf-8')
+                else:
+                    return text_type(x)
+
+            def clean(answers):
+                if type(answers) is list:
+                    return [to_text(x) for x in answers]
+                if type(answers) is dict:
+                    result = []
+                    keys = sorted([int(x) for x in answers.iterkeys()])
+                    max_key = max(keys)
+                    for i in range(0, max_key+1):
+                        if i in keys:
+                            result.append(to_text(answers[str(i)]))
+                        else:
+                            result.append('')
+                    return result
+
+            try:
+                self.data['essentialRequirements'] = \
+                    clean(self.data['essentialRequirements'])
+            except KeyError:
+                pass
+
+            try:
+                self.data['niceToHaveRequirements'] = \
+                    clean(self.data['niceToHaveRequirements'])
+            except KeyError:
+                pass
+
+            try:
+                self.data['attachedDocumentURL'] = \
+                    filter(None, clean(self.data['attachedDocumentURL']))
+            except KeyError:
+                pass
+
+        try:
+            clean_non_strings()
+        except TypeError:
+            pass
+
         errs = get_validation_errors(
             'brief-responses-{}-{}'.format(self.brief.framework.slug, self.brief.lot.slug),
-            data,
+            self.data,
             enforce_required=enforce_required,
             required_fields=required_fields
         )
 
         if (
             'essentialRequirements' not in errs and
-            len(filter(None, data.get('essentialRequirements', []))) !=
+            len(filter(None, self.data.get('essentialRequirements', []))) !=
             len(self.brief.data['essentialRequirements'])
         ):
             errs['essentialRequirements'] = 'answer_required'
 
         if max_day_rate and 'dayRate' not in errs:
-            if float(data['dayRate']) > float(max_day_rate):
+            if float(self.data['dayRate']) > float(max_day_rate):
                 errs['dayRate'] = 'max_less_than_min'
 
         if errs:
             raise ValidationError(errs)
 
     def serialize(self):
-        data = self.get_data_blob(self.brief_response_answers)
-
+        data = self.data.copy()
         data.update({
             'id': self.id,
             'briefId': self.brief_id,
@@ -2114,80 +2179,6 @@ class BriefResponse(db.Model):
         })
 
         return data
-
-    def get_data_blob(self, brief_response_answers):
-        data = {}
-        for bra in brief_response_answers:
-            if (bra.question_enum == 'essentialRequirements' or
-               bra.question_enum == 'niceToHaveRequirements' or
-               bra.question_enum == 'attachedDocumentURL'):
-
-                if bra.question_enum not in data:
-                    data[bra.question_enum] = []
-                data[bra.question_enum].append(bra.answer)
-            else:
-                data[bra.question_enum] = bra.answer
-
-        return data
-
-
-class BriefResponseAnswer(db.Model):
-    __tablename__ = 'brief_response_answer'
-
-    id = db.Column(db.Integer, primary_key=True)
-    brief_response_id = db.Column(db.Integer, db.ForeignKey('brief_response.id'), nullable=False)
-    question_enum = db.Column(
-        db.Enum(
-            *[
-                'essentialRequirements',
-                'niceToHaveRequirements',
-                'availability',
-                'dayRate',
-                'specialistName',
-                'attachedDocumentURL'
-            ],
-            name='brief_response_answer_question_enum'
-        ),
-        default='saved',
-        index=True,
-        unique=False,
-        nullable=False
-    )
-
-    answer = db.Column(db.String, index=True, nullable=False)
-
-    brief_response = db.relationship('BriefResponse')
-
-    @validates('answer')
-    def validates_answer(self, key, value):
-        # required fields
-        value = value.strip()
-        if (self.question_enum == 'essentialRequirements' or
-           self.question_enum == 'dayRate' or
-           self.question_enum == 'availability'):
-            if not value:
-                raise ValidationError('{} is required'.format(self.question_enum))
-
-        if self.question_enum == 'dayRate':
-            num_format = re.compile('^\\d{1,15}(?:\\.\\d{1,5})?$')
-            is_number = re.match(num_format, value)
-            if (not is_number):
-                raise ValidationError('Day Rate must be a number')
-
-        return value
-
-    def validate(self):
-        errs = None
-
-        if errs:
-            raise ValidationError(errs)
-
-    def serialize(self):
-        return {
-            "id": self.brief_response_id,
-            "questionEnum": self.question_enum,
-            "answer": answer
-        }
 
 
 class BriefResponseContact(db.Model):

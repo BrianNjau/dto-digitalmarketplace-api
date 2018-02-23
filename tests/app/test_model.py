@@ -16,7 +16,7 @@ from app.models import (
     User, Lot, Framework, Service,
     Supplier, SupplierFramework,
     SupplierDomain, Domain, Product,
-    Brief, BriefResponse, BriefResponseAnswer,
+    Brief, BriefResponse,
     Address, ValidationError,
     BriefClarificationQuestion,
     WorkOrder, ServiceCategory, ServiceRole, Application,
@@ -672,22 +672,9 @@ class TestBriefResponses(BaseApplicationTest):
 
         with self.app.app_context():
             self.brief.data = ERSPEC
-
             db.session.add(self.brief)
             db.session.commit()
             brief_response = BriefResponse(data=FIELDS, brief=self.brief, supplier=self.supplier)
-
-            brief_response_answer_1 = BriefResponseAnswer(question_enum='essentialRequirements',
-                                                          answer='be cool',
-                                                          brief_response=brief_response)
-            brief_response.brief_response_answers.append(brief_response_answer_1)
-            db.session.add(brief_response_answer_1)
-
-            brief_response_answer_2 = BriefResponseAnswer(question_enum='essentialRequirements',
-                                                          answer='be rad',
-                                                          brief_response=brief_response)
-            brief_response.brief_response_answers.append(brief_response_answer_2)
-            db.session.add(brief_response_answer_2)
 
             db.session.add(brief_response)
             db.session.commit()
@@ -703,7 +690,6 @@ class TestBriefResponses(BaseApplicationTest):
             assert brief_response.brief_id == self.brief.id
             assert isinstance(brief_response.created_at, builtindatetime)
             assert brief_response.data == FIELDS
-            assert brief_response.brief_response_answers[0].answer == brief_response_answer_1.answer
 
     def test_create_a_brief_with_comments(self):
         with self.app.app_context():
@@ -718,22 +704,14 @@ class TestBriefResponses(BaseApplicationTest):
             assert brief_response.data == {}
 
     def test_whitespace_is_stripped_from_brief_response_answer(self):
-        brief_response_answer_1 = BriefResponseAnswer(question_enum='essentialRequirements', answer=' bar ')
-        assert brief_response_answer_1.answer == 'bar'
+        brief_response = BriefResponse(data={})
+        brief_response.data = {'foo': ' bar ', 'bar': ['', '  foo']}
 
-        brief_response_answer_2 = BriefResponseAnswer(question_enum='niceToHaveRequirements', answer='foo    ')
-        assert brief_response_answer_2.answer == 'foo'
-
-        brief_response_answer_3 = BriefResponseAnswer(question_enum='availability', answer='   foo')
-        assert brief_response_answer_3.answer == 'foo'
+        assert brief_response.data == {'foo': 'bar', 'bar': ['foo']}
 
     def test_brief_response_can_be_serialized(self):
         with self.app.app_context():
             brief_response = BriefResponse(data={'foo': 'bar'}, brief=self.brief, supplier=self.supplier)
-            brief_response_answer = BriefResponseAnswer(question_enum='availability',
-                                                        answer='bar',
-                                                        brief_response=brief_response)
-            db.session.add(brief_response_answer)
             db.session.add(brief_response)
             db.session.commit()
 
@@ -745,7 +723,7 @@ class TestBriefResponses(BaseApplicationTest):
                     'supplierCode': 0,
                     'supplierName': 'Supplier 0',
                     'createdAt': mock.ANY,
-                    'availability': 'bar',
+                    'foo': 'bar',
                     'links': {
                         'self': (('.get_brief_response',), {'brief_response_id': brief_response.id}),
                         'brief': (('.get_brief',), {'brief_id': self.brief.id}),

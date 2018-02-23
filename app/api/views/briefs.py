@@ -1,13 +1,13 @@
 import os
 
-from flask import jsonify, request, current_app, Response
+from flask import jsonify, request, current_app, Response, make_response
 from flask_login import current_user, login_required
 from app.api import api
 from app.api.services import briefs, brief_responses_service, brief_responses_contact_service, lots_service
-from app.api.helpers import role_required
+from app.api.helpers import role_required, abort, forbidden, not_found
 from app.emails import send_brief_response_received_email
 from dmapiclient.audit import AuditTypes
-from ...models import (db, AuditEvent, Brief, BriefResponse, BriefResponseAnswer,
+from ...models import (db, AuditEvent, Brief, BriefResponse,
                        BriefResponseContact, Lot, Supplier, Framework, ValidationError)
 from sqlalchemy.exc import DataError
 from ...utils import (
@@ -69,9 +69,8 @@ def _can_do_brief_response(brief_id):
     if len(supplier.frameworks) == 0 \
             or 'digital-marketplace' != supplier.frameworks[0].framework.slug \
             or len(supplier.assessed_domains) == 0:
-        abort(make_response(jsonify(
-            errorMessage="Supplier does not have Digital Marketplace framework "
-                         "or does not have at least one assessed domain"), 400))
+        abort("Supplier does not have Digital Marketplace framework "
+              "or does not have at least one assessed domain")
 
     lot = lots_service.first(slug='digital-professionals')
     if brief.lot_id == lot.id:
@@ -80,15 +79,13 @@ def _can_do_brief_response(brief_id):
                                                             brief_id=brief.id,
                                                             withdrawn_at=None).count()
         if (brief_response_count > 2):  # TODO magic number
-            abort(make_response(jsonify(
-                errorMessage="There are already 3 brief response for supplier '{}'".format(supplier.code)), 400))
+            abort("There are already 3 brief response for supplier '{}'".format(supplier.code))
     else:
         # Check if brief response already exists from this supplier when outcome for all other types
         if brief_responses_service.find(supplier_code=supplier.code,
                                         brief_id=brief.id,
                                         withdrawn_at=None).one_or_none():
-            abort(make_response(jsonify(
-                errorMessage="Brief response already exists for supplier '{}'".format(supplier.code)), 400))
+            abort("Brief response already exists for supplier '{}'".format(supplier.code))
 
     return supplier, brief
 
@@ -152,7 +149,7 @@ def get_brief_responses(brief_id):
     brief_responses = brief_responses_service.get_brief_responses(brief_id, current_user.supplier_code)
 
     if not brief_responses:
-        abort(make_response(jsonify(errorMessage="Invalid brief id '{}'".format(brief_id)), 404))
+        not_found("Invalid brief id '{}'".format(brief_id))
 
     return jsonify(briefResponses=brief_responses)
 
@@ -192,13 +189,7 @@ def download_brief_response_file(brief_id, supplier_code, slug):
 def post_brief_response(brief_id):
     brief_response_json = get_json_from_request()
     supplier, brief = _can_do_brief_response(brief_id)
-    # TODO fix frontend to only send arrays for these three properties
-    array_fields = ['essentialRequirements', 'niceToHaveRequirements', 'attachedDocumentURL']
     try:
-        for af in array_fields:
-            if (af in brief_response_json):
-                brief_response_json[af] = _clean(brief_response_json[af])
-
         brief_response = BriefResponse(
             data=brief_response_json,
             supplier=supplier,
@@ -213,15 +204,6 @@ def post_brief_response(brief_id):
                 email_address=current_user.email_address
             )
             db.session.add(brief_response_contact)
-
-        for attr, value in brief_response_json.items():
-            if (attr in array_fields):
-                for v in value:
-                    _add_brief_response_answer_to_session(brief_response, attr, v)
-            elif (attr == 'respondToEmailAddress'):
-                pass  # new tables stores this somewhere else
-            else:
-                _add_brief_response_answer_to_session(brief_response, attr, value)
 
         brief_response.validate()
         db.session.add(brief_response)
@@ -270,37 +252,3 @@ def get_framework(framework_slug):
     ).first_or_404()
 
     return jsonify(framework.serialize())
-
-
-def _to_text(x):
-    if isinstance(x, binary_type):
-        return x.decode('utf-8')
-    else:
-        return text_type(x)
-
-
-def _clean(answers):
-    if type(answers) is list:
-        return [_to_text(x) for x in answers]
-    if type(answers) is dict:
-        result = []
-        keys = sorted([int(x) for x in answers.iterkeys()])
-        max_key = max(keys)
-        for i in range(0, max_key+1):
-            if i in keys:
-                result.append(_to_text(answers[str(i)]))
-            else:
-                result.append('')
-        return result
-
-
-def _add_brief_response_answer_to_session(brief_response, attr, value):
-    if value:
-        brief_response_answer = BriefResponseAnswer(
-            brief_response=brief_response,
-            question_enum=attr,
-            answer=value
-        )
-        brief_response_answer.validate()
-        db.session.add(brief_response_answer)
-        brief_response.brief_response_answers.append(brief_response_answer)

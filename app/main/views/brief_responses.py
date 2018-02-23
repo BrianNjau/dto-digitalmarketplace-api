@@ -120,10 +120,7 @@ def list_brief_responses():
     if brief_id or supplier_code:
         brief_response_contacts = brief_response_contacts.all()
         brief_responses = [brief_response.serialize() for brief_response in brief_responses.all()]
-        for br in brief_responses:
-            br.update({'respondToEmailAddress': next((brc.email_address for brc in brief_response_contacts
-                                                      if brc.brief_id == br['briefId'] and
-                                                      brc.supplier_code == br['supplierCode']), '')})
+        _add_respond_to_email_address(brief_responses, brief_response_contacts)
 
         return jsonify(
             briefResponses=brief_responses,
@@ -140,10 +137,7 @@ def list_brief_responses():
                                    get_all_by_brief_id([br.brief_id for br in brief_responses.items]))
 
     brief_responses_json = [brief_response.serialize() for brief_response in brief_responses.items]
-    for br in brief_responses_json:
-        br.update({'respondToEmailAddress': next((brc.email_address for brc in brief_response_contacts
-                                                  if brc.brief_id == br['briefId'] and
-                                                  brc.supplier_code == br['supplierCode']), '')})
+    _add_respond_to_email_address(brief_responses_json, brief_response_contacts)
 
     return jsonify(
         briefResponses=brief_responses_json,
@@ -153,3 +147,10 @@ def list_brief_responses():
             request.args
         )
     )
+
+
+def _add_respond_to_email_address(brief_responses_json, brief_response_contacts):
+    for br in brief_responses_json:
+        br.update({'respondToEmailAddress': next((brc.email_address for brc in brief_response_contacts
+                                                 if brc.brief_id == br['briefId'] and
+                                                 brc.supplier_code == br['supplierCode']), '')})
