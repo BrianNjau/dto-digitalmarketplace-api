@@ -112,7 +112,7 @@ def get_brief_responses(brief_id):
     """All brief responses (role=supplier)
     ---
     tags:
-      - "Brief Responses"
+      - "Brief"
     security:
       - basicAuth: []
     parameters:
@@ -126,23 +126,12 @@ def get_brief_responses(brief_id):
           briefResponses:
             type: array
             items:
-              $ref: '#/definitions/BriefResponse'
-      BriefResponse:
-        type: object
-        properties:
-          id:
-            type: number
-          data:
-            type: object
-          brief_id:
-            type: number
-          supplier_code:
-            type: number
+              id: BriefResponse
     responses:
       200:
         description: A list of brief responses
         schema:
-          $ref: '#/definitions/BriefResponse'
+          id: BriefResponses
       404:
         description: brief_id not found
     """

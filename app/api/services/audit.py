@@ -13,5 +13,4 @@ class AuditService(Service):
 
 class AuditTypes(Enum):
     update_price = 'update_price'
-    update_brief_response = 'update_brief_response'
-    update_brief_response_contact = 'update_brief_response_contact'
+    update_brief_response = "update_brief_response"
