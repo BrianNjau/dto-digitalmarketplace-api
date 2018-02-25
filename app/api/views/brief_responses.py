@@ -37,10 +37,9 @@ def withdraw_brief_response(brief_response_id):
                             supplier_code=current_user.supplier_code)
                       .one_or_none())
 
-    withdrawn_at = utcnow()
     if brief_response:
         if brief_response.withdrawn_at is None:
-            brief_response.withdrawn_at = withdrawn_at
+            brief_response.withdrawn_at = utcnow()
             brief_responses_service.save(brief_response)
 
             try:
