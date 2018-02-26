@@ -79,7 +79,7 @@ def _can_do_brief_response(brief_id):
                                                             brief_id=brief.id,
                                                             withdrawn_at=None).count()
         if (brief_response_count > 2):  # TODO magic number
-            abort("There are already 3 brief response for supplier '{}'".format(supplier.code))
+            abort("There are already 3 brief responses for supplier '{}'".format(supplier.code))
     else:
         # Check if brief response already exists from this supplier when outcome for all other types
         if brief_responses_service.find(supplier_code=supplier.code,
