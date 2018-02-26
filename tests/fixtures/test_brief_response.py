@@ -124,7 +124,7 @@ def test_withdraw_brief_response(client, supplier_user, supplier_domains, briefs
         )
         assert res.status_code == 200
 
-        res = client.post(
+        res = client.put(
             '/2/brief-response/{}/withdraw'.format(i),
             data=json.dumps({
                 'essentialRequirements': ['ABC', 'XYZ'],
@@ -169,7 +169,7 @@ def test_withdraw_already_withdrawn_brief_response(client,
         )
         assert res.status_code == 201
 
-        res = client.post(
+        res = client.put(
             '/2/brief-response/{}/withdraw'.format(i),
             data=json.dumps({
                 'essentialRequirements': ['ABC', 'XYZ'],
@@ -182,7 +182,7 @@ def test_withdraw_already_withdrawn_brief_response(client,
         )
         assert res.status_code == 200
 
-        res = client.post(
+        res = client.put(
             '/2/brief-response/{}/withdraw'.format(i),
             data=json.dumps({
                 'essentialRequirements': ['ABC', 'XYZ'],
