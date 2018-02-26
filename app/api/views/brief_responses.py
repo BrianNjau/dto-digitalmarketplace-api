@@ -110,4 +110,4 @@ def get_brief_response(brief_response_id):
         not_found('Cannot find brief response with brief_response_id :{} and supplier_code: {}'
                   .format(brief_response_id, current_user.supplier_code))
 
-    return jsonify(briefResponses=brief_response.serialize())
+    return jsonify(brief_response.serialize())
