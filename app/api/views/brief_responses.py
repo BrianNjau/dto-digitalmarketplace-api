@@ -9,7 +9,7 @@ from ...datetime_utils import utcnow
 import rollbar
 
 
-@api.route('/brief-response/<int:brief_response_id>/withdraw', methods=['POST'])
+@api.route('/brief-response/<int:brief_response_id>/withdraw', methods=['PUT'])
 @login_required
 @role_required('supplier')
 def withdraw_brief_response(brief_response_id):
