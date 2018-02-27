@@ -3,7 +3,7 @@ import os
 from flask import jsonify, request, current_app, Response, make_response
 from flask_login import current_user, login_required
 from app.api import api
-from app.api.services import briefs, brief_responses_service, brief_responses_contact_service, lots_service
+from app.api.services import briefs, brief_responses_service, brief_response_contact_service, lots_service
 from app.api.helpers import role_required, abort, forbidden, not_found
 from app.emails import send_brief_response_received_email
 from dmapiclient.audit import AuditTypes
@@ -185,7 +185,7 @@ def post_brief_response(brief_id):
             brief=brief
         )
 
-        if brief_responses_contact_service.find(supplier_code=supplier.code, brief_id=brief.id).one_or_none() is None:
+        if brief_response_contact_service.find(supplier_code=supplier.code, brief_id=brief.id).one_or_none() is None:
             # create a brief response contact when it doesn't exist
             brief_response_contact = BriefResponseContact(
                 supplier=supplier,

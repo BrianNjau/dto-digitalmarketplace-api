@@ -5,7 +5,7 @@ from dmapiclient.audit import AuditTypes
 
 from .. import main
 from ...models import db, Brief, BriefResponse, AuditEvent
-from ...api.services import brief_responses_contact_service
+from ...api.services import brief_response_contact_service
 from ...utils import (
     get_json_from_request, json_has_required_keys, get_int_or_400,
     pagination_links, get_valid_page_or_1, url_for,
@@ -101,21 +101,22 @@ def list_brief_responses():
     brief_response_contacts = None
     if supplier_code is not None:
         brief_responses = brief_responses.filter(BriefResponse.supplier_code == supplier_code)
-        brief_response_contacts = brief_responses_contact_service.find(supplier_code=supplier_code)
+        brief_response_contacts = brief_response_contact_service.find(supplier_code=supplier_code)
 
     if brief_id is not None:
         brief_responses = brief_responses.filter(BriefResponse.brief_id == brief_id)
-        brief_response_contacts = brief_responses_contact_service.find(brief_id=brief_id)
-        audit = AuditEvent(
-            audit_type=AuditTypes.read_brief_responses,
-            user=None,
-            data={
-                'briefId': brief_id,
-            },
-            db_object=None,
-        )
-        db.session.add(audit)
-        db.session.commit()
+        brief_response_contacts = brief_response_contact_service.find(brief_id=brief_id)
+        if request.headers.get('User-Agent', '').startswith('DM-API-Client'):
+            audit = AuditEvent(
+                audit_type=AuditTypes.read_brief_responses,
+                user=None,
+                data={
+                    'briefId': brief_id,
+                },
+                db_object=None,
+            )
+            db.session.add(audit)
+            db.session.commit()
 
     if brief_id or supplier_code:
         brief_response_contacts = brief_response_contacts.all()
@@ -133,7 +134,7 @@ def list_brief_responses():
     )
 
     if brief_response_contacts is None:
-        brief_response_contacts = (brief_responses_contact_service.
+        brief_response_contacts = (brief_response_contact_service.
                                    get_all_by_brief_id([br.brief_id for br in brief_responses.items]))
 
     brief_responses_json = [brief_response.serialize() for brief_response in brief_responses.items]

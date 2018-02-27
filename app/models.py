@@ -2205,8 +2205,8 @@ class BriefResponseContact(db.Model):
     def serialize(self):
         return {
             "id": self.id,
-            "brief_id": self.brief_id,
-            "supplier_code": self.supplier_code,
+            "briefId": self.brief_id,
+            "supplierCode": self.supplier_code,
             "emailAddress": self.email_address
         }
 
