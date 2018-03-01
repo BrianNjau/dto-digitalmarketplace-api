@@ -6,7 +6,6 @@ from ...models import AuditEvent
 from app.api.services import brief_response_contact_service, audit_service, audit_types
 from app.api.helpers import role_required
 from ...utils import get_json_from_request
-import rollbar
 
 
 @api.route('/brief-response-contact/<int:brief_id>', methods=['PUT'])
@@ -39,7 +38,7 @@ def save_brief_response_contact(brief_id):
         description: Successfully updated a candidate
         schema:
           id: BriefResponseContact
-      400:
+      404:
         description: brief_id not found
     """
     brief_response_contact = (brief_response_contact_service
@@ -52,20 +51,16 @@ def save_brief_response_contact(brief_id):
         brief_response_contact.email_address = brief_response_contact_json['emailAddress']
         brief_response_contact_service.save(brief_response_contact)
 
-        try:
-            audit = AuditEvent(
-                audit_type=audit_types.update_brief_response_contact,
-                user=current_user.email_address,
-                data={
-                    'briefResponseContactId': brief_response_contact.id
-                },
-                db_object=brief_response_contact
-            )
-            audit_service.save(audit)
-        except Exception as e:
-            extra_data = {'audit_type': audit_types.update_brief_response_contact,
-                          'briefResponseContactId': brief_response_contact.id}
-            rollbar.report_exc_info(extra_data=extra_data)
+        audit = AuditEvent(
+            audit_type=audit_types.update_brief_response_contact,
+            user=current_user.email_address,
+            data={
+                'briefResponseContactId': brief_response_contact.id
+            },
+            db_object=brief_response_contact
+        )
+        audit_service.log_audit_event(audit, {'audit_type': audit_types.update_brief_response_contact,
+                                              'briefResponseContactId': brief_response_contact.id})
     else:
         # there should only be a record when there is a brief response submitted by the supplier
         not_found('Cannot find brief response contact with brief_id :{} and supplier_code: {}'

@@ -1,14 +1,16 @@
 import os
 
-from flask import jsonify, request, current_app, Response, make_response
+from flask import jsonify, request, current_app, Response
 from flask_login import current_user, login_required
 from app.api import api
-from app.api.services import briefs, brief_responses_service, brief_response_contact_service, lots_service
+from app.api.services import (briefs, brief_responses_service,
+                              brief_response_contact_service, lots_service,
+                              audit_service)
 from app.api.helpers import role_required, abort, forbidden, not_found
 from app.emails import send_brief_response_received_email
 from dmapiclient.audit import AuditTypes
 from ...models import (db, AuditEvent, Brief, BriefResponse,
-                       BriefResponseContact, Lot, Supplier, Framework, ValidationError)
+                       BriefResponseContact, Supplier, Framework, ValidationError)
 from sqlalchemy.exc import DataError
 from ...utils import (
     get_json_from_request
@@ -17,7 +19,6 @@ from dmutils.file import s3_upload_file_from_request, s3_download_file
 import mimetypes
 import rollbar
 import json
-from six import text_type, binary_type
 
 
 def _can_do_brief_response(brief_id):
@@ -135,10 +136,11 @@ def get_brief_responses(brief_id):
       404:
         description: brief_id not found
     """
-    brief_responses = brief_responses_service.get_brief_responses(brief_id, current_user.supplier_code)
-
-    if not brief_responses:
+    brief = briefs.get(brief_id)
+    if not brief:
         not_found("Invalid brief id '{}'".format(brief_id))
+
+    brief_responses = brief_responses_service.get_brief_responses(brief_id, current_user.supplier_code)
 
     return jsonify(briefResponses=brief_responses)
 
