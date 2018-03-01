@@ -1,5 +1,4 @@
 from app.api.helpers import Service
-from app import db
 from app.models import Lot
 
 
