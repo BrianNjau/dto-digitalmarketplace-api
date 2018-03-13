@@ -142,7 +142,7 @@ def get_brief_responses(brief_id):
 
     brief_responses = brief_responses_service.get_brief_responses(brief_id, current_user.supplier_code)
 
-    return jsonify(brief=brief, briefResponses=brief_responses)
+    return jsonify(brief=brief.serialize(with_users=False), briefResponses=brief_responses)
 
 
 @api.route('/brief/<int:brief_id>/respond/documents/<string:supplier_code>/<slug>', methods=['POST'])
