@@ -221,7 +221,7 @@ def briefs(app, request, users):
         for i in range(1, 6):
             db.session.add(Brief(
                 id=i,
-                data=COMPLETE_DIGITAL_SPECIALISTS_BRIEF.copy(),
+                data=data,
                 framework=Framework.query.filter(Framework.slug == "digital-service-professionals").first(),
                 lot=Lot.query.filter(Lot.slug == 'digital-professionals').first(),
                 users=users,
