@@ -85,7 +85,6 @@ def test_create_new_brief_response(client, supplier_user, supplier_domains, brie
         }),
         content_type='application/json'
     )
-    print res.get_data(as_text=True)
     assert res.status_code == 201
 
 
