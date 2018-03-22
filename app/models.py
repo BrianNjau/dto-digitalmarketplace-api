@@ -2061,7 +2061,6 @@ class BriefResponse(db.Model):
     __tablename__ = 'brief_response'
 
     id = db.Column(db.Integer, primary_key=True)
-
     data = db.Column(JSON, nullable=False)
 
     brief_id = db.Column(db.Integer, db.ForeignKey('brief.id'), nullable=False)
