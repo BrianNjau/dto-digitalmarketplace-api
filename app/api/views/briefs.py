@@ -4,13 +4,13 @@ from flask import jsonify, request, current_app, Response
 from flask_login import current_user, login_required
 from app.api import api
 from app.api.services import (briefs, brief_responses_service,
-                              brief_response_contact_service, lots_service,
+                              lots_service,
                               audit_service)
 from app.api.helpers import role_required, abort, forbidden, not_found
 from app.emails import send_brief_response_received_email
 from dmapiclient.audit import AuditTypes
 from ...models import (db, AuditEvent, Brief, BriefResponse,
-                       BriefResponseContact, Supplier, Framework, ValidationError)
+                       Supplier, Framework, ValidationError)
 from sqlalchemy.exc import DataError
 from ...utils import (
     get_json_from_request
@@ -178,6 +178,7 @@ def download_brief_response_file(brief_id, supplier_code, slug):
 @api.route('/brief/<int:brief_id>/respond', methods=["POST"])
 @login_required
 def post_brief_response(brief_id):
+
     brief_response_json = get_json_from_request()
     supplier, brief = _can_do_brief_response(brief_id)
     try:
@@ -186,15 +187,6 @@ def post_brief_response(brief_id):
             supplier=supplier,
             brief=brief
         )
-
-        if brief_response_contact_service.find(supplier_code=supplier.code, brief_id=brief.id).one_or_none() is None:
-            # create a brief response contact when it doesn't exist
-            brief_response_contact = BriefResponseContact(
-                supplier=supplier,
-                brief=brief,
-                email_address=current_user.email_address
-            )
-            db.session.add(brief_response_contact)
 
         brief_response.validate()
         db.session.add(brief_response)

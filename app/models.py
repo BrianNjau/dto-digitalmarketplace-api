@@ -2076,7 +2076,7 @@ class BriefResponse(db.Model):
     @validates('data')
     def validates_data(self, key, data):
         data = drop_foreign_fields(data, [
-            'supplierCode', 'briefId', 'respondToEmailAddress'
+            'supplierCode', 'briefId'
         ])
 
         NTF = 'niceToHaveRequirements'
@@ -2179,36 +2179,6 @@ class BriefResponse(db.Model):
         })
 
         return data
-
-
-class BriefResponseContact(db.Model):
-    __tablename__ = 'brief_response_contact'
-
-    id = db.Column(db.Integer, primary_key=True)
-    brief_id = db.Column(db.Integer, db.ForeignKey('brief.id'), nullable=False)
-    supplier_code = db.Column(db.BigInteger, db.ForeignKey('supplier.code'), nullable=False)
-    email_address = db.Column(db.String, index=True, nullable=False)
-
-    brief = db.relationship('Brief')
-    supplier = db.relationship('Supplier', lazy='joined')
-
-    @validates('email_address')
-    def validates_email_address(self, key, value):
-        return value.strip() if isinstance(value, string_types) else value
-
-    def validate(self):
-        errs = None
-
-        if errs:
-            raise ValidationError(errs)
-
-    def serialize(self):
-        return {
-            "id": self.id,
-            "briefId": self.brief_id,
-            "supplierCode": self.supplier_code,
-            "emailAddress": self.email_address
-        }
 
 
 class BriefClarificationQuestion(db.Model):

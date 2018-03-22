@@ -57,7 +57,7 @@ def load_user_from_request(request):
                              user.frameworks)
             return user
 
-from app.api.views import (briefs, brief_responses, brief_response_contacts,
+from app.api.views import (briefs, brief_responses,
                            users, feedback, suppliers, services, prices, regions, tokens, dashboards)  # noqa
 
 
