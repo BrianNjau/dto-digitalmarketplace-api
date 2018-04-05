@@ -7,6 +7,18 @@ from flask import current_app
 from .util import render_email_template, send_or_handle_error
 
 
+def send_seller_unsuccessful_email(supplier, subject='', content=''):
+    to_address = supplier.data['contact_email']
+    send_or_handle_error(
+        to_address,
+        content,
+        subject,
+        current_app.config['DM_GENERIC_NOREPLY_EMAIL'],
+        current_app.config['DM_GENERIC_SUPPORT_NAME'],
+        event_description_for_errors='seller unsuccessful for brief'
+    )
+
+
 def send_brief_response_received_email(supplier, brief, brief_response):
     TEMPLATE_FILENAME = 'brief_response_submitted_outcome.md' if brief.lot.slug == 'digital-outcome' \
         else 'brief_response_submitted.md'

@@ -5,9 +5,10 @@ from flask_login import current_user, login_required
 from app.api import api
 from app.api.services import (briefs, brief_responses_service,
                               lots_service,
-                              audit_service)
+                              audit_service,
+                              suppliers)
 from app.api.helpers import role_required, abort, forbidden, not_found
-from app.emails import send_brief_response_received_email
+from app.emails import send_brief_response_received_email, send_seller_unsuccessful_email
 from dmapiclient.audit import AuditTypes
 from ...models import (db, AuditEvent, Brief, BriefResponse,
                        Supplier, Framework, ValidationError)
@@ -108,7 +109,7 @@ def get_brief(brief_id):
 
 @api.route('/brief/<int:brief_id>/responses', methods=['GET'])
 @login_required
-@role_required('supplier')
+@role_required('supplier', 'buyer')
 def get_brief_responses(brief_id):
     """All brief responses (role=supplier)
     ---
@@ -140,9 +141,49 @@ def get_brief_responses(brief_id):
     if not brief:
         not_found("Invalid brief id '{}'".format(brief_id))
 
-    brief_responses = brief_responses_service.get_brief_responses(brief_id, current_user.supplier_code)
+    if hasattr(current_user, 'role') and current_user.role == 'buyer':
+        brief_user_ids = [user.id for user in brief.users]
+        if current_user.id not in brief_user_ids:
+            return forbidden("Unauthorised to view brief or brief does not exist")
+
+    supplier_code = current_user.supplier_code if hasattr(current_user, 'supplier_code') else None
+    brief_responses = brief_responses_service.get_brief_responses(brief_id, supplier_code)
 
     return jsonify(brief=brief.serialize(with_users=False), briefResponses=brief_responses)
+
+
+@api.route('/brief/<int:brief_id>/notify/sellers', methods=['POST'])
+@login_required
+@role_required('buyer')
+def notify_brief_sellers_unsuccessful(brief_id):
+    brief = briefs.get(brief_id)
+    if not brief:
+        not_found("Invalid brief id '{}'".format(brief_id))
+
+    brief_user_ids = [user.id for user in brief.users]
+    if current_user.id not in brief_user_ids:
+        return forbidden("Unauthorised to view brief or brief does not exist")
+
+    request_body = get_json_from_request()
+    try:
+        subject = request_body['subject']
+        content = request_body['content']
+        selected_sellers = request_body['selectedSellers']
+        supplier_codes = [supplier['supplier_code'] for supplier in selected_sellers]
+
+        try:
+            suppliers_to_notify = suppliers.get_all_by_code(supplier_codes)
+            for supplier in suppliers_to_notify:
+                send_seller_unsuccessful_email(supplier, subject=subject, content=content)
+        except Exception as e:
+            rollbar.report_exc_info()
+            return jsonify(errorMessage=e.message), 400
+
+        return jsonify(data=[subject, content, [supplier.name for supplier in suppliers_to_notify]])
+
+    except AttributeError as e:
+        rollbar.report_exc_info()
+        return jsonify(errorMessage=e.message), 400
 
 
 @api.route('/brief/<int:brief_id>/respond/documents/<string:supplier_code>/<slug>', methods=['POST'])
