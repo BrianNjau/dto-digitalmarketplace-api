@@ -7,7 +7,7 @@ from flask import current_app
 from .util import render_email_template, send_or_handle_error
 
 
-def send_seller_unsuccessful_email(supplier, subject='', content=''):
+def send_seller_email(supplier, subject='', content=''):
     to_address = supplier.data['contact_email']
     send_or_handle_error(
         to_address,
@@ -15,7 +15,7 @@ def send_seller_unsuccessful_email(supplier, subject='', content=''):
         subject,
         current_app.config['DM_GENERIC_NOREPLY_EMAIL'],
         current_app.config['DM_GENERIC_SUPPORT_NAME'],
-        event_description_for_errors='seller unsuccessful for brief'
+        event_description_for_errors='seller emailed about brief'
     )
 
 

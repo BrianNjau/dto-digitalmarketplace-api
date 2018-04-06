@@ -8,7 +8,7 @@ from app.api.services import (briefs, brief_responses_service,
                               audit_service,
                               suppliers)
 from app.api.helpers import role_required, abort, forbidden, not_found
-from app.emails import send_brief_response_received_email, send_seller_unsuccessful_email
+from app.emails import send_brief_response_received_email, send_seller_email
 from dmapiclient.audit import AuditTypes
 from ...models import (db, AuditEvent, Brief, BriefResponse,
                        Supplier, Framework, ValidationError)
@@ -174,7 +174,7 @@ def notify_brief_sellers_unsuccessful(brief_id):
         try:
             suppliers_to_notify = suppliers.get_all_by_code(supplier_codes)
             for supplier in suppliers_to_notify:
-                send_seller_unsuccessful_email(supplier, subject=subject, content=content)
+                send_seller_email(supplier, subject=subject, content=content)
         except Exception as e:
             rollbar.report_exc_info()
             return jsonify(errorMessage=e.message), 400
