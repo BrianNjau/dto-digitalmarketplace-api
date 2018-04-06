@@ -2141,6 +2141,12 @@ class BriefResponse(db.Model):
         except TypeError:
             pass
 
+        # if the UI is sending back the dayRate. remove it from data
+        if self.brief.lot.slug == 'digital-outcome':
+            self.data = drop_foreign_fields(self.data, [
+                'dayRate'
+            ])
+
         errs = get_validation_errors(
             'brief-responses-{}-{}'.format(self.brief.framework.slug, self.brief.lot.slug),
             self.data,
@@ -2242,7 +2248,6 @@ class WorkOrder(db.Model):
     supplier_code = db.Column(db.BigInteger, db.ForeignKey('supplier.code'), nullable=False)
 
     created_at = db.Column(DateTime, index=True, nullable=False, default=utcnow)
-    withdrawn_at = db.Column(DateTime, index=True, nullable=True)
 
     brief = db.relationship('Brief')
     supplier = db.relationship('Supplier', lazy='joined')
