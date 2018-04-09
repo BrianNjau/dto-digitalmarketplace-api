@@ -109,7 +109,7 @@ def get_brief(brief_id):
 
 @api.route('/brief/<int:brief_id>/responses', methods=['GET'])
 @login_required
-@role_required('supplier', 'buyer')
+@role_required('supplier')
 def get_brief_responses(brief_id):
     """All brief responses (role=supplier)
     ---
@@ -141,21 +141,118 @@ def get_brief_responses(brief_id):
     if not brief:
         not_found("Invalid brief id '{}'".format(brief_id))
 
+    brief_responses = brief_responses_service.get_brief_responses(brief_id, current_user.supplier_code)
+
+    return jsonify(brief=brief.serialize(with_users=False), briefResponses=brief_responses)
+
+
+@api.route('/brief/<int:brief_id>/sellers', methods=['GET'])
+@login_required
+@role_required('buyer')
+def get_brief_responded_sellers(brief_id):
+    """All sellers who responded to a now closed brief (role=buyer)
+    ---
+    tags:
+      - "Brief"
+    security:
+      - basicAuth: []
+    parameters:
+      - name: brief_id
+        in: path
+        type: number
+        required: true
+    definitions:
+      BriefResponses:
+        properties:
+          sellers:
+            type: array
+            items:
+              id: BriefResponse
+    responses:
+      200:
+        description: A list of sellers as brief responses
+        schema:
+          id: BriefResponses
+      403:
+        description: brief_id is not owned by the requesting user
+      404:
+        description: brief_id not found
+    """
+    brief = briefs.get(brief_id)
+    if not brief:
+        not_found("Invalid brief id '{}'".format(brief_id))
+
     if hasattr(current_user, 'role') and current_user.role == 'buyer':
         brief_user_ids = [user.id for user in brief.users]
         if current_user.id not in brief_user_ids:
             return forbidden("Unauthorised to view brief or brief does not exist")
 
-    supplier_code = current_user.supplier_code if hasattr(current_user, 'supplier_code') else None
-    brief_responses = brief_responses_service.get_brief_responses(brief_id, supplier_code)
+    if brief.status != 'closed':
+        return forbidden("Unauthorised to view brief or brief does not exist")
 
-    return jsonify(brief=brief.serialize(with_users=False), briefResponses=brief_responses)
+    brief_responses = brief_responses_service.get_brief_responses(brief_id, None)
+
+    return jsonify(brief=brief.serialize(with_users=False), sellers=brief_responses)
 
 
-@api.route('/brief/<int:brief_id>/notify/sellers', methods=['POST'])
+@api.route('/brief/<int:brief_id>/sellers/notify', methods=['POST'])
 @login_required
 @role_required('buyer')
 def notify_brief_sellers_unsuccessful(brief_id):
+    """Send an email to sellers (role=buyers)
+    ---
+    tags:
+      - "Brief"
+    security:
+      - basicAuth: []
+    consumes:
+      - application/json
+    parameters:
+      - name: brief_id
+        in: path
+        type: integer
+        required: true
+      - name: body
+        in: body
+        required: true
+        schema:
+          id: SellerNotification
+          required:
+            - subject
+            - content
+            - selectedSellers
+          properties:
+            subject:
+              type: string
+            content:
+              type: string
+            selectedSellers:
+              type: array
+              items:
+                type: object
+                required:
+                  - supplier_code
+                  - supplier_name
+                  - contact_name
+                properties:
+                  supplier_code:
+                    type: integer
+                  supplier_name:
+                    type: string
+                  contact_name:
+                    type: string
+    responses:
+      204:
+        description: The email was successfully sent
+      400:
+        description: request body was missing required data
+      403:
+        description: brief_id is not owned by the requesting user
+      404:
+        description: brief_id not found
+      500:
+        description: the server failed to send the email
+    """
     brief = briefs.get(brief_id)
     if not brief:
         not_found("Invalid brief id '{}'".format(brief_id))
@@ -175,9 +272,10 @@ def notify_brief_sellers_unsuccessful(brief_id):
             suppliers_to_notify = suppliers.get_all_by_code(supplier_codes)
             for supplier in suppliers_to_notify:
                 send_seller_email(supplier, subject=subject, content=content)
+            return ('', 204)
         except Exception as e:
             rollbar.report_exc_info()
-            return jsonify(errorMessage=e.message), 400
+            return jsonify(errorMessage=e.message), 500
 
         return jsonify(data=[subject, content, [supplier.name for supplier in suppliers_to_notify]])
 
