@@ -8,7 +8,7 @@ from .util import render_email_template, send_or_handle_error
 
 
 def send_seller_email(supplier, subject='', content=''):
-    to_address = supplier.data['contact_email']
+    to_address = supplier.data.get('contact_email', None)
     send_or_handle_error(
         to_address,
         content,

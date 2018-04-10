@@ -265,23 +265,27 @@ def notify_brief_sellers_unsuccessful(brief_id):
     try:
         subject = request_body['subject']
         content = request_body['content']
-        selected_sellers = request_body['selectedSellers']
-        supplier_codes = [supplier['supplier_code'] for supplier in selected_sellers]
-
-        try:
-            suppliers_to_notify = suppliers.get_all_by_code(supplier_codes)
-            for supplier in suppliers_to_notify:
-                send_seller_email(supplier, subject=subject, content=content)
-            return ('', 204)
-        except Exception as e:
-            rollbar.report_exc_info()
-            return jsonify(errorMessage=e.message), 500
-
-        return jsonify(data=[subject, content, [supplier.name for supplier in suppliers_to_notify]])
-
-    except AttributeError as e:
+        supplier_codes = [supplier['supplier_code'] for supplier in request_body['selectedSellers']]
+    except KeyError as e:
         rollbar.report_exc_info()
-        return jsonify(errorMessage=e.message), 400
+        return jsonify(errorMessage='The "{}" value was not found but is required'.format(e)), 400
+
+    if not supplier_codes:
+        return jsonify(errorMessage='You must supply at least one supplier to notify'), 400
+
+    try:
+        suppliers_to_notify = suppliers.get_all_by_code(supplier_codes)
+        brief_responses = brief_responses_service.get_brief_responses(brief_id, None)
+        valid_supplier_codes = [brief_response['supplier_code'] for brief_response in brief_responses]
+        valid_suppliers = [supplier for supplier in suppliers_to_notify if supplier.code in valid_supplier_codes]
+        if not valid_suppliers:
+            return jsonify(errorMessage='You must supply at least one supplier to notify'), 400
+        for supplier in valid_suppliers:
+            send_seller_email(supplier, subject=subject, content=content)
+        return ('', 204)
+    except Exception as e:
+        rollbar.report_exc_info()
+        return jsonify(errorMessage=e), 500
 
 
 @api.route('/brief/<int:brief_id>/respond/documents/<string:supplier_code>/<slug>', methods=['POST'])
