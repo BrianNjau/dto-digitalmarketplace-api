@@ -296,6 +296,11 @@ def test_get_brief_sellers_success_no_responses(client, supplier_user, supplier_
     assert len(data['sellers']) == 0
 
 
+@pytest.mark.parametrize(
+    'briefs',
+    [{'published_at': '%s-01-01' % (date.today().year - 1), 'closed_at': '%s-01-07' % (date.today().year - 1)}],
+    indirect=True
+)
 def test_get_brief_sellers_failure_current_user_not_buyer(client, supplier_user, supplier_domains, briefs, assessments,
                                                           suppliers, brief_responses):
     res = client.post('/2/login', data=json.dumps({
@@ -329,6 +334,11 @@ def test_get_brief_sellers_failure_not_yet_closed(client, supplier_user, supplie
     assert res.status_code == 403
 
 
+@pytest.mark.parametrize(
+    'briefs',
+    [{'published_at': '%s-01-01' % (date.today().year - 1), 'closed_at': '%s-01-07' % (date.today().year - 1)}],
+    indirect=True
+)
 def test_send_brief_sellers_notify_success(client, supplier_user, supplier_domains, briefs, assessments, suppliers,
                                            brief_responses, mocker):
     send_seller_email = mocker.patch('app.api.views.briefs.send_seller_email')
@@ -355,6 +365,40 @@ def test_send_brief_sellers_notify_success(client, supplier_user, supplier_domai
     assert send_seller_email.called
 
 
+@pytest.mark.parametrize(
+    'briefs',
+    [{'closed_at': pendulum.now().add(days=7).to_datetime_string()}],
+    indirect=True
+)
+def test_send_brief_sellers_notify_failure_not_yet_closed(client, supplier_user, supplier_domains, briefs, assessments, suppliers,
+                                                          brief_responses):
+    res = client.post('/2/login', data=json.dumps({
+        'emailAddress': 'test@digital.gov.au', 'password': 'testpassword'
+    }), content_type='application/json')
+    assert res.status_code == 200
+
+    res = client.post(
+        '/2/brief/1/sellers/notify',
+        data=json.dumps({
+            'flow': 'unsuccessful',
+            'subject': 'test subject',
+            'content': 'test content',
+            'selectedSellers': [{
+                'supplier_name': 'Test Supplier1',
+                'supplier_code': '1',
+                'contact_name': 'Test Name'
+            }]
+        }),
+        content_type='application/json'
+    )
+    assert res.status_code == 403
+
+
+@pytest.mark.parametrize(
+    'briefs',
+    [{'published_at': '%s-01-01' % (date.today().year - 1), 'closed_at': '%s-01-07' % (date.today().year - 1)}],
+    indirect=True
+)
 def test_send_brief_sellers_notify_failure_missing_input(client, supplier_user, supplier_domains, briefs, assessments,
                                                          suppliers, brief_responses, mocker):
     send_seller_email = mocker.patch('app.api.views.briefs.send_seller_email')
@@ -380,6 +424,11 @@ def test_send_brief_sellers_notify_failure_missing_input(client, supplier_user, 
     assert not send_seller_email.called
 
 
+@pytest.mark.parametrize(
+    'briefs',
+    [{'published_at': '%s-01-01' % (date.today().year - 1), 'closed_at': '%s-01-07' % (date.today().year - 1)}],
+    indirect=True
+)
 def test_send_brief_sellers_notify_failure_empty_sellers(client, supplier_user, supplier_domains, briefs, assessments,
                                                          suppliers, brief_responses, mocker):
     send_seller_email = mocker.patch('app.api.views.briefs.send_seller_email')
@@ -402,6 +451,11 @@ def test_send_brief_sellers_notify_failure_empty_sellers(client, supplier_user, 
     assert not send_seller_email.called
 
 
+@pytest.mark.parametrize(
+    'briefs',
+    [{'published_at': '%s-01-01' % (date.today().year - 1), 'closed_at': '%s-01-07' % (date.today().year - 1)}],
+    indirect=True
+)
 def test_send_brief_sellers_notify_failure_invalid_sellers(client, supplier_user, supplier_domains, briefs,
                                                            assessments, suppliers, brief_responses, mocker):
     send_seller_email = mocker.patch('app.api.views.briefs.send_seller_email')
@@ -428,6 +482,11 @@ def test_send_brief_sellers_notify_failure_invalid_sellers(client, supplier_user
     assert not send_seller_email.called
 
 
+@pytest.mark.parametrize(
+    'briefs',
+    [{'published_at': '%s-01-01' % (date.today().year - 1), 'closed_at': '%s-01-07' % (date.today().year - 1)}],
+    indirect=True
+)
 def test_send_brief_sellers_notify_failure_invalid_flow(client, supplier_user, supplier_domains, briefs, assessments,
                                                         suppliers, brief_responses, mocker):
     send_seller_email = mocker.patch('app.api.views.briefs.send_seller_email')
