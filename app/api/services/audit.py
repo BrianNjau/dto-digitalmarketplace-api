@@ -21,3 +21,5 @@ class AuditTypes(Enum):
     update_price = 'update_price'
     update_brief_response = 'update_brief_response'
     update_brief_response_contact = 'update_brief_response_contact'
+    create_brief_response = 'create_brief_response'
+    notify_brief_responders = 'notify_brief_responders'

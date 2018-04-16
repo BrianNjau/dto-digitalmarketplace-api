@@ -6,10 +6,10 @@ from app.api import api
 from app.api.services import (briefs, brief_responses_service,
                               lots_service,
                               audit_service,
+                              audit_types,
                               suppliers)
 from app.api.helpers import role_required, abort, forbidden, not_found
 from app.emails import send_brief_response_received_email, send_seller_email
-from dmapiclient.audit import AuditTypes
 from ...models import (db, AuditEvent, Brief, BriefResponse,
                        Supplier, Framework, ValidationError)
 from sqlalchemy.exc import DataError
@@ -265,6 +265,7 @@ def notify_brief_sellers_unsuccessful(brief_id):
     try:
         subject = request_body['subject']
         content = request_body['content']
+        notification_type = request_body['flow']
         supplier_codes = [supplier['supplier_code'] for supplier in request_body['selectedSellers']]
     except KeyError as e:
         rollbar.report_exc_info()
@@ -272,6 +273,10 @@ def notify_brief_sellers_unsuccessful(brief_id):
 
     if not supplier_codes:
         return jsonify(errorMessage='You must supply at least one supplier to notify'), 400
+
+    valid_types = ['unsuccessful']
+    if notification_type not in valid_types:
+        return jsonify(errorMessage='This flow type is not valid'), 400
 
     try:
         suppliers_to_notify = suppliers.get_all_by_code(supplier_codes)
@@ -282,10 +287,24 @@ def notify_brief_sellers_unsuccessful(brief_id):
             return jsonify(errorMessage='You must supply at least one supplier to notify'), 400
         for supplier in valid_suppliers:
             send_seller_email(supplier, subject=subject, content=content)
-        return ('', 204)
+
     except Exception as e:
         rollbar.report_exc_info()
         return jsonify(errorMessage=e), 500
+
+    audit = AuditEvent(
+        audit_type=audit_types.notify_brief_responders,
+        user=current_user.email_address,
+        data={
+            'briefId': brief_id,
+            'notificationType': notification_type,
+            'supplierCodesNotified': valid_supplier_codes
+        },
+        db_object=brief,
+    )
+    audit_service.log_audit_event(audit, {'audit_type': audit_types.notify_brief_responders,
+                                          'briefId': brief_id})
+    return ('', 204)
 
 
 @api.route('/brief/<int:brief_id>/respond/documents/<string:supplier_code>/<slug>', methods=['POST'])
@@ -357,7 +376,7 @@ def post_brief_response(brief_id):
         rollbar.report_exc_info(extra_data=brief_response_json)
 
     audit = AuditEvent(
-        audit_type=AuditTypes.create_brief_response,
+        audit_type=audit_types.create_brief_response,
         user=current_user.email_address,
         data={
             'briefResponseId': brief_response.id,
@@ -365,7 +384,7 @@ def post_brief_response(brief_id):
         },
         db_object=brief_response,
     )
-    audit_service.log_audit_event(audit, {'audit_type': AuditTypes.create_brief_response,
+    audit_service.log_audit_event(audit, {'audit_type': audit_types.create_brief_response,
                                           'briefResponseId': brief_response.id})
 
     return jsonify(briefResponses=brief_response.serialize()), 201

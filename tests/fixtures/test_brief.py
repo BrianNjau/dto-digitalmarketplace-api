@@ -340,6 +340,7 @@ def test_send_brief_sellers_notify_success(client, supplier_user, supplier_domai
     res = client.post(
         '/2/brief/1/sellers/notify',
         data=json.dumps({
+            'flow': 'unsuccessful',
             'subject': 'test subject',
             'content': 'test content',
             'selectedSellers': [{
@@ -365,6 +366,7 @@ def test_send_brief_sellers_notify_failure_missing_input(client, supplier_user, 
     res = client.post(
         '/2/brief/1/sellers/notify',
         data=json.dumps({
+            'flow': 'unsuccessful',
             'subject': 'test subject',
             'selectedSellers': [{
                 'supplier_name': 'Test Supplier1',
@@ -389,6 +391,7 @@ def test_send_brief_sellers_notify_failure_empty_sellers(client, supplier_user, 
     res = client.post(
         '/2/brief/1/sellers/notify',
         data=json.dumps({
+            'flow': 'unsuccessful',
             'subject': 'test subject',
             'content': 'test content',
             'selectedSellers': []
@@ -410,11 +413,38 @@ def test_send_brief_sellers_notify_failure_invalid_sellers(client, supplier_user
     res = client.post(
         '/2/brief/1/sellers/notify',
         data=json.dumps({
+            'flow': 'unsuccessful',
             'subject': 'test subject',
             'content': 'test content',
             'selectedSellers': [{
                 'supplier_name': 'Test Supplier999',
                 'supplier_code': '999',
+                'contact_name': 'Test Name'
+            }]
+        }),
+        content_type='application/json'
+    )
+    assert res.status_code == 400
+    assert not send_seller_email.called
+
+
+def test_send_brief_sellers_notify_failure_invalid_flow(client, supplier_user, supplier_domains, briefs, assessments,
+                                                        suppliers, brief_responses, mocker):
+    send_seller_email = mocker.patch('app.api.views.briefs.send_seller_email')
+    res = client.post('/2/login', data=json.dumps({
+        'emailAddress': 'test@digital.gov.au', 'password': 'testpassword'
+    }), content_type='application/json')
+    assert res.status_code == 200
+
+    res = client.post(
+        '/2/brief/1/sellers/notify',
+        data=json.dumps({
+            'flow': 'bad',
+            'subject': 'test subject',
+            'content': 'test content',
+            'selectedSellers': [{
+                'supplier_name': 'Test Supplier1',
+                'supplier_code': '1',
                 'contact_name': 'Test Name'
             }]
         }),
