@@ -370,8 +370,8 @@ def test_send_brief_sellers_notify_success(client, supplier_user, supplier_domai
     [{'closed_at': pendulum.now().add(days=7).to_datetime_string()}],
     indirect=True
 )
-def test_send_brief_sellers_notify_failure_not_yet_closed(client, supplier_user, supplier_domains, briefs, assessments, suppliers,
-                                                          brief_responses):
+def test_send_brief_sellers_notify_failure_not_yet_closed(client, supplier_user, supplier_domains, briefs, assessments,
+                                                          suppliers, brief_responses):
     res = client.post('/2/login', data=json.dumps({
         'emailAddress': 'test@digital.gov.au', 'password': 'testpassword'
     }), content_type='application/json')
