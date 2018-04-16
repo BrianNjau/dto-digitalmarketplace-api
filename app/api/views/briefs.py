@@ -182,13 +182,12 @@ def get_brief_responded_sellers(brief_id):
     if not brief:
         not_found("Invalid brief id '{}'".format(brief_id))
 
-    if hasattr(current_user, 'role') and current_user.role == 'buyer':
-        brief_user_ids = [user.id for user in brief.users]
-        if current_user.id not in brief_user_ids:
-            return forbidden("Unauthorised to view brief or brief does not exist")
+    brief_user_ids = [user.id for user in brief.users]
+    if current_user.id not in brief_user_ids:
+        return forbidden("Unauthorised to view brief or brief does not exist")
 
     if brief.status != 'closed':
-        return forbidden("Unauthorised to view brief or brief does not exist")
+        return forbidden("Brief is not closed")
 
     brief_responses = brief_responses_service.get_brief_responses(brief_id, None)
 
@@ -260,6 +259,9 @@ def notify_brief_sellers_unsuccessful(brief_id):
     brief_user_ids = [user.id for user in brief.users]
     if current_user.id not in brief_user_ids:
         return forbidden("Unauthorised to view brief or brief does not exist")
+
+    if brief.status != 'closed':
+        return forbidden("Brief is not closed")
 
     request_body = get_json_from_request()
     try:
