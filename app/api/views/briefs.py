@@ -10,6 +10,7 @@ from app.api.services import (briefs, brief_responses_service,
                               suppliers)
 from app.api.helpers import role_required, abort, forbidden, not_found
 from app.emails import send_brief_response_received_email, send_seller_email
+from dmapiclient.audit import AuditTypes
 from ...models import (db, AuditEvent, Brief, BriefResponse,
                        Supplier, Framework, ValidationError)
 from sqlalchemy.exc import DataError
@@ -302,7 +303,7 @@ def notify_brief_sellers_unsuccessful(brief_id):
         rollbar.report_exc_info()
         return jsonify(errorMessage=e), 500
 
-    audit = AuditEvent(
+    audit_service.log_audit_event(
         audit_type=audit_types.notify_brief_responders,
         user=current_user.email_address,
         data={
@@ -310,10 +311,7 @@ def notify_brief_sellers_unsuccessful(brief_id):
             'notificationType': notification_type,
             'supplierCodesNotified': valid_supplier_codes
         },
-        db_object=brief,
-    )
-    audit_service.log_audit_event(audit, {'audit_type': audit_types.notify_brief_responders,
-                                          'briefId': brief_id})
+        db_object=brief)
     return ('', 204)
 
 
