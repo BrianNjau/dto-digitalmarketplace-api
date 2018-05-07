@@ -24,6 +24,6 @@ class BriefResponsesService(Service):
             )
         )
         if supplier_code:
-            query.filter(BriefResponse.supplier_code == supplier_code)
+            query = query.filter(BriefResponse.supplier_code == supplier_code)
 
         return [r._asdict() for r in query.all()]

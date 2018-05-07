@@ -75,6 +75,14 @@ def agencies(app, request):
             whitelisted=True
         ))
 
+        db.session.add(Agency(
+            id=3,
+            name='Another Test Agency',
+            domain='asdf.com.au',
+            category='Commonwealth',
+            whitelisted=True
+        ))
+
         db.session.commit()
         yield Agency.query.all()
 
@@ -171,6 +179,23 @@ def users(app, request):
 
         db.session.commit()
         yield User.query.filter(User.role == user_role).all()
+
+
+@pytest.fixture()
+def admin_users(app, request):
+    with app.app_context():
+        db.session.add(User(
+            id=7,
+            email_address='testadmin@digital.gov.au',
+            name=fake.name(),
+            password=encryption.hashpw('testpassword'),
+            active=True,
+            role='admin',
+            password_changed_at=utcnow()
+        ))
+
+        db.session.commit()
+        yield User.query.filter(User.role == 'admin').all()
 
 
 @pytest.fixture()

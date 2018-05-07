@@ -37,6 +37,14 @@ def check_csrf_token():
             abort(400, 'Invalid CSRF token. Please try again.')
 
 
+@api.after_request
+def add_cache_control(response):
+    response.headers['Cache-control'] = 'no-cache, no-store'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = 0
+    return response
+
+
 @login_manager.request_loader
 def load_user_from_request(request):
     if not current_app.config.get('BASIC_AUTH'):
@@ -57,7 +65,7 @@ def load_user_from_request(request):
                              user.frameworks)
             return user
 
-from app.api.views import (briefs, brief_responses,
+from app.api.views import (applications, briefs, brief_responses,
                            users, feedback, suppliers, services, prices, regions, tokens, dashboards)  # noqa
 
 
