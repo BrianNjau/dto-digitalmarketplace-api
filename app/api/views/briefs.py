@@ -288,54 +288,6 @@ def get_brief_responses(brief_id):
     return jsonify(brief=brief.serialize(with_users=False), briefResponses=brief_responses)
 
 
-@api.route('/brief/<int:brief_id>/sellers', methods=['GET'])
-@login_required
-@role_required('buyer')
-def get_brief_responded_sellers(brief_id):
-    """All sellers who responded to a now closed brief (role=buyer)
-    ---
-    tags:
-      - "Brief"
-    security:
-      - basicAuth: []
-    parameters:
-      - name: brief_id
-        in: path
-        type: number
-        required: true
-    definitions:
-      BriefResponses:
-        properties:
-          sellers:
-            type: array
-            items:
-              id: BriefResponse
-    responses:
-      200:
-        description: A list of sellers as brief responses
-        schema:
-          id: BriefResponses
-      403:
-        description: brief_id is not owned by the requesting user
-      404:
-        description: brief_id not found
-    """
-    brief = briefs.get(brief_id)
-    if not brief:
-        not_found("Invalid brief id '{}'".format(brief_id))
-
-    brief_user_ids = [user.id for user in brief.users]
-    if current_user.id not in brief_user_ids:
-        return forbidden("Unauthorised to view brief or brief does not exist")
-
-    if brief.status != 'closed':
-        return forbidden("Brief is not closed")
-
-    brief_responses = brief_responses_service.get_brief_responses(brief_id, None)
-
-    return jsonify(brief=brief.serialize(with_users=False), sellers=brief_responses)
-
-
 @api.route('/brief/<int:brief_id>/sellers/notify', methods=['POST'])
 @login_required
 @role_required('buyer')

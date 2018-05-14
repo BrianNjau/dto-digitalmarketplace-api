@@ -117,7 +117,7 @@ class Lot(db.Model):
         return self.one_service_limit
 
     def serialize(self):
-        data = dict(self.data.items())
+        data = dict(self.data.items()) if self.data is not None else {}
         data.update({
             'id': self.id,
             'slug': self.slug,
