@@ -15,6 +15,7 @@ class BriefResponsesService(Service):
                              BriefResponse.id,
                              BriefResponse.brief_id,
                              BriefResponse.supplier_code,
+                             BriefResponse.successful,
                              Supplier.name.label('supplier_name'),
                              Supplier.data['contact_name'].label('supplier_contact_name'))
             .join(Supplier)
@@ -49,3 +50,16 @@ class BriefResponsesService(Service):
                     'file_name': attachment
                 })
         return attachments
+
+    def set_outcome_by_ids(self, brief_ids, successful):
+        query = (
+            db.session.query(BriefResponse)
+            .filter(BriefResponse.id.in_(brief_ids))
+        )
+        responses = query.all()
+
+        if responses:
+            for response in responses:
+                response.successful = successful
+                db.session.add(response)
+                db.session.commit()

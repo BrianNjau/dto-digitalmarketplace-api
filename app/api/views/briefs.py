@@ -291,7 +291,7 @@ def get_brief_responses(brief_id):
 @api.route('/brief/<int:brief_id>/sellers/notify', methods=['POST'])
 @login_required
 @role_required('buyer')
-def notify_brief_sellers_unsuccessful(brief_id):
+def notify_brief_sellers(brief_id):
     """Send an email to sellers (role=buyers)
     ---
     tags:
@@ -365,28 +365,41 @@ def notify_brief_sellers_unsuccessful(brief_id):
         supplier_codes = [supplier['supplier_code'] for supplier in request_body['selectedSellers']]
     except KeyError as e:
         rollbar.report_exc_info()
-        return jsonify(errorMessage='The "{}" value was not found but is required'.format(e)), 400
+        return abort('The "{}" value was not found but is required'.format(e))
 
     if not supplier_codes:
-        return jsonify(errorMessage='You must supply at least one supplier to notify'), 400
+        return abort('You must supply at least one supplier to notify')
 
     valid_types = ['unsuccessful']
     if notification_type not in valid_types:
-        return jsonify(errorMessage='This flow type is not valid'), 400
+        return abort('This flow type is not valid')
+
+    suppliers_to_notify = suppliers.get_all_by_code(supplier_codes)
+    brief_responses = brief_responses_service.get_brief_responses(brief_id, None)
+    valid_supplier_codes = [brief_response['supplier_code'] for brief_response in brief_responses]
+    valid_suppliers_to_notify = [
+        supplier for supplier in suppliers_to_notify if supplier.code in valid_supplier_codes
+    ]
+    if not valid_suppliers_to_notify:
+        return abort('You must supply at least one supplier to notify')
+    valid_supplier_codes_to_notify = [
+        supplier.code for supplier in valid_suppliers_to_notify
+    ]
+
+    if notification_type == 'unsuccessful':
+        brief_response_ids_unsuccessful = [
+            brief_response['id'] for brief_response in brief_responses if
+            brief_response['supplier_code'] in valid_supplier_codes_to_notify
+        ]
+        brief_responses_service.set_outcome_by_ids(brief_response_ids_unsuccessful, False)
 
     try:
-        suppliers_to_notify = suppliers.get_all_by_code(supplier_codes)
-        brief_responses = brief_responses_service.get_brief_responses(brief_id, None)
-        valid_supplier_codes = [brief_response['supplier_code'] for brief_response in brief_responses]
-        valid_suppliers = [supplier for supplier in suppliers_to_notify if supplier.code in valid_supplier_codes]
-        if not valid_suppliers:
-            return jsonify(errorMessage='You must supply at least one supplier to notify'), 400
-        for supplier in valid_suppliers:
+        for supplier in valid_suppliers_to_notify:
             send_seller_email(supplier, subject=subject, content=content)
 
     except Exception as e:
         rollbar.report_exc_info()
-        return jsonify(errorMessage=e), 500
+        return jsonify(errorMessage=str(e)), 500
 
     audit_service.log_audit_event(
         audit_type=audit_types.notify_brief_responders,

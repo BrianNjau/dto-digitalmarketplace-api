@@ -2101,6 +2101,8 @@ class BriefResponse(db.Model):
     created_at = db.Column(DateTime, index=True, nullable=False, default=utcnow)
     withdrawn_at = db.Column(DateTime, index=True, nullable=True)
 
+    successful = db.Column(db.Boolean, index=False, unique=False, default=False)
+
     brief = db.relationship('Brief')
     supplier = db.relationship('Supplier', lazy='joined')
 
