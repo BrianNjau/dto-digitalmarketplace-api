@@ -1,4 +1,4 @@
-from flask import current_app, render_template_string, jsonify, make_response, abort as flask_abort
+from flask import current_app, render_template_string, jsonify, make_response, abort as flask_abort, request
 import requests
 import rollbar
 from app.models import db, Agency, User, ServiceType, BriefUser
@@ -59,7 +59,12 @@ def is_current_user_in_brief(func):
             brief_id = kwargs.get('brief_id', None)
 
             if not brief_id:
-                not_found('Invalid brief {}'.format(brief_id))
+                json_data = request.get_json()
+                if 'brief_id' in json_data:
+                    brief_id = json_data['brief_id']
+
+                if not brief_id:
+                    not_found('Invalid brief {}'.format(brief_id))
 
             users = db.session.query(BriefUser.user_id)\
                 .filter(BriefUser.brief_id == brief_id).all()

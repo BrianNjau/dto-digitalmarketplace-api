@@ -9,6 +9,7 @@ from .lots import LotsService
 from .brief_overview import BriefOverviewService
 from .brief_responses import BriefResponsesService
 from .users import UsersService
+from .brief_assessors import BriefAssessorsService
 
 prices = PricesService()
 application_service = ApplicationService()
@@ -22,3 +23,4 @@ lots_service = LotsService()
 brief_overview_service = BriefOverviewService()
 brief_responses_service = BriefResponsesService()
 users = UsersService()
+brief_assessors = BriefAssessorsService()

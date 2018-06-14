@@ -9,7 +9,7 @@ from flask_login import current_user, login_required
 from sqlalchemy.exc import DataError
 
 from app.api import api
-from app.api.helpers import abort, forbidden, not_found, role_required, is_current_user_in_brief
+from app.api.helpers import abort, forbidden, not_found, role_required
 from app.api.services import (audit_service, brief_overview_service,
                               brief_responses_service, briefs, lots_service)
 from app.emails import send_brief_response_received_email
@@ -415,47 +415,3 @@ def get_framework(framework_slug):
     ).first_or_404()
 
     return jsonify(framework.serialize())
-
-
-@api.route('/brief/<int:brief_id>/assessors', methods=["GET"])
-@login_required
-@role_required('buyer')
-@is_current_user_in_brief
-def get_assessors(brief_id):
-    """All brief assessors (role=buyer)
-    ---
-    tags:
-      - brief
-    security:
-      - basicAuth: []
-    parameters:
-      - name: brief_id
-        in: path
-        type: number
-        required: true
-    definitions:
-      BriefAssessors:
-        type: array
-        items:
-          $ref: '#/definitions/BriefAssessor'
-      BriefAssessor:
-        type: object
-        properties:
-          id:
-            type: integer
-          brief_id:
-            type: integer
-          user_id:
-            type: integer
-          email_address:
-            type: string
-          user_email_address:
-            type: string
-    responses:
-      200:
-        description: A list of brief assessors
-        schema:
-          $ref: '#/definitions/BriefAssessors'
-    """
-    assessors = briefs.get_assessors(brief_id)
-    return jsonify(assessors)

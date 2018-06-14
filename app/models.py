@@ -2851,7 +2851,17 @@ class BriefAssessor(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     brief_id = db.Column(db.Integer, db.ForeignKey('brief.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    user = db.relationship(User, lazy='joined')
     email_address = db.Column(db.String)
+    view_day_rates = db.Column(db.Boolean, nullable=False, default=False)
+    created_at = db.Column(DateTime, index=False, nullable=False, default=utcnow)
+    updated_at = db.Column(DateTime, index=False, nullable=False, default=utcnow, onupdate=utcnow)
+
+    def serializable_after(self, data):
+        if data['user']:
+            data['email_address'] = data['user']['email_address']
+
+        return {k: data[k] for k in ['id', 'brief_id', 'email_address', 'view_day_rates']}
 
 
 # Index for .last_for_object queries. Without a composite index the

@@ -16,7 +16,7 @@ def withdraw_brief_response(brief_response_id):
     """Withdraw brief responses (role=supplier)
     ---
     tags:
-      - "Brief Response"
+      - "brief_response"
     security:
       - basicAuth: []
     parameters:
@@ -71,7 +71,7 @@ def get_brief_response(brief_response_id):
     """Get brief response (role=supplier)
     ---
     tags:
-      - "Brief Response"
+      - "brief_response"
     security:
       - basicAuth: []
     parameters:
