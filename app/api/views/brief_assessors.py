@@ -21,7 +21,7 @@ def get(brief_id):
     parameters:
       - name: brief_id
         in: path
-        type: number
+        type: integer
         required: true
     definitions:
       BriefAssessors:
