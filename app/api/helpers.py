@@ -289,6 +289,10 @@ def not_found(message):
     return flask_abort(make_response(jsonify(message=message), 404))
 
 
+def ok(message):
+    return flask_abort(make_response(jsonify(message=message), 200))
+
+
 def parse_date(dt):
     try:
         return pendulum.parse(dt).date()
