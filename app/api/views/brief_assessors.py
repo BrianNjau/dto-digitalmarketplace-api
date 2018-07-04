@@ -3,8 +3,9 @@ from flask_login import login_required
 
 from app.api import api
 from app.api.services import brief_assessors, users
-from app.api.helpers import role_required, is_current_user_in_brief, not_found, ok
+from app.api.helpers import role_required, is_current_user_in_brief, abort
 from app.swagger import swag
+from app.models import db, BriefAssessor
 
 
 @api.route('/brief/<int:brief_id>/assessors', methods=["GET"], endpoint='get_brief_assessors')
@@ -96,60 +97,31 @@ def update(brief_id):
     """
     json_data = request.get_json()
     assessor_data = json_data['assessors']
+    current_assessors = [a.serializable for a in brief_assessors.find(brief_id=brief_id)]
 
     assessors = []
     for a in assessor_data:
+        if any(ca['email_address'] == a['email_address'] for ca in current_assessors):
+            db.session.rollback()
+            abort('{} has already been invited'.format(a['email_address']))
+
         existing_user = users.first(email_address=a['email_address'])
 
         if existing_user:
-            assessor = brief_assessors.create(
+            assessor = BriefAssessor(
                 brief_id=brief_id,
                 user_id=existing_user.id,
                 view_day_rates=a['view_day_rates']
             )
         else:
-            assessor = brief_assessors.create(
+            assessor = BriefAssessor(
                 brief_id=brief_id,
                 email_address=a['email_address'],
                 view_day_rates=a['view_day_rates']
             )
+        db.session.add(assessor)
+        assessors.append(assessor)
 
-        assessors.append(assessor.serializable)
+    db.session.commit()
 
-    return jsonify(assessors)
-
-
-@api.route('/brief/<int:brief_id>/assessors/<string:email_address>',
-           methods=['DELETE'], endpoint='delete_brief_assessors')
-@login_required
-@role_required('buyer')
-@is_current_user_in_brief
-def delete(brief_id, email_address):
-    """Delete brief assessor (role=buyer)
-    ---
-    tags:
-      - brief
-    security:
-      - basicAuth: []
-    consumes:
-      - application/json
-    parameters:
-      - name: brief_id
-        in: path
-        type: integer
-        required: true
-      - name: email_address
-        in: path
-        type: string
-        required: true
-    responses:
-      200:
-        description: Assessor deleted
-    """
-    assessor = brief_assessors.first(brief_id=brief_id, email_address=email_address)
-
-    if not assessor:
-        not_found('Assessor {} not found for brief {}'.format(email_address, brief_id))
-
-    brief_assessors.delete(assessor)
-    return ok('Assessor {} from brief {} deleted'.format(email_address, brief_id))
+    return jsonify([a.serializable for a in assessors])

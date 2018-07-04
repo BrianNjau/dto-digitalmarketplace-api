@@ -40,22 +40,20 @@ def test_add_assessor(bearer, client, briefs):
     user = User.query.filter(User.email_address == email_address).first()
     brief = briefs[0]
 
-    res = client.post('/2/assessors', data=json.dumps({
-        'email_address': email_address, 'brief_id': brief.id, 'view_day_rates': False
-    }), content_type='application/json')
+    res = client.post('/2/brief/{}/assessors'.format(brief.id), data=json.dumps({'assessors': [{
+        'email_address': email_address, 'view_day_rates': False
+    }]}), content_type='application/json')
 
     assert res.status_code == 200
     data = json.loads(res.get_data(as_text=True))
-    assert data['brief_id'] == brief.id
-    assert data['email_address'] == email_address
-    assert not data['view_day_rates']
+    assert data[0]['brief_id'] == brief.id
+    assert data[0]['email_address'] == email_address
+    assert not data[0]['view_day_rates']
 
-    res = client.post('/2/assessors', data=json.dumps({
+    res = client.post('/2/brief/{}/assessors'.format(brief.id), data=json.dumps({'assessors': [{
         'email_address': user.email_address, 'brief_id': brief.id, 'view_day_rates': True
-    }), content_type='application/json')
+    }]}), content_type='application/json')
 
-    assert res.status_code == 200
+    assert res.status_code == 400
     data = json.loads(res.get_data(as_text=True))
-    assert data['brief_id'] == brief.id
-    assert data['email_address'] == user.email_address
-    assert data['view_day_rates']
+    assert data['message'] == '{} has already been invited'.format(user.email_address)
