@@ -707,13 +707,13 @@ class Supplier(db.Model):
 
     @property
     def assessed_domains(self):
-        approved_new_domains = [sd.domain.name for sd in self.domains if sd.status == 'assessed']
+        approved_new_domains = [sd.domain.name for sd in self.domains if sd.status == 'assessed' and sd.domain.name in self.data.get('pricing')]
         result = approved_new_domains + self.legacy_domains
         return sorted_uniques(result)
 
     @property
     def unassessed_domains(self):
-        result = [sd.domain.name for sd in self.domains if not sd.status == 'assessed']
+        result = [sd.domain.name for sd in self.domains if not sd.status == 'assessed' and sd.domain.name in self.data.get('pricing')]
         return sorted_uniques(result)
 
     @property

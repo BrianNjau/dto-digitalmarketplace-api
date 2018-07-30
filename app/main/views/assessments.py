@@ -1,6 +1,6 @@
 from flask import jsonify, abort, current_app, request
 from app.main import main
-from app.models import db, Application, Assessment, AuditEvent, SupplierDomain, Supplier, Domain
+from app.models import db, Application, Assessment, AuditEvent, SupplierDomain, Supplier, Domain, User
 from dmapiclient.audit import AuditTypes
 from app.utils import (get_json_from_request, json_has_required_keys, validate_and_return_updater_request)
 from sqlalchemy.exc import IntegrityError
@@ -148,16 +148,37 @@ def get_supplier_assessments(supplier_code):
     ).first_or_404()
     existing_assessment = SupplierDomain.query.filter(SupplierDomain.supplier_id == supplier.id).all()
 
-    assessments = {'assessed': [], 'unassessed': [], 'briefs': []}
+    user = User.query.filter(
+        User.supplier_code == supplier_code
+    ).first_or_404()
 
+    application = Application.query.filter(
+        Application.id == user.application_id
+    ).first_or_404()
+    assessments = {
+        'assessed': [],
+        'unassessed': [],
+        'briefs': [],
+        'supplier_empty_prices': [],
+        'unassessed_supplier_empty_prices': []
+    }
+    
     for row in existing_assessment:
+        domain_name = row.domain.name
         for assessment in row.assessments:
             if assessment.active:
                 if assessment.briefs:
                     assessments['briefs'] = list(set(assessments['briefs'] + ([x.id for x in assessment.briefs])))
-                if row.status == 'assessed':
-                    assessments['assessed'].append(row.domain.name)
-                if row.status == 'unassessed':
-                    assessments['unassessed'].append(row.domain.name)
+
+                if domain_name not in supplier.data.get('pricing', {}):
+                    if (application.status == 'submitted'
+                            and domain_name in application.data.get('pricing', {})):
+                        assessments['unassessed_supplier_empty_prices'].append(domain_name)
+                    else:
+                        assessments['supplier_empty_prices'].append(domain_name)
+                elif row.status == 'assessed':
+                    assessments['assessed'].append(domain_name)
+                elif row.status == 'unassessed':
+                    assessments['unassessed'].append(domain_name)
 
     return jsonify(assessments), 200

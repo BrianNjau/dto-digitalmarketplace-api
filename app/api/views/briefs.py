@@ -81,6 +81,17 @@ def _can_do_brief_response(brief_id):
             if 'Training, Learning and Development' not in supplier.assessed_domains:
                 abort("Supplier needs to be assessed in 'Training, Learning and Development'")
 
+        aoe = brief.data.get('areaOfExpertise')
+        if aoe:
+            if aoe in supplier.assessed_domains:
+                pricing = supplier.data.get('pricing')
+                if pricing and not pricing.get(aoe):
+                    abort('Pricing not provided by supplier for {}'.format(aoe))
+            else:
+                abort('Supplier not assessed in {}'.format(aoe))
+        elif len(supplier.domains) != len(supplier.data.get('pricing')):
+            abort('Pricing not provided by supplier')
+
     lot = lots_service.first(slug='digital-professionals')
     if brief.lot_id == lot.id:
         # Check if there are more than 3 brief response already from this supplier when professional aka specialists
