@@ -9,6 +9,31 @@ from dmapiclient.audit import AuditTypes
 
 fake = Faker()
 
+digital_specialists_brief = {
+    "essentialRequirements": ["MS Paint", "GIMP"],
+    "startDate": "31/12/2016",
+    "evaluationType": ["Reference", "Interview"],
+    "niceToHaveRequirements": ["LISP"],
+    "existingTeam": "Nice people.",
+    "specialistWork": "All the things",
+    "workingArrangements": "Just get the work done.",
+    "organisation": "Org.org",
+    "location": "Wales",
+    "specialistRole": "developer",
+    "title": "I need a Developer",
+    "priceWeighting": 85,
+    "contractLength": "3 weeks",
+    "culturalWeighting": 5,
+    "securityClearance": "Developed vetting required.",
+    "technicalWeighting": 10,
+    "culturalFitCriteria": ["CULTURAL", "FIT"],
+    "numberOfSuppliers": 3,
+    "summary": "Doing some stuff to help out.",
+    "workplaceAddress": "Aviation House",
+    "requirementsLength": "2 weeks",
+    "areaOfExpertise": "Strategy and Policy"
+}
+
 
 @pytest.fixture()
 def suppliers(app, request):
@@ -18,7 +43,14 @@ def suppliers(app, request):
                 abn=i,
                 code=(i),
                 name='Test Supplier{}'.format(i),
-                contacts=[Contact(name='auth rep', email='auth@rep.com')]
+                contacts=[Contact(name='auth rep', email='auth@rep.com')],
+                data={
+                    "pricing": {
+                        "Strategy and Policy": {
+                            "maxPrice": 1000
+                        }
+                    }
+                }
             ))
 
             db.session.flush()
@@ -68,6 +100,7 @@ def supplier_user(app, request, suppliers):
         yield User.query.first()
 
 
+@pytest.mark.parametrize('briefs', [{'data': digital_specialists_brief}], indirect=True)
 def test_create_new_brief_response(client, supplier_user, supplier_domains, briefs, assessments, suppliers):
     res = client.post('/2/login', data=json.dumps({
         'emailAddress': 'j@examplecompany.biz', 'password': 'testpassword'
@@ -88,6 +121,7 @@ def test_create_new_brief_response(client, supplier_user, supplier_domains, brie
     assert res.status_code == 201
 
 
+@pytest.mark.parametrize('briefs', [{'data': digital_specialists_brief}], indirect=True)
 def test_create_brief_response_creates_an_audit_event(client, supplier_user, supplier_domains,
                                                       briefs, assessments, suppliers):
     res = client.post('/2/login', data=json.dumps({
@@ -116,6 +150,7 @@ def test_create_brief_response_creates_an_audit_event(client, supplier_user, sup
     assert audit_events[0].data['briefResponseId'] == 1
 
 
+@pytest.mark.parametrize('briefs', [{'data': digital_specialists_brief}], indirect=True)
 def test_create_brief_response_with_object(client, supplier_user,
                                            supplier_domains, briefs,
                                            assessments, suppliers):
@@ -138,6 +173,7 @@ def test_create_brief_response_with_object(client, supplier_user,
     assert res.status_code == 201
 
 
+@pytest.mark.parametrize('briefs', [{'data': digital_specialists_brief}], indirect=True)
 def test_cannot_respond_to_a_brief_more_than_three_times_from_the_same_supplier(client, supplier_user,
                                                                                 supplier_domains, briefs,
                                                                                 assessments, suppliers):
@@ -175,6 +211,7 @@ def test_cannot_respond_to_a_brief_more_than_three_times_from_the_same_supplier(
     assert 'There are already 3 brief responses for supplier' in res.get_data(as_text=True)
 
 
+@pytest.mark.parametrize('briefs', [{'data': digital_specialists_brief}], indirect=True)
 def test_cannot_respond_to_a_brief_with_wrong_number_of_essential_reqs(client, supplier_user,
                                                                        supplier_domains, briefs,
                                                                        assessments, suppliers):
@@ -198,6 +235,7 @@ def test_cannot_respond_to_a_brief_with_wrong_number_of_essential_reqs(client, s
     assert 'Essential requirements must be completed' in res.get_data(as_text=True)
 
 
+@pytest.mark.parametrize('briefs', [{'data': digital_specialists_brief}], indirect=True)
 def test_create_brief_response_success_with_audit_exception(client, supplier_user, supplier_domains,
                                                             briefs, assessments, suppliers, mocker):
     audit_event = mocker.patch('app.api.views.briefs.audit_service')
@@ -222,6 +260,7 @@ def test_create_brief_response_success_with_audit_exception(client, supplier_use
     assert res.status_code == 201
 
 
+@pytest.mark.parametrize('briefs', [{'data': digital_specialists_brief}], indirect=True)
 def test_get_brief(client, supplier_user, supplier_domains, briefs, assessments, suppliers):
     res = client.post('/2/login', data=json.dumps({
         'emailAddress': 'j@examplecompany.biz', 'password': 'testpassword'

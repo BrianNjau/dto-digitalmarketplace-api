@@ -747,14 +747,19 @@ class TestDomains(BaseApplicationTest):
         ]
 
     def test_domain_approvals(self):
-        SAMPLE_DOMAIN = 'data science'
+        SAMPLE_DOMAIN = 'Data science'
 
         with self.app.app_context():
-            payload = self.setup_dummy_suppliers(1)
-            payload = self.setup_dummy_briefs(1)
+            self.setup_dummy_suppliers(1)
+            self.setup_dummy_briefs(1)
 
             supplier = Supplier.query.first()
             supplier.add_unassessed_domain(SAMPLE_DOMAIN)
+            supplier.data['pricing'] = {
+                SAMPLE_DOMAIN: {
+                    "maxPrice": 1000
+                }
+            }
 
             suppliers_url = '/suppliers/{}'.format(
                 supplier.id,

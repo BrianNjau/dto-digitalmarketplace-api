@@ -10,6 +10,32 @@ from dmapiclient.audit import AuditTypes
 fake = Faker()
 
 
+digital_specialists_brief = {
+    "essentialRequirements": ["MS Paint", "GIMP"],
+    "startDate": "31/12/2016",
+    "evaluationType": ["Reference", "Interview"],
+    "niceToHaveRequirements": ["LISP"],
+    "existingTeam": "Nice people.",
+    "specialistWork": "All the things",
+    "workingArrangements": "Just get the work done.",
+    "organisation": "Org.org",
+    "location": "Wales",
+    "specialistRole": "developer",
+    "title": "I need a Developer",
+    "priceWeighting": 85,
+    "contractLength": "3 weeks",
+    "culturalWeighting": 5,
+    "securityClearance": "Developed vetting required.",
+    "technicalWeighting": 10,
+    "culturalFitCriteria": ["CULTURAL", "FIT"],
+    "numberOfSuppliers": 3,
+    "summary": "Doing some stuff to help out.",
+    "workplaceAddress": "Aviation House",
+    "requirementsLength": "2 weeks",
+    "areaOfExpertise": "Strategy and Policy"
+}
+
+
 @pytest.fixture()
 def suppliers(app, request):
     with app.app_context():
@@ -18,7 +44,14 @@ def suppliers(app, request):
                 abn=i,
                 code=(i),
                 name='Test Supplier{}'.format(i),
-                contacts=[Contact(name='auth rep', email='auth@rep.com')]
+                contacts=[Contact(name='auth rep', email='auth@rep.com')],
+                data={
+                    "pricing": {
+                        "Strategy and Policy": {
+                            "maxPrice": 1000
+                        }
+                    }
+                }
             ))
 
             db.session.flush()
@@ -68,6 +101,7 @@ def supplier_user(app, request, suppliers):
         yield User.query.first()
 
 
+@pytest.mark.parametrize('briefs', [{'data': digital_specialists_brief}], indirect=True)
 def test_get_brief_response(client, supplier_user, supplier_domains, briefs, assessments, suppliers):
     res = client.post('/2/login', data=json.dumps({
         'emailAddress': 'j@examplecompany.biz', 'password': 'testpassword'
@@ -97,6 +131,7 @@ def test_get_brief_response(client, supplier_user, supplier_domains, briefs, ass
         assert data['id'] == i
 
 
+@pytest.mark.parametrize('briefs', [{'data': digital_specialists_brief}], indirect=True)
 def test_withdraw_brief_response(client, supplier_user, supplier_domains, briefs, assessments, suppliers):
     res = client.post('/2/login', data=json.dumps({
         'emailAddress': 'j@examplecompany.biz', 'password': 'testpassword'
@@ -144,6 +179,7 @@ def test_withdraw_brief_response(client, supplier_user, supplier_domains, briefs
         assert res.status_code == 400
 
 
+@pytest.mark.parametrize('briefs', [{'data': digital_specialists_brief}], indirect=True)
 def test_withdraw_already_withdrawn_brief_response(client,
                                                    supplier_user,
                                                    supplier_domains,

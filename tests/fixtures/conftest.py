@@ -99,7 +99,14 @@ def suppliers(app, request):
                 code=(i),
                 name='Test Supplier{}'.format(i),
                 contacts=[Contact(name='auth rep', email='auth@rep.com')],
-                data={'contact_email': 'test{}@supplier.com'.format(i)}
+                data={
+                    'contact_email': 'test{}@supplier.com'.format(i),
+                    'pricing': {
+                        'Strategy and Policy': {
+                            'maxPrice': '1000'
+                        }
+                    }
+                }
             ))
 
             db.session.flush()

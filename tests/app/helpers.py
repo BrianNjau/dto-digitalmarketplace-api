@@ -120,6 +120,14 @@ INCOMING_APPLICATION_DATA = {
         "Content and publishing": True,
         "User research and design": False
     },
+    "pricing": {
+        "Content and Publishing": {
+            "maxPrice": "1000"
+        },
+        "User research and Design": {
+            "maxPrice": "1000"
+        }
+    },
     "steps": {
         "casestudy": "complete",
         "digital": "complete",

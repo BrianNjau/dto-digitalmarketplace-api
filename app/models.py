@@ -707,13 +707,17 @@ class Supplier(db.Model):
 
     @property
     def assessed_domains(self):
-        approved_new_domains = [sd.domain.name for sd in self.domains if sd.status == 'assessed' and sd.domain.name in self.data.get('pricing')]
+        approved_new_domains = [sd.domain.name
+                                for sd in self.domains
+                                if sd.status == 'assessed' and sd.domain.name in self.data.get('pricing', {})]
         result = approved_new_domains + self.legacy_domains
         return sorted_uniques(result)
 
     @property
     def unassessed_domains(self):
-        result = [sd.domain.name for sd in self.domains if not sd.status == 'assessed' and sd.domain.name in self.data.get('pricing')]
+        result = [sd.domain.name
+                  for sd in self.domains
+                  if not sd.status == 'assessed' and sd.domain.name in self.data.get('pricing', {})]
         return sorted_uniques(result)
 
     @property
@@ -2148,7 +2152,7 @@ class BriefResponse(db.Model):
                     result = []
                     keys = sorted([int(x) for x in answers.iterkeys()])
                     max_key = max(keys)
-                    for i in range(0, max_key+1):
+                    for i in range(0, max_key + 1):
                         if i in keys:
                             result.append(to_text(answers[str(i)]))
                         else:

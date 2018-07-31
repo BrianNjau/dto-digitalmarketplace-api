@@ -1274,6 +1274,11 @@ class TestApplication(BaseApplicationTest):
             assert supp.unassessed_domains == []
 
             supp.add_unassessed_domain('Change, Training and Transformation')
+            supp.data['pricing'] = {
+                "Change, Training and Transformation": {
+                    "maxPrice": 1000
+                }
+            }
 
             assert supp.legacy_domains == ['Agile delivery and Governance']
             assert supp.assessed_domains == ['Agile delivery and Governance']
