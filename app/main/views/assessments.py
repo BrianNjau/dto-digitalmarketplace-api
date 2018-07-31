@@ -154,7 +154,7 @@ def get_supplier_assessments(supplier_code):
 
     application = Application.query.filter(
         Application.id == user.application_id
-    ).first_or_404()
+    ).first()
     assessments = {
         'assessed': [],
         'unassessed': [],
@@ -171,8 +171,9 @@ def get_supplier_assessments(supplier_code):
                     assessments['briefs'] = list(set(assessments['briefs'] + ([x.id for x in assessment.briefs])))
 
                 if domain_name not in supplier.data.get('pricing', {}):
-                    if (application.status == 'submitted'
-                            and domain_name in application.data.get('pricing', {})):
+                    if (application and
+                            application.status == 'submitted' and
+                            domain_name in application.data.get('pricing', {})):
                         assessments['unassessed_supplier_empty_prices'].append(domain_name)
                     else:
                         assessments['supplier_empty_prices'].append(domain_name)
