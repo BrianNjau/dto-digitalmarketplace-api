@@ -23,7 +23,7 @@ from dmapiclient.audit import AuditTypes
 from dmutils.file import s3_download_file, s3_upload_file_from_request
 
 from ...models import (AuditEvent, Brief, BriefResponse, Framework, Supplier,
-                       ValidationError, db)
+                       ValidationError, Lot, User, db)
 from ...utils import get_json_from_request
 
 
@@ -106,6 +106,29 @@ def _can_do_brief_response(brief_id):
             abort("Brief response already exists for supplier '{}'".format(supplier.code))
 
     return supplier, brief
+
+
+@api.route('/brief/rfq', methods=['POST'])
+@login_required
+@role_required('buyer')
+def create_rfq_brief():
+    try:
+        lot = Lot.query.filter(Lot.slug == 'digital-outcome').first()
+        framework = Framework.query.filter(Framework.slug == 'digital-marketplace').first()
+        user = User.query.get(current_user.id)
+        brief = Brief(
+            users=[user],
+            framework=framework,
+            lot=lot,
+            data={}
+        )
+        db.session.add(brief)
+        db.session.commit()
+    except Exception as e:
+        rollbar.report_exc_info()
+        return jsonify(message=e.message), 400
+
+    return jsonify(brief.serialize(with_users=True))
 
 
 @api.route('/brief/<int:brief_id>', methods=["GET"])
