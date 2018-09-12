@@ -1,7 +1,6 @@
 import json
 import mimetypes
 import os
-
 import botocore
 import rollbar
 from flask import Response, current_app, jsonify, request
@@ -112,6 +111,8 @@ def _can_do_brief_response(brief_id):
 @login_required
 @role_required('buyer')
 def create_rfq_brief():
+    if current_user.role != 'buyer':
+        return forbidden('Unauthorised to create a brief')
     try:
         lot = Lot.query.filter(Lot.slug == 'digital-outcome').first()
         framework = Framework.query.filter(Framework.slug == 'digital-marketplace').first()
@@ -128,7 +129,7 @@ def create_rfq_brief():
         rollbar.report_exc_info()
         return jsonify(message=e.message), 400
 
-    return jsonify(brief.serialize(with_users=True))
+    return jsonify(brief.serialize(with_users=False))
 
 
 @api.route('/brief/<int:brief_id>', methods=["GET"])
@@ -144,6 +145,30 @@ def get_brief(brief_id):
             return forbidden("Unauthorised to view brief or brief does not exist")
     else:
         return jsonify(brief.serialize(with_users=False))
+
+
+@api.route('/brief/<int:brief_id>', methods=['PATCH'])
+@login_required
+@role_required('buyer')
+def update_brief(brief_id):
+    brief = briefs.get(brief_id)
+
+    if not brief:
+        not_found("Invalid brief id '{}'".format(brief_id))
+
+    if current_user.role == 'buyer':
+        brief_user_ids = [user.id for user in brief.users]
+        if current_user.id not in brief_user_ids:
+            return forbidden('Unauthorised to update brief')
+
+    data = get_json_from_request()
+
+    brief.data = data
+
+    db.session.add(brief)
+    db.session.commit()
+
+    return jsonify(brief.serialize(with_users=False))
 
 
 @api.route('/brief/<int:brief_id>', methods=['DELETE'])
