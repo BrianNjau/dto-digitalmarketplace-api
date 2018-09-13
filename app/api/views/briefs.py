@@ -377,6 +377,26 @@ def upload_brief_response_file(brief_id, supplier_code, slug):
                     })
 
 
+@api.route('/brief/<int:brief_id>/attachments/<slug>', methods=['POST'])
+@login_required
+@role_required('buyer')
+def upload_brief_rfq_attachment_file(brief_id, slug):
+    brief = briefs.get(brief_id)
+
+    if not brief:
+        not_found("Invalid brief id '{}'".format(brief_id))
+
+    if current_user.role == 'buyer':
+        brief_user_ids = [user.id for user in brief.users]
+        if current_user.id not in brief_user_ids:
+            return forbidden('Unauthorised to update brief')
+
+    return jsonify({"filename": s3_upload_file_from_request(request, slug,
+                                                            os.path.join(brief.framework.slug, 'attachments',
+                                                                         'brief-' + str(brief_id)))
+                    })
+
+
 @api.route('/brief/<int:brief_id>/respond/documents')
 @login_required
 @role_required('buyer')
@@ -414,6 +434,24 @@ def download_brief_responses(brief_id):
             'attachment; filename="responses-to-requirements-{}.csv"'.format(brief_id))
 
     return response
+
+
+@api.route('/brief/<int:brief_id>/attachments/<slug>', methods=['GET'])
+@login_required
+def download_brief_rfq_attachment(brief_id, slug):
+    brief = Brief.query.filter(
+        Brief.id == brief_id
+    ).first_or_404()
+    brief_user_ids = [user.id for user in brief.users]
+    if hasattr(current_user, 'role') and (current_user.role == 'buyer' and current_user.id in brief_user_ids) \
+            or (current_user.role == 'supplier'):
+        file = s3_download_file(slug, os.path.join(brief.framework.slug, 'attachments',
+                                                   'brief-' + str(brief_id)))
+
+        mimetype = mimetypes.guess_type(slug)[0] or 'binary/octet-stream'
+        return Response(file, mimetype=mimetype)
+    else:
+        return forbidden("Unauthorised to view brief or brief does not exist")
 
 
 @api.route('/brief/<int:brief_id>/respond/documents/<int:supplier_code>/<slug>', methods=['GET'])
