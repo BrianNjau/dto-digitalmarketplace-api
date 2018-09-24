@@ -2,7 +2,7 @@ from dmutils.data_tools import ValidationError
 from dmutils.filters import timesince
 from flask import jsonify, abort, current_app, request
 from sqlalchemy import desc
-from sqlalchemy.orm import joinedload, lazyload
+from sqlalchemy.orm import joinedload, lazyload, noload
 from sqlalchemy.exc import IntegrityError
 import pendulum
 from pendulum.parsing.exceptions import ParserError
@@ -279,9 +279,18 @@ def update_brief_admin(brief_id):
 
 @main.route('/briefs/<int:brief_id>', methods=['GET'])
 def get_brief(brief_id):
-    brief = Brief.query.filter(
-        Brief.id == brief_id
-    ).first_or_404()
+    brief = (
+        Brief
+        .query
+        .filter(
+            Brief.id == brief_id
+        )
+        .options(
+            joinedload('users.frameworks'),
+            noload('framework.lots')
+        )
+        .first_or_404()
+    )
     return jsonify(briefs=brief.serialize(with_users=True))
 
 
@@ -376,6 +385,8 @@ def get_briefs_stats():
 
     briefs = {
         'total': brief_query.count(),
+
+        'live': brief_query.filter(Brief.closed_at.isnot(None), Brief.closed_at > pendulum.now()).count(),
 
         'open_to_all': brief_query.filter(Brief.data['sellerSelector'].astext == 'allSellers').count(),
 
