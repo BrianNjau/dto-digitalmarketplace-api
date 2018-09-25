@@ -163,7 +163,7 @@ def update_brief(brief_id):
 
     data = get_json_from_request()
 
-    if 'publish' in data and data['publish'] == True:
+    if 'publish' in data and data['publish']:
         del data['publish']
         brief.publish()
 
