@@ -163,6 +163,10 @@ def update_brief(brief_id):
 
     data = get_json_from_request()
 
+    if 'publish' in data and data['publish'] == True:
+        del data['publish']
+        brief.publish()
+
     brief.data = data
 
     db.session.add(brief)
