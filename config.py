@@ -145,7 +145,7 @@ class Config:
     APP_ROOT = {'digital-marketplace': '/2', 'orams': '/orams'}
 
     SEND_EMAILS = True
-    CSRF_ENABLED = False
+    CSRF_ENABLED = True
     BASIC_AUTH = False
 
     ALLOWED_EXTENSIONS = ['pdf', 'odt', 'doc', 'docx']
@@ -261,15 +261,27 @@ class Production(Live):
         },
         'send-daily-seller-email': {
             'task': 'app.tasks.mailchimp.send_new_briefs_email',
-            'schedule': crontab(hour=7, minute=0)
+            'schedule': crontab(hour=6, minute=0)
         },
         'process_closed_briefs': {
             'task': 'app.tasks.brief_tasks.process_closed_briefs',
-            'schedule': crontab(hour=20, minute=0)
+            'schedule': crontab(hour=19, minute=0)
         },
         'create_responses_zip_for_closed_briefs': {
             'task': 'app.tasks.brief_tasks.create_responses_zip_for_closed_briefs',
-            'schedule': crontab(hour=8, minute=1)
+            'schedule': crontab(hour=7, minute=1)
+        },
+        'update_brief_metrics': {
+            'task': 'app.tasks.brief_tasks.update_brief_metrics',
+            'schedule': crontab(hour='*/1', minute=1)
+        },
+        'update_brief_response_metrics': {
+            'task': 'app.tasks.brief_response_tasks.update_brief_response_metrics',
+            'schedule': crontab(hour='*/2', minute=2)
+        },
+        'update_supplier_metrics': {
+            'task': 'app.tasks.supplier_tasks.update_supplier_metrics',
+            'schedule': crontab(hour='*/4', minute=4)
         }
     }
 

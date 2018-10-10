@@ -1,11 +1,13 @@
 import rollbar
 from dmutils.csrf import check_valid_csrf
 from dmutils.user import User as LoginUser
-from flask import Blueprint, request, abort, current_app
+from sqlalchemy.orm import noload
+from flask import Blueprint, request, current_app
 from flask_login import LoginManager
 from app.models import User
 from base64 import b64decode
 from app import encryption
+from app.api.helpers import abort
 
 api = Blueprint('api', __name__)
 login_manager = LoginManager()
@@ -18,7 +20,9 @@ def on_load(state):
 
 @login_manager.user_loader
 def load_user(userid):
-    user = User.query.get(int(userid))
+    user = User.query.options(
+        noload('*')
+    ).get(int(userid))
 
     if user is not None:
         user = LoginUser(user.id, user.email_address, user.supplier_code, None, user.locked,
@@ -34,7 +38,7 @@ def check_csrf_token():
 
         if not (new_csrf_valid):
             rollbar.report_message('csrf.invalid_token: Aborting request check_csrf_token()', 'error', request)
-            abort(400, 'Invalid CSRF token. Please try again.')
+            abort('Invalid CSRF token. Please try again.')
 
 
 @api.after_request
@@ -77,7 +81,8 @@ from app.api.views import (briefs,  # noqa
                            tasks,
                            tokens,
                            dashboards,
-                           opportunities)
+                           opportunities,
+                           key_values)
 
 from app.api.views.reports import (suppliers)  # noqa
 
