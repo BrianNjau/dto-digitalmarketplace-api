@@ -96,33 +96,23 @@ def test_search_suppliers_success(client, suppliers):
     assert json.loads(response.data) == {'sellers': [
         {
             "code": 1,
-            "name": "Test Supplier1",
-            "panel": False,
-            "sme": False
+            "name": "Test Supplier1"
         },
         {
             "code": 2,
-            "name": "Test Supplier2",
-            "panel": False,
-            "sme": False
+            "name": "Test Supplier2"
         },
         {
             "code": 3,
-            "name": "Test Supplier3",
-            "panel": False,
-            "sme": False
+            "name": "Test Supplier3"
         },
         {
             "code": 4,
-            "name": "Test Supplier4",
-            "panel": False,
-            "sme": False
+            "name": "Test Supplier4"
         },
         {
             "code": 5,
-            "name": "Test Supplier5",
-            "panel": False,
-            "sme": False
+            "name": "Test Supplier5"
         }
     ]}
 
