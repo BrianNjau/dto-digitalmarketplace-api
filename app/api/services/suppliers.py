@@ -26,18 +26,20 @@ class SuppliersService(Service):
             .filter(Supplier.code == code)
             .one_or_none())
 
-    def get_suppliers_by_name_keyword(self, keyword):
-        return (db.session.query(Supplier)
-                .filter(Supplier.name.ilike('%{}%'.format(keyword.encode('utf-8'))))
-                .filter(Supplier.status != 'deleted')
-                .order_by(Supplier.name.asc())
-                .options(
-                    joinedload(Supplier.frameworks),
-                    joinedload('frameworks.framework'),
-                    noload('frameworks.framework.lots'),
-                    raiseload('*'))
-                .limit(20)
-                .all())
+    def get_suppliers_by_name_keyword(self, keyword, framework_slug=None):
+        query = (db.session.query(Supplier)
+                 .filter(Supplier.name.ilike('%{}%'.format(keyword.encode('utf-8'))))
+                 .filter(Supplier.status != 'deleted')
+                 .order_by(Supplier.name.asc())
+                 .options(
+                     joinedload(Supplier.frameworks),
+                     joinedload('frameworks.framework'),
+                     noload('frameworks.framework.lots'),
+                     raiseload('*')))
+        if framework_slug:
+            query.filter(Framework.slug == framework_slug)
+        query.limit(20)
+        return query.all()
 
     def get_metrics(self):
         supplier_count = (

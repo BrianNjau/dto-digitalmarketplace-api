@@ -217,7 +217,7 @@ def get_suppliers():
     """
     keyword = request.args.get('keyword') or ''
     if keyword:
-        results = suppliers.get_suppliers_by_name_keyword(keyword)
+        results = suppliers.get_suppliers_by_name_keyword(keyword, framework_slug='digital-marketplace')
         supplier_results = []
         for result in results:
             supplier = {}
