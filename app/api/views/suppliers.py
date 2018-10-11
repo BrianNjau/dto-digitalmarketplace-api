@@ -223,17 +223,6 @@ def get_suppliers():
             supplier = {}
             supplier['name'] = result.name
             supplier['code'] = result.code
-
-            try:
-                supplier['panel'] = 'Digital Marketplace' in [f.framework.name for f in result.frameworks]
-            except (TypeError, KeyError):
-                supplier['panel'] = False
-
-            try:
-                supplier['sme'] = result.data['seller_type']['sme']
-            except (TypeError, KeyError):
-                supplier['sme'] = False
-
             supplier_results.append(supplier)
 
         return jsonify(sellers=supplier_results), 200
