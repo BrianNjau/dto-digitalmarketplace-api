@@ -1,5 +1,6 @@
 import json
 from app.models import Supplier
+import pytest
 
 form_data = {
     "abn": "50 110 219 460",
@@ -90,6 +91,7 @@ def test_list_suppliers(client, users, service_type_prices):
                                                          'suppliers': [{'code': 2, 'name': 'Test Supplier2'}]}]}
 
 
+@pytest.mark.parametrize('suppliers', [{'framework_slug': 'digital-marketplace'}], indirect=True)
 def test_search_suppliers_success(client, suppliers):
     response = client.get('/2/suppliers/search?keyword=test')
     assert response.status_code == 200

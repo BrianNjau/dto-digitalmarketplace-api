@@ -30,15 +30,15 @@ class SuppliersService(Service):
         query = (db.session.query(Supplier)
                  .filter(Supplier.name.ilike('%{}%'.format(keyword.encode('utf-8'))))
                  .filter(Supplier.status != 'deleted')
-                 .order_by(Supplier.name.asc())
                  .options(
                      joinedload(Supplier.frameworks),
                      joinedload('frameworks.framework'),
                      noload('frameworks.framework.lots'),
                      raiseload('*')))
         if framework_slug:
-            query.filter(Framework.slug == framework_slug)
-        query.limit(20)
+            query = query.outerjoin(SupplierFramework).outerjoin(Framework)
+            query = query.filter(Framework.slug == framework_slug)
+        query.order_by(Supplier.name.asc()).limit(20)
         return query.all()
 
     def get_metrics(self):
