@@ -163,12 +163,21 @@ def update_brief(brief_id):
 
     data = get_json_from_request()
 
+    publish = False
     if 'publish' in data and data['publish']:
         del data['publish']
+        publish = True
+
+    if 'evaluationType' in data:
+        if 'Written proposal' not in data['evaluationType']:
+            data['proposalType'] = []
+        if 'Response template' not in data['evaluationType']:
+            data['responseTemplate'] = []
+
+    if publish:
         brief.publish()
 
     brief.data = data
-
     db.session.add(brief)
     db.session.commit()
 
