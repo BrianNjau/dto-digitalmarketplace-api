@@ -1749,16 +1749,21 @@ class Brief(db.Model):
         name = DOMAIN_MAPPING_SPECIALISTS[specialist_role]
         return Domain.get_by_name_or_id(name)
 
-    def publish(self):
+    def publish(self, closed_at=None):
         if not self.published_at:
             self.published_at = pendulum.now('UTC')
         DEADLINES_TIME_OF_DAY = current_app.config['DEADLINES_TIME_OF_DAY']
         DEADLINES_TZ_NAME = current_app.config['DEADLINES_TZ_NAME']
         t = parse_time_of_day(DEADLINES_TIME_OF_DAY)
 
-        self.closed_at = combine_date_and_time(
-            self.published_day + parse_interval(self.requirements_length),
-            t, DEADLINES_TZ_NAME).in_tz('UTC')
+        if closed_at:
+            self.closed_at = combine_date_and_time(
+                closed_at,
+                t, DEADLINES_TZ_NAME).in_tz('UTC')
+        else:
+            self.closed_at = combine_date_and_time(
+                self.published_day + parse_interval(self.requirements_length),
+                t, DEADLINES_TZ_NAME).in_tz('UTC')
         self.questions_closed_at = combine_date_and_time(
             workday(self.published_day, self.questions_duration_workdays),
             t, DEADLINES_TZ_NAME).in_tz('UTC')

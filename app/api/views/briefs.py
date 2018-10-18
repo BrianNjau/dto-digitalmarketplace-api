@@ -3,6 +3,8 @@ import mimetypes
 import os
 import botocore
 import rollbar
+import pendulum
+from pendulum.parsing.exceptions import ParserError
 from flask import Response, current_app, jsonify, request
 from flask_login import current_user, login_required
 from sqlalchemy.exc import DataError
@@ -175,7 +177,16 @@ def update_brief(brief_id):
             data['responseTemplate'] = []
 
     if publish:
-        brief.publish()
+        closed_at = None
+        if 'closedAt' in data:
+            try:
+                parsed = pendulum.parse(data['closedAt'])
+                if not parsed.is_future() or pendulum.today().add(weeks=1) > parsed:
+                    abort('The closing date must be at least 1 week into the future')
+                closed_at = parsed
+            except ParserError as e:
+                abort('The closing date is invalid')
+        brief.publish(closed_at=closed_at)
 
     brief.data = data
     db.session.add(brief)

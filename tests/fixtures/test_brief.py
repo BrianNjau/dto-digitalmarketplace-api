@@ -560,3 +560,45 @@ def test_404_is_returned_when_deleting_a_missing_brief(client, overview_briefs):
     res = client.delete('/2/brief/10', content_type='application/json')
 
     assert res.status_code == 404
+
+
+def test_rfq_brief_create_success(client, overview_users):
+    res = client.post('/2/login', data=json.dumps({
+        'emailAddress': 'me@digital.gov.au', 'password': 'test'
+    }), content_type='application/json')
+    assert res.status_code == 200
+
+    res = client.post('/2/brief/rfq', content_type='application/json')
+    assert res.status_code == 200
+
+    response = json.loads(res.data)
+    assert response['id'] == 1
+
+
+def test_rfq_brief_create_failure_as_seller(client, supplier_user):
+    res = client.post('/2/login', data=json.dumps({
+        'emailAddress': 'j@examplecompany.biz', 'password': 'testpassword'
+    }), content_type='application/json')
+    assert res.status_code == 200
+
+    res = client.post('/2/brief/rfq', content_type='application/json')
+    assert res.status_code == 403
+
+
+def test_rfq_brief_update_success(client, overview_users):
+    res = client.post('/2/login', data=json.dumps({
+        'emailAddress': 'me@digital.gov.au', 'password': 'test'
+    }), content_type='application/json')
+    assert res.status_code == 200
+
+    res = client.post('/2/brief/rfq', content_type='application/json')
+    assert res.status_code == 200
+
+    response = json.loads(res.data)
+    assert response['id'] == 1
+
+    res = client.patch('/2/brief/1', content_type='application/json', data=json.dumps({
+        'closedAt': pendulum.today().add(weeks=2).format('%Y-%m-%d')
+    }))
+    response = json.loads(res.data)
+    assert response['closedAt'] == pendulum.today().add(weeks=2).format('%Y-%m-%d')
