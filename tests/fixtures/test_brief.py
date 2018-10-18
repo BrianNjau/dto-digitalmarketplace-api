@@ -600,5 +600,42 @@ def test_rfq_brief_update_success(client, overview_users):
     res = client.patch('/2/brief/1', content_type='application/json', data=json.dumps({
         'closedAt': pendulum.today().add(weeks=2).format('%Y-%m-%d')
     }))
+    assert res.status_code == 200
     response = json.loads(res.data)
     assert response['closedAt'] == pendulum.today().add(weeks=2).format('%Y-%m-%d')
+
+
+def test_rfq_brief_update_failure_closing_date_too_soon(client, overview_users):
+    res = client.post('/2/login', data=json.dumps({
+        'emailAddress': 'me@digital.gov.au', 'password': 'test'
+    }), content_type='application/json')
+    assert res.status_code == 200
+
+    res = client.post('/2/brief/rfq', content_type='application/json')
+    assert res.status_code == 200
+
+    response = json.loads(res.data)
+    assert response['id'] == 1
+
+    res = client.patch('/2/brief/1', content_type='application/json', data=json.dumps({
+        'closedAt': pendulum.today().add(days=2).format('%Y-%m-%d')
+    }))
+    assert res.status_code == 400
+
+
+def test_rfq_brief_update_failure_closing_date_invalid(client, overview_users):
+    res = client.post('/2/login', data=json.dumps({
+        'emailAddress': 'me@digital.gov.au', 'password': 'test'
+    }), content_type='application/json')
+    assert res.status_code == 200
+
+    res = client.post('/2/brief/rfq', content_type='application/json')
+    assert res.status_code == 200
+
+    response = json.loads(res.data)
+    assert response['id'] == 1
+
+    res = client.patch('/2/brief/1', content_type='application/json', data=json.dumps({
+        'closedAt': 'baddate'
+    }))
+    assert res.status_code == 400

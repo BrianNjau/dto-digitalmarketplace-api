@@ -176,16 +176,17 @@ def update_brief(brief_id):
         if 'Response template' not in data['evaluationType']:
             data['responseTemplate'] = []
 
+    closed_at = None
+    if 'closedAt' in data:
+        try:
+            parsed = pendulum.parse(data['closedAt'])
+            if not parsed.is_future() or pendulum.today().add(weeks=1) > parsed:
+                abort('The closing date must be at least 1 week into the future')
+            closed_at = parsed
+        except ParserError as e:
+            abort('The closing date is invalid')
+
     if publish:
-        closed_at = None
-        if 'closedAt' in data:
-            try:
-                parsed = pendulum.parse(data['closedAt'])
-                if not parsed.is_future() or pendulum.today().add(weeks=1) > parsed:
-                    abort('The closing date must be at least 1 week into the future')
-                closed_at = parsed
-            except ParserError as e:
-                abort('The closing date is invalid')
         brief.publish(closed_at=closed_at)
 
     brief.data = data
