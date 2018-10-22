@@ -116,7 +116,7 @@ def create_rfq_brief():
     if current_user.role != 'buyer':
         return forbidden('Unauthorised to create a brief')
     try:
-        lot = Lot.query.filter(Lot.slug == 'digital-outcome').first()
+        lot = Lot.query.filter(Lot.slug == 'rfx').first()
         framework = Framework.query.filter(Framework.slug == 'digital-marketplace').first()
         user = User.query.get(current_user.id)
         brief = Brief(
@@ -185,6 +185,9 @@ def update_brief(brief_id):
             closed_at = parsed
         except ParserError as e:
             abort('The closing date is invalid')
+
+    if 'sellers' in data and len(data['sellers']) > 0:
+        data['sellerSelector'] = 'someSellers' if len(data['sellers']) > 1 else 'oneSeller'
 
     if publish:
         brief.publish(closed_at=closed_at)
