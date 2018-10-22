@@ -3,7 +3,7 @@ import pytest
 
 from app import encryption
 from app.models import Brief, Lot, db, utcnow, Supplier, SupplierFramework, Contact, SupplierDomain, User,\
-    Framework, UserFramework, AuditEvent
+    Framework, UserFramework, AuditEvent, FrameworkLot
 from faker import Faker
 from dmapiclient.audit import AuditTypes
 import pendulum
@@ -562,20 +562,45 @@ def test_404_is_returned_when_deleting_a_missing_brief(client, overview_briefs):
     assert res.status_code == 404
 
 
-def test_rfq_brief_create_success(client, overview_users):
+@pytest.fixture()
+def rfx_lot(app, request):
+    with app.app_context():
+        db.session.add(Lot(
+            id=12,
+            slug='rfx',
+            name='RFX',
+            one_service_limit=True,
+            data={"unitPlural": "services", "unitSingular": "service"}
+        ))
+        db.session.flush()
+
+        framework = Framework.query.filter(Framework.slug == 'digital-marketplace').first()
+        db.session.add(FrameworkLot(
+            framework_id=framework.id,
+            lot_id=12
+        ))
+
+        db.session.flush()
+        db.session.commit()
+
+        yield Lot.query.all()
+
+
+def test_rfq_brief_create_success(client, overview_users, rfx_lot):
     res = client.post('/2/login', data=json.dumps({
         'emailAddress': 'me@digital.gov.au', 'password': 'test'
     }), content_type='application/json')
     assert res.status_code == 200
 
     res = client.post('/2/brief/rfq', content_type='application/json')
+    print res.data
     assert res.status_code == 200
 
     response = json.loads(res.data)
     assert response['id'] == 1
 
 
-def test_rfq_brief_create_failure_as_seller(client, supplier_user):
+def test_rfq_brief_create_failure_as_seller(client, supplier_user, rfx_lot):
     res = client.post('/2/login', data=json.dumps({
         'emailAddress': 'j@examplecompany.biz', 'password': 'testpassword'
     }), content_type='application/json')
@@ -585,7 +610,7 @@ def test_rfq_brief_create_failure_as_seller(client, supplier_user):
     assert res.status_code == 403
 
 
-def test_rfq_brief_update_success(client, overview_users):
+def test_rfq_brief_update_success(client, overview_users, rfx_lot):
     res = client.post('/2/login', data=json.dumps({
         'emailAddress': 'me@digital.gov.au', 'password': 'test'
     }), content_type='application/json')
@@ -605,7 +630,7 @@ def test_rfq_brief_update_success(client, overview_users):
     assert response['closedAt'] == pendulum.today().add(weeks=2).format('%Y-%m-%d')
 
 
-def test_rfq_brief_update_failure_closing_date_too_soon(client, overview_users):
+def test_rfq_brief_update_failure_closing_date_too_soon(client, overview_users, rfx_lot):
     res = client.post('/2/login', data=json.dumps({
         'emailAddress': 'me@digital.gov.au', 'password': 'test'
     }), content_type='application/json')
@@ -623,7 +648,7 @@ def test_rfq_brief_update_failure_closing_date_too_soon(client, overview_users):
     assert res.status_code == 400
 
 
-def test_rfq_brief_update_failure_closing_date_invalid(client, overview_users):
+def test_rfq_brief_update_failure_closing_date_invalid(client, overview_users, rfx_lot):
     res = client.post('/2/login', data=json.dumps({
         'emailAddress': 'me@digital.gov.au', 'password': 'test'
     }), content_type='application/json')
