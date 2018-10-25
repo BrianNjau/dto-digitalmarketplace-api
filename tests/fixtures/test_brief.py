@@ -643,6 +643,7 @@ def test_rfq_brief_update_failure_closing_date_too_soon(client, overview_users, 
     assert response['id'] == 1
 
     res = client.patch('/2/brief/1', content_type='application/json', data=json.dumps({
+        'publish': True,
         'closedAt': pendulum.today().add(days=2).format('%Y-%m-%d')
     }))
     assert res.status_code == 400
@@ -661,6 +662,7 @@ def test_rfq_brief_update_failure_closing_date_invalid(client, overview_users, r
     assert response['id'] == 1
 
     res = client.patch('/2/brief/1', content_type='application/json', data=json.dumps({
+        'publish': True,
         'closedAt': 'baddate'
     }))
     assert res.status_code == 400

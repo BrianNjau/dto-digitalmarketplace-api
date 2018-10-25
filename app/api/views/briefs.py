@@ -182,7 +182,7 @@ def update_brief(brief_id):
             data['responseTemplate'] = []
 
     closed_at = None
-    if 'closedAt' in data and data['closedAt']:
+    if 'closedAt' in data and data['closedAt'] and publish:
         try:
             parsed = pendulum.parse(data['closedAt'])
             if not parsed.is_future() or pendulum.today().add(weeks=1) > parsed:
@@ -477,14 +477,17 @@ def download_brief_rfq_attachment(brief_id, slug):
     ).first_or_404()
     brief_user_ids = [user.id for user in brief.users]
     if hasattr(current_user, 'role') and (current_user.role == 'buyer' and current_user.id in brief_user_ids) \
-            or (current_user.role == 'supplier'):
+            or (current_user.role == 'supplier' and
+                'sellers' in brief.data and
+                len(brief.data['sellers']) > 0 and
+                str(current_user.supplier_code) in brief.data['sellers'].keys()):
         file = s3_download_file(slug, os.path.join(brief.framework.slug, 'attachments',
                                                    'brief-' + str(brief_id)))
 
         mimetype = mimetypes.guess_type(slug)[0] or 'binary/octet-stream'
         return Response(file, mimetype=mimetype)
     else:
-        return forbidden("Unauthorised to view brief or brief does not exist")
+        return forbidden("Unauthorised to view attachment or attachment does not exist")
 
 
 @api.route('/brief/<int:brief_id>/respond/documents/<int:supplier_code>/<slug>', methods=['GET'])
