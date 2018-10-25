@@ -182,7 +182,7 @@ def update_brief(brief_id):
             data['responseTemplate'] = []
 
     closed_at = None
-    if 'closedAt' in data:
+    if 'closedAt' in data and data['closedAt']:
         try:
             parsed = pendulum.parse(data['closedAt'])
             if not parsed.is_future() or pendulum.today().add(weeks=1) > parsed:
