@@ -2216,12 +2216,15 @@ class BriefResponse(db.Model):
                 'attachedDocumentURL'
             ])
 
-        errs = get_validation_errors(
-            'brief-responses-{}-{}'.format(self.brief.framework.slug, self.brief.lot.slug),
-            self.data,
-            enforce_required=enforce_required,
-            required_fields=required_fields
-        )
+        # only perform schema validation on non RFX responses
+        errs = []
+        if self.brief.lot.slug != 'rfx':
+            errs = get_validation_errors(
+                'brief-responses-{}-{}'.format(self.brief.framework.slug, self.brief.lot.slug),
+                self.data,
+                enforce_required=enforce_required,
+                required_fields=required_fields
+            )
 
         if self.brief.lot.slug != 'digital-outcome':
             attachedDocumentURL = self.data.get('attachedDocumentURL', [])
@@ -2235,6 +2238,7 @@ class BriefResponse(db.Model):
 
         if (
             self.brief.lot.slug != 'training' and
+            self.brief.lot.slug != 'rfx' and
             'essentialRequirements' not in errs and
             len(filter(None, self.data.get('essentialRequirements', []))) !=
             len(self.brief.data['essentialRequirements'])

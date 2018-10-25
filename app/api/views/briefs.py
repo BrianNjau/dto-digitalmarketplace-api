@@ -67,15 +67,20 @@ def _can_do_brief_response(brief_id):
         if domain(current_user.email_address) not in current_app.config.get('GENERIC_EMAIL_DOMAINS') \
         else None
 
-    if brief.data.get('sellerSelector', '') == 'someSellers':
+    rfx_lot = lots_service.find(slug='rfx').one_or_none()
+    rfx_lot_id = rfx_lot.id if rfx_lot else None
+    if brief.data.get('sellerSelector', '') == 'someSellers' and brief.lot_id != rfx_lot_id:
         seller_domain_list = [domain(x).lower() for x in brief.data['sellerEmailList']]
         if current_user.email_address not in brief.data['sellerEmailList'] \
                 and (not current_user_domain or current_user_domain.lower() not in seller_domain_list):
             forbidden("Supplier not selected for this brief")
-    if brief.data.get('sellerSelector', '') == 'oneSeller':
+    if brief.data.get('sellerSelector', '') == 'oneSeller' and brief.lot_id != rfx_lot_id:
         if current_user.email_address.lower() != brief.data['sellerEmail'].lower() \
                 and (not current_user_domain or
                      current_user_domain.lower() != domain(brief.data['sellerEmail'].lower())):
+            forbidden("Supplier not selected for this brief")
+    if brief.lot_id == rfx_lot_id:
+        if str(current_user.supplier_code) not in brief.data['sellers'].keys():
             forbidden("Supplier not selected for this brief")
 
     if (len(supplier.frameworks) == 0 or
