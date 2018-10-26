@@ -1757,16 +1757,30 @@ class Brief(db.Model):
         t = parse_time_of_day(DEADLINES_TIME_OF_DAY)
 
         if closed_at:
+            closed_at_parsed = pendulum.parse(closed_at)
+            if closed_at_parsed < pendulum.now('UTC').add(days=2):
+                questions_closed_at = closed_at_parsed
+            elif closed_at_parsed < pendulum.now('UTC').add(weeks=1):
+                questions_closed_at = workday(self.published_day, 2)
+            else:
+                questions_closed_at = workday(self.published_day, 5)
+
+            if questions_closed_at > closed_at_parsed:
+                questions_closed_at = closed_at_parsed
+
+            self.questions_closed_at = combine_date_and_time(
+                questions_closed_at,
+                t, DEADLINES_TZ_NAME).in_tz('UTC')
             self.closed_at = combine_date_and_time(
-                closed_at,
+                pendulum.parse(closed_at),
                 t, DEADLINES_TZ_NAME).in_tz('UTC')
         else:
             self.closed_at = combine_date_and_time(
                 self.published_day + parse_interval(self.requirements_length),
                 t, DEADLINES_TZ_NAME).in_tz('UTC')
-        self.questions_closed_at = combine_date_and_time(
-            workday(self.published_day, self.questions_duration_workdays),
-            t, DEADLINES_TZ_NAME).in_tz('UTC')
+            self.questions_closed_at = combine_date_and_time(
+                workday(self.published_day, self.questions_duration_workdays),
+                t, DEADLINES_TZ_NAME).in_tz('UTC')
 
     @property
     def dates_for_serialization(self):

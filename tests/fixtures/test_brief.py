@@ -6,6 +6,7 @@ from app.models import Brief, Lot, db, utcnow, Supplier, SupplierFramework, Cont
     Framework, UserFramework, AuditEvent, FrameworkLot
 from faker import Faker
 from dmapiclient.audit import AuditTypes
+from workdays import workday
 import pendulum
 
 fake = Faker()
@@ -593,11 +594,94 @@ def test_rfq_brief_create_success(client, overview_users, rfx_lot):
     assert res.status_code == 200
 
     res = client.post('/2/brief/rfq', content_type='application/json')
-    print res.data
     assert res.status_code == 200
 
     response = json.loads(res.data)
     assert response['id'] == 1
+
+
+def test_rfq_publish_success_next_day_correct_dates(client, overview_users, rfx_lot):
+    res = client.post('/2/login', data=json.dumps({
+        'emailAddress': 'me@digital.gov.au', 'password': 'test'
+    }), content_type='application/json')
+    assert res.status_code == 200
+
+    res = client.post('/2/brief/rfq', content_type='application/json')
+    assert res.status_code == 200
+
+    res = client.patch('/2/brief/1', content_type='application/json', data=json.dumps({
+        'publish': True,
+        'closedAt': pendulum.today().add(days=1).format('%Y-%m-%d')
+    }))
+    assert res.status_code == 200
+    response = json.loads(res.data)
+    assert response['closedAt'] == pendulum.today().add(days=1).format('%Y-%m-%d')
+    assert response['dates']['questions_closing_date'] == pendulum.today().add(days=1).format('%Y-%m-%d')
+
+
+def test_rfq_publish_success_three_days_correct_dates(client, overview_users, rfx_lot):
+    res = client.post('/2/login', data=json.dumps({
+        'emailAddress': 'me@digital.gov.au', 'password': 'test'
+    }), content_type='application/json')
+    assert res.status_code == 200
+
+    res = client.post('/2/brief/rfq', content_type='application/json')
+    assert res.status_code == 200
+
+    res = client.patch('/2/brief/1', content_type='application/json', data=json.dumps({
+        'publish': True,
+        'closedAt': pendulum.today().add(days=3).format('%Y-%m-%d')
+    }))
+    assert res.status_code == 200
+    response = json.loads(res.data)
+    assert response['closedAt'] == pendulum.today().add(days=3).format('%Y-%m-%d')
+    question_closing_date = pendulum.instance(workday(pendulum.today(), 2)).format('%Y-%m-%d')
+    if question_closing_date > pendulum.today().add(days=3):
+        question_closing_date = pendulum.today().add(days=3).format('%Y-%m-%d')
+    assert response['dates']['questions_closing_date'] == question_closing_date
+
+
+def test_rfq_publish_success_under_one_week_correct_dates(client, overview_users, rfx_lot):
+    res = client.post('/2/login', data=json.dumps({
+        'emailAddress': 'me@digital.gov.au', 'password': 'test'
+    }), content_type='application/json')
+    assert res.status_code == 200
+
+    res = client.post('/2/brief/rfq', content_type='application/json')
+    assert res.status_code == 200
+
+    res = client.patch('/2/brief/1', content_type='application/json', data=json.dumps({
+        'publish': True,
+        'closedAt': pendulum.today().add(days=4).format('%Y-%m-%d')
+    }))
+    assert res.status_code == 200
+    response = json.loads(res.data)
+    assert response['closedAt'] == pendulum.today().add(days=4).format('%Y-%m-%d')
+    question_closing_date = pendulum.instance(workday(pendulum.today(), 2)).format('%Y-%m-%d')
+    if question_closing_date > pendulum.today().add(days=4):
+        question_closing_date = pendulum.today().add(days=4).format('%Y-%m-%d')
+    assert response['dates']['questions_closing_date'] == question_closing_date
+
+
+def test_rfq_publish_success_over_one_week_correct_dates(client, overview_users, rfx_lot):
+    res = client.post('/2/login', data=json.dumps({
+        'emailAddress': 'me@digital.gov.au', 'password': 'test'
+    }), content_type='application/json')
+    assert res.status_code == 200
+
+    res = client.post('/2/brief/rfq', content_type='application/json')
+    assert res.status_code == 200
+
+    res = client.patch('/2/brief/1', content_type='application/json', data=json.dumps({
+        'publish': True,
+        'closedAt': pendulum.today().add(days=10).format('%Y-%m-%d')
+    }))
+    assert res.status_code == 200
+    response = json.loads(res.data)
+    assert response['closedAt'] == pendulum.today().add(days=10).format('%Y-%m-%d')
+    assert response['dates']['questions_closing_date'] == (
+        pendulum.instance(workday(pendulum.today(), 5)).format('%Y-%m-%d')
+    )
 
 
 def test_rfq_brief_create_failure_as_seller(client, supplier_user, rfx_lot):
@@ -628,25 +712,6 @@ def test_rfq_brief_update_success(client, overview_users, rfx_lot):
     assert res.status_code == 200
     response = json.loads(res.data)
     assert response['closedAt'] == pendulum.today().add(weeks=2).format('%Y-%m-%d')
-
-
-def test_rfq_brief_update_failure_closing_date_too_soon(client, overview_users, rfx_lot):
-    res = client.post('/2/login', data=json.dumps({
-        'emailAddress': 'me@digital.gov.au', 'password': 'test'
-    }), content_type='application/json')
-    assert res.status_code == 200
-
-    res = client.post('/2/brief/rfq', content_type='application/json')
-    assert res.status_code == 200
-
-    response = json.loads(res.data)
-    assert response['id'] == 1
-
-    res = client.patch('/2/brief/1', content_type='application/json', data=json.dumps({
-        'publish': True,
-        'closedAt': pendulum.today().add(days=2).format('%Y-%m-%d')
-    }))
-    assert res.status_code == 400
 
 
 def test_rfq_brief_update_failure_closing_date_invalid(client, overview_users, rfx_lot):

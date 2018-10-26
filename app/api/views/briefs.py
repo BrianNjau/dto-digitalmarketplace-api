@@ -185,9 +185,9 @@ def update_brief(brief_id):
     if 'closedAt' in data and data['closedAt'] and publish:
         try:
             parsed = pendulum.parse(data['closedAt'])
-            if not parsed.is_future() or pendulum.today().add(weeks=1) > parsed:
+            if not parsed.is_future():
                 abort('The closing date must be at least 1 week into the future')
-            closed_at = parsed
+            closed_at = data['closedAt']
         except ParserError as e:
             abort('The closing date is invalid')
 
