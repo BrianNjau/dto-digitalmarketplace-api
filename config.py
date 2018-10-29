@@ -159,7 +159,7 @@ class Config:
 
     # CELERY
     CELERY_ASYNC_TASKING_ENABLED = True
-    CELERY_TIMEZONE = 'UTC'
+    CELERY_TIMEZONE = 'Australia/Sydney'
     CELERYBEAT_SCHEDULE = {}
 
 
@@ -262,15 +262,15 @@ class Production(Live):
         },
         'send-daily-seller-email': {
             'task': 'app.tasks.mailchimp.send_new_briefs_email',
-            'schedule': crontab(hour=6, minute=0)
+            'schedule': crontab(hour=17, minute=0)
         },
         'process_closed_briefs': {
             'task': 'app.tasks.brief_tasks.process_closed_briefs',
-            'schedule': crontab(hour=19, minute=0)
+            'schedule': crontab(hour=6, minute=0)
         },
         'create_responses_zip_for_closed_briefs': {
             'task': 'app.tasks.brief_tasks.create_responses_zip_for_closed_briefs',
-            'schedule': crontab(hour=7, minute=1)
+            'schedule': crontab(hour=18, minute=1)
         },
         'update_brief_metrics': {
             'task': 'app.tasks.brief_tasks.update_brief_metrics',
@@ -283,6 +283,14 @@ class Production(Live):
         'update_supplier_metrics': {
             'task': 'app.tasks.supplier_tasks.update_supplier_metrics',
             'schedule': crontab(hour='*/4', minute=4)
+        },
+        'sync_application_approvals_with_jira': {
+            'task': 'app.tasks.jira.sync_application_approvals_with_jira',
+            'schedule': crontab(day_of_week='mon-fri', hour='8-18/1', minute=45)
+        },
+        'sync_domain_assessment_approvals_with_jira': {
+            'task': 'app.tasks.jira.sync_domain_assessment_approvals_with_jira',
+            'schedule': crontab(day_of_week='mon-fri', hour='8-18/1', minute=46)
         }
     }
 

@@ -1,28 +1,13 @@
-DO $$                  
-    BEGIN 
-		IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'key_value')
-		THEN
-            create sequence "public"."key_value_id_seq";
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'case_study_status_enum') THEN
 
-            create table "public"."key_value" (
-                "id" integer not null default nextval('key_value_id_seq'::regclass),
-                "updated_at" timestamp without time zone not null,
-                "key" character varying,
-                "data" json
-            );
+        create type "public"."case_study_status_enum" as enum ('unassessed', 'approved', 'rejected');
 
+        alter table "public"."case_study" add column "status" case_study_status_enum null;
 
-            CREATE INDEX ix_key_value_updated_at ON public.key_value USING btree (updated_at);
+        update "public"."case_study" set status = 'unassessed';
 
-            CREATE UNIQUE INDEX key_value_key_key ON public.key_value USING btree (key);
-
-            CREATE UNIQUE INDEX key_value_pkey ON public.key_value USING btree (id);
-
-            alter table "public"."key_value" add constraint "key_value_pkey" PRIMARY KEY using index "key_value_pkey";
-
-            alter table "public"."key_value" add constraint "key_value_key_key" UNIQUE using index "key_value_key_key";
-
-		END IF;
-	END;
-$$ ;
-
+        ALTER TABLE "public"."case_study" ALTER COLUMN status SET NOT NULL;
+    END IF;
+END$$;
