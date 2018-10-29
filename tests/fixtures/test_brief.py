@@ -584,7 +584,7 @@ def rfx_lot(app, request):
         db.session.flush()
         db.session.commit()
 
-        yield Lot.query.all()
+        yield Lot.query.filter(Lot.slug == 'rfx').first()
 
 
 def test_rfq_brief_create_success(client, overview_users, rfx_lot):
@@ -636,8 +636,8 @@ def test_rfq_publish_success_three_days_correct_dates(client, overview_users, rf
     response = json.loads(res.data)
     assert response['closedAt'] == pendulum.today().add(days=3).format('%Y-%m-%d')
     question_closing_date = pendulum.instance(workday(pendulum.today(), 2)).format('%Y-%m-%d')
-    if question_closing_date > pendulum.today().add(days=3):
-        question_closing_date = pendulum.today().add(days=3).format('%Y-%m-%d')
+    if question_closing_date > response['closedAt']:
+        question_closing_date = response['closedAt']
     assert response['dates']['questions_closing_date'] == question_closing_date
 
 
@@ -658,8 +658,8 @@ def test_rfq_publish_success_under_one_week_correct_dates(client, overview_users
     response = json.loads(res.data)
     assert response['closedAt'] == pendulum.today().add(days=4).format('%Y-%m-%d')
     question_closing_date = pendulum.instance(workday(pendulum.today(), 2)).format('%Y-%m-%d')
-    if question_closing_date > pendulum.today().add(days=4):
-        question_closing_date = pendulum.today().add(days=4).format('%Y-%m-%d')
+    if question_closing_date > response['closedAt']:
+        question_closing_date = response['closedAt']
     assert response['dates']['questions_closing_date'] == question_closing_date
 
 
