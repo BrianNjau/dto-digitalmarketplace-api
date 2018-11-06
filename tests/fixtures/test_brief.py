@@ -359,7 +359,7 @@ def test_get_brief(client, supplier_user, supplier_domains, briefs, assessments,
     )
     data = json.loads(res.get_data(as_text=True))
     assert res.status_code == 200
-    assert data['id'] == 1
+    assert data['brief']['id'] == 1
 
 
 @pytest.fixture()
@@ -585,6 +585,22 @@ def rfx_lot(app, request):
         db.session.commit()
 
         yield Lot.query.filter(Lot.slug == 'rfx').first()
+
+
+def test_rfq_draft_visible_to_author(client, overview_users, rfx_lot):
+    res = client.post('/2/login', data=json.dumps({
+        'emailAddress': 'me@digital.gov.au', 'password': 'test'
+    }), content_type='application/json')
+    assert res.status_code == 200
+
+    res = client.post('/2/brief/rfq', content_type='application/json')
+    assert res.status_code == 200
+
+    response = json.loads(res.data)
+    assert response['id'] == 1
+
+    res = client.get('/2/brief/1', content_type='application/json')
+    assert res.status_code == 200
 
 
 def test_rfq_brief_create_success(client, overview_users, rfx_lot):
