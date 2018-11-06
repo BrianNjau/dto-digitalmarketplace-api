@@ -144,14 +144,32 @@ def get_brief(brief_id):
     brief = Brief.query.filter(
         Brief.id == brief_id
     ).first_or_404()
-    if brief.status == 'draft':
-        brief_user_ids = [user.id for user in brief.users]
-        if hasattr(current_user, 'role') and current_user.role == 'buyer' and current_user.id in brief_user_ids:
-            return jsonify(brief.serialize(with_users=True))
-        else:
-            return forbidden("Unauthorised to view brief or brief does not exist")
-    else:
-        return jsonify(brief.serialize(with_users=False))
+
+    user_is_privileged = False
+    brief_user_ids = [user.id for user in brief.users]
+    if hasattr(current_user, 'role') and current_user.role == 'buyer' and current_user.id in brief_user_ids:
+        user_is_privileged = True
+
+    if brief.status == 'draft' and not user_is_privileged:
+        return forbidden("Unauthorised to view brief or brief does not exist")
+
+    brief_response_count = 0
+    brief_responses = brief_responses_service.get_brief_responses(brief_id, None)
+    if brief_responses:
+        brief_response_count = len(brief_responses)
+
+    invited_seller_count = 0
+    if 'sellers' in brief.data and brief.data['sellers']:
+        invited_seller_count = len(brief.data['sellers'])
+
+    # remove private data for unprivileged users
+    if not user_is_privileged:
+        brief.data['sellers'] = {}
+        brief.responses_zip_filesize = None
+
+    return jsonify(brief=brief.serialize(with_users=False),
+                   brief_response_count=brief_response_count,
+                   invited_seller_count=invited_seller_count)
 
 
 @api.route('/brief/<int:brief_id>', methods=['PATCH'])

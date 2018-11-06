@@ -88,7 +88,7 @@ class BriefsService(Service):
         location = location or []
         status_filters = [x for x in status if x in ['live', 'closed']]
         open_to_filters = [x for x in open_to if x in ['all', 'selected', 'one']]
-        brief_type_filters = [x for x in brief_type if x in ['innovation', 'outcomes', 'training', 'specialists']]
+        brief_type_filters = [x for x in brief_type if x in ['outcomes', 'training', 'specialists']]
         location_filters = [x for x in location if x in ['ACT', 'NSW', 'NT', 'QLD', 'SA', 'TAS', 'VIC', 'WA', 'Remote']]
 
         query = (db.session
@@ -130,12 +130,15 @@ class BriefsService(Service):
 
         if brief_type_filters:
             switcher = {
-                'innovation': '0',
                 'outcomes': db.session.query(Lot.id).filter(Lot.slug == 'digital-outcome').first(),
                 'training': db.session.query(Lot.id).filter(Lot.slug == 'training').first(),
                 'specialists': db.session.query(Lot.id).filter(Lot.slug == 'digital-professionals').first()
             }
             lot_cond = or_(*[Brief._lot_id == switcher.get(x) for x in brief_type_filters])
+
+            if 'outcomes' in brief_type_filters:
+                rfx_lot_id = db.session.query(Lot.id).filter(Lot.slug == 'rfx').first()
+                lot_cond = or_(lot_cond, Brief._lot_id == db.session.query(Lot.id).filter(Lot.slug == 'rfx').first())
 
             if 'training' in brief_type_filters:
                 # this is a list of historic prod brief ids we want to show when the training filter is active
