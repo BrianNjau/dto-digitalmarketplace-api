@@ -143,7 +143,9 @@ def create_rfq_brief():
 def get_brief(brief_id):
     brief = Brief.query.filter(
         Brief.id == brief_id
-    ).first_or_404()
+    ).first()
+    if not brief:
+        not_found("No brief for id '%s' found" % (brief_id))
 
     user_is_privileged = False
     brief_user_ids = [user.id for user in brief.users]
