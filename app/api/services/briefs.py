@@ -96,9 +96,11 @@ class BriefsService(Service):
                           Brief.data['organisation'].astext.label('company'),
                           Brief.data['location'].label('location'),
                           Brief.data['sellerSelector'].astext.label('openTo'),
-                          func.count(BriefResponse.id).label('submissions'))
+                          func.count(BriefResponse.id).label('submissions'),
+                          Lot.slug.label('lot'))
                    .outerjoin(BriefResponse, Brief.id == BriefResponse.brief_id)
-                   .group_by(Brief.id))
+                   .outerjoin(Lot)
+                   .group_by(Brief.id, Lot.id))
 
         if status_filters:
             cond = or_(*[Brief.status == x for x in status_filters])
