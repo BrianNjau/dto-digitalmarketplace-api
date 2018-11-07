@@ -166,7 +166,10 @@ def get_brief(brief_id):
 
     # is the current user an invited seller?
     is_invited_seller = False
-    if 'sellers' in brief.data and str(current_user.supplier_code) in brief.data['sellers'].keys():
+    if ('sellers' in brief.data and
+       hasattr(current_user, 'role') and
+       current_user.role == 'supplier' and
+       str(current_user.supplier_code) in brief.data['sellers'].keys()):
         is_invited_seller = True
 
     # remove private data for unprivileged users
