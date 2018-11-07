@@ -164,6 +164,11 @@ def get_brief(brief_id):
     if 'sellers' in brief.data and brief.data['sellers']:
         invited_seller_count = len(brief.data['sellers'])
 
+    # is the current user an invited seller?
+    is_invited_seller = False
+    if 'sellers' in brief.data and str(current_user.supplier_code) in brief.data['sellers'].keys():
+        is_invited_seller = True
+
     # remove private data for unprivileged users
     if not user_is_privileged:
         brief.data['sellers'] = {}
@@ -171,7 +176,8 @@ def get_brief(brief_id):
 
     return jsonify(brief=brief.serialize(with_users=False),
                    brief_response_count=brief_response_count,
-                   invited_seller_count=invited_seller_count)
+                   invited_seller_count=invited_seller_count,
+                   is_invited_seller=is_invited_seller)
 
 
 @api.route('/brief/<int:brief_id>', methods=['PATCH'])
