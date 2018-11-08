@@ -504,19 +504,10 @@ def download_brief_rfq_attachment(brief_id, slug):
     brief = Brief.query.filter(
         Brief.id == brief_id
     ).first_or_404()
-    brief_user_ids = [user.id for user in brief.users]
-    if hasattr(current_user, 'role') and (current_user.role == 'buyer' and current_user.id in brief_user_ids) \
-            or (current_user.role == 'supplier' and
-                'sellers' in brief.data and
-                len(brief.data['sellers']) > 0 and
-                str(current_user.supplier_code) in brief.data['sellers'].keys()):
-        file = s3_download_file(slug, os.path.join(brief.framework.slug, 'attachments',
-                                                   'brief-' + str(brief_id)))
-
-        mimetype = mimetypes.guess_type(slug)[0] or 'binary/octet-stream'
-        return Response(file, mimetype=mimetype)
-    else:
-        return forbidden("Unauthorised to view attachment or attachment does not exist")
+    file = s3_download_file(slug, os.path.join(brief.framework.slug, 'attachments',
+                                               'brief-' + str(brief_id)))
+    mimetype = mimetypes.guess_type(slug)[0] or 'binary/octet-stream'
+    return Response(file, mimetype=mimetype)
 
 
 @api.route('/brief/<int:brief_id>/respond/documents/<int:supplier_code>/<slug>', methods=['GET'])
