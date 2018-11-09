@@ -418,6 +418,11 @@ def get_brief_responses(brief_id):
         supplier_errors = SupplierValidator(supplier).validate_all()
         if len(supplier_errors) > 0:
             abort(supplier_errors)
+        # strip data from seller view
+        if 'sellers' in brief.data:
+            brief.data['sellers'] = {}
+        if brief.responses_zip_filesize:
+            brief.responses_zip_filesize = None
 
     if current_user.role == 'buyer' and brief.status != 'closed':
         brief_responses = []
