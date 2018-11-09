@@ -951,6 +951,7 @@ class Domain(db.Model):
     price_minimum = db.Column(db.Numeric, nullable=False)
     price_maximum = db.Column(db.Numeric, nullable=False)
 
+    domain_criterias = relationship('DomainCriteria')
     suppliers = relationship("SupplierDomain", back_populates="domain", lazy='joined')
     assoc_suppliers = association_proxy('suppliers', 'supplier')
 
@@ -968,6 +969,13 @@ class Domain(db.Model):
         if not d:
             raise ValidationError('cannot find domain: {}'.format(name_or_id))
         return d
+
+
+class DomainCriteria(db.Model):
+    __tablename__ = 'domain_criteria'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String, nullable=False)
+    domain_id = db.Column(db.Integer, db.ForeignKey('domain.id'), nullable=False)
 
 
 class RecruiterInfo(db.Model):
@@ -2581,6 +2589,42 @@ class CaseStudy(db.Model):
         c = CaseStudy()
         c.update_from_json(data)
         return c
+
+
+class CaseStudyAssessment(db.Model):
+    __tablename__ = 'case_study_assessment'
+
+    id = db.Column(db.Integer, primary_key=True)
+    case_study_id = db.Column(db.Integer, db.ForeignKey('case_study.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    comment = db.Column(db.String, nullable=True)
+    status = db.Column(
+        db.Enum(
+            *[
+                'unassessed',
+                'approved',
+                'rejected'
+            ],
+            name='case_study_assessment_status_enum'
+        ),
+        default='unassessed',
+        index=False,
+        unique=False,
+        nullable=False
+    )
+
+    approved_criterias = relationship('CaseStudyAssessmentDomainCriteria', lazy='joined', innerjoin=False)
+    user = relationship('User', lazy='joined', innerjoin=True)
+
+
+class CaseStudyAssessmentDomainCriteria(db.Model):
+    __tablename__ = 'case_study_assessment_domain_criteria'
+
+    id = db.Column(db.Integer, primary_key=True)
+    domain_criteria_id = db.Column(db.Integer, db.ForeignKey('domain_criteria.id'), nullable=False)
+    case_study_assessment_id = db.Column(db.Integer, db.ForeignKey('case_study_assessment.id'), nullable=False)
+
+    domain_criteria = db.relationship('DomainCriteria', lazy='joined', innerjoin=True)
 
 
 class BriefAssessment(db.Model):

@@ -79,7 +79,8 @@ from app.api.views import (briefs,  # noqa
                            tokens,
                            dashboards,
                            opportunities,
-                           key_values)
+                           key_values,
+                           case_studies)
 
 from app.api.views.reports import (suppliers)  # noqa
 

@@ -204,11 +204,17 @@ def get_application_by_id_admin(application_id):
         Domain
         .query
         .options(
-            noload('suppliers')
+            noload('suppliers'),
+            joinedload('domain_criterias')
         )
         .all()
     )
-    domains = {'prices': {'maximum': {}}}
+    domains = {
+        'prices': {
+            'maximum': {}
+        },
+        'list': {d.name: d for d in result}
+    }
     domains['prices']['maximum'] = {domain.name: domain.price_maximum for domain in result}
 
     return jsonify(application=application.serializable, domains=domains)
