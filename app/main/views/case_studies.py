@@ -10,7 +10,11 @@ from app.utils import (
 )
 
 from app.service_utils import validate_and_return_supplier
-
+from app.api.services import (
+    case_studies_service,
+    domain_service,
+    users
+)
 from dmapiclient.audit import AuditTypes
 
 
@@ -136,4 +140,42 @@ def list_case_studies():
             '.list_case_studies',
             request.args
         )
+    )
+
+@main.route('/admin/casestudy/<int:case_study_id>', methods=['GET'])
+def get_case_study_admin(case_study_id):
+    case_study = case_studies_service.get(case_study_id)
+    if case_study:
+        domain = domain_service.get_domain_with_criterias(case_study.data.get('service'))
+
+    return jsonify(
+        case_study=case_study,
+        domain=domain
+    )
+
+@main.route('/admin/casestudy/<int:case_study_id>/assessment', methods=['POST'])
+def add_case_study_admin(case_study_id):
+    updater_json = validate_and_return_updater_request()
+    json_payload = get_json_from_request()
+    user = users.first(email_address=updater_json.get('updated_by'))
+    if not user:
+        abort(404)
+
+    assessment = json_payload.get('assessment')
+    if not assessment:
+        abort(404)
+
+    assessment['user_id'] = user.id
+    assessment['case_study_id'] = case_study_id
+    assessment = case_studies_service.add_assessment(assessment)
+
+    return jsonify(
+        assessment=assessment
+    )
+
+@main.route('/admin/casestudy/assessment', methods=['GET'])
+def get_case_study_assessments_admin():
+    case_studies = case_studies_service.get_case_studies()
+    return jsonify(
+        case_studies=case_studies
     )

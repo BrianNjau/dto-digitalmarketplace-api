@@ -1,5 +1,12 @@
 from app.api.helpers import Service
-from app.models import CaseStudy, CaseStudyAssessment, db
+from app.models import (
+    CaseStudy,
+    CaseStudyAssessment,
+    CaseStudyAssessmentDomainCriteria,
+    Supplier,
+    db
+)
+from sqlalchemy import func
 
 
 class CaseStudyService(Service):
@@ -8,20 +15,22 @@ class CaseStudyService(Service):
     def __init__(self, *args, **kwargs):
         super(CaseStudyService, self).__init__(*args, **kwargs)
 
-    def insert_assessment(self, assessment):
-        existing = self.find(key=key).one_or_none()
-        if existing:
-            saved = self.update(existing, data=data)
-        else:
-            saved = self.create(key=key, data=data)
+    def add_assessment(self, assessment):
+        case_study_assessment = CaseStudyAssessment(
+            status=assessment.get('status'),
+            comment=assessment.get('comment'),
+            user_id=assessment.get('user_id'),
+            case_study_id=assessment.get('case_study_id'),
+            approved_criterias=[
+                CaseStudyAssessmentDomainCriteria(
+                    domain_criteria_id=a
+                ) for a in assessment.get('approved_criteria', [])
+            ]
+        )
+        db.session.add(case_study_assessment)
+        return self.commit_changes()
 
-        return {
-            "key": saved.key,
-            "data": saved.data,
-            "updated_at": saved.updated_at
-        } if saved else None
-
-    def get_case_study_assessments(self, case_study_id, user_id=None):
+    def get_case_study_assessments(self, case_study_id=None, user_id=None):
         query = (
             db
             .session
@@ -39,3 +48,34 @@ class CaseStudyService(Service):
         )
 
         return [r._asdict() for r in results]
+
+    def get_case_studies(self):
+        case_study_query = (
+            db
+            .session
+            .query(
+                CaseStudy.id,
+                func.count(CaseStudyAssessment.id).label('assessment_count')
+            )
+            .join(CaseStudyAssessment, isouter=True)
+            .group_by(CaseStudy.id)
+            .filter(CaseStudy.status == 'unassessed')
+            # .having(func.count(CaseStudyAssessment.id) < 2)
+            .subquery()
+        )
+        query = (
+            db
+            .session
+            .query(
+                CaseStudy.id,
+                CaseStudy.data,
+                CaseStudy.supplier_code,
+                CaseStudy.status,
+                CaseStudy.created_at,
+                Supplier.name,
+                case_study_query.c.assessment_count
+            )
+            .join(Supplier)
+            .join(case_study_query, case_study_query.c.id == CaseStudy.id)
+        )
+        return [r._asdict() for r in query.all()]
