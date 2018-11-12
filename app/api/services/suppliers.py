@@ -26,7 +26,7 @@ class SuppliersService(Service):
             .filter(Supplier.code == code)
             .one_or_none())
 
-    def get_suppliers_by_name_keyword(self, keyword, framework_slug=None):
+    def get_suppliers_by_name_keyword(self, keyword, framework_slug=None, category=None):
         query = (db.session.query(Supplier)
                  .filter(Supplier.name.ilike('%{}%'.format(keyword.encode('utf-8'))))
                  .filter(Supplier.status != 'deleted')
@@ -38,6 +38,9 @@ class SuppliersService(Service):
         if framework_slug:
             query = query.outerjoin(SupplierFramework).outerjoin(Framework)
             query = query.filter(Framework.slug == framework_slug)
+        if category:
+            query = query.outerjoin(SupplierDomain)
+            query = query.filter(SupplierDomain.domain_id == category).filter(SupplierDomain.status == 'assessed')
         query.order_by(Supplier.name.asc()).limit(20)
         return query.all()
 

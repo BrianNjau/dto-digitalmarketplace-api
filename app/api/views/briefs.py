@@ -24,7 +24,7 @@ from dmapiclient.audit import AuditTypes
 from dmutils.file import s3_download_file, s3_upload_file_from_request
 
 from ...models import (AuditEvent, Brief, BriefResponse, Framework, Supplier,
-                       ValidationError, Lot, User, db)
+                       ValidationError, Lot, User, Domain, db)
 from ...utils import get_json_from_request
 
 
@@ -177,10 +177,20 @@ def get_brief(brief_id):
         brief.data['sellers'] = {}
         brief.responses_zip_filesize = None
 
+    # add the domains available for the buyer during RFX brief build
+    domains = []
+    if user_is_privileged:
+        for domain in Domain.query.order_by(Domain.ordering.asc()).all():
+            domains.append({
+                'id': str(domain.id),
+                'name': domain.name
+            })
+
     return jsonify(brief=brief.serialize(with_users=False),
                    brief_response_count=brief_response_count,
                    invited_seller_count=invited_seller_count,
-                   is_invited_seller=is_invited_seller)
+                   is_invited_seller=is_invited_seller,
+                   domains=domains)
 
 
 @api.route('/brief/<int:brief_id>', methods=['PATCH'])
