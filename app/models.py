@@ -2615,6 +2615,7 @@ class CaseStudyAssessment(db.Model):
 
     approved_criterias = relationship('CaseStudyAssessmentDomainCriteria', lazy='joined', innerjoin=False)
     user = relationship('User', lazy='joined', innerjoin=True)
+    case_study = relationship('CaseStudy', lazy='joined', innerjoin=True)
 
 
 class CaseStudyAssessmentDomainCriteria(db.Model):

@@ -179,3 +179,10 @@ def get_case_study_assessments_admin():
     return jsonify(
         case_studies=case_studies
     )
+
+@main.route('/admin/casestudy/assessment/<int:case_study_assessment_id>')
+def get_case_study_assessment_admin(case_study_assessment_id):
+    case_study_assessment = case_studies_service.get_case_study_assessment(case_study_assessment_id)
+    return jsonify(
+        case_study_assessment=case_study_assessment
+    )
