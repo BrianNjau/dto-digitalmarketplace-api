@@ -48,3 +48,4 @@ class AuditTypes(Enum):
     add_brief_clarification_question = 'add_brief_clarification_question'
     delete_brief = 'delete_brief'
     seller_requested_feedback_from_buyer_email = 'seller_requested_feedback_from_buyer_email'
+    seller_invited_to_rfx_opportunity = 'seller_invited_to_rfx_opportunity'

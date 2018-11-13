@@ -19,7 +19,7 @@ from app.api.services import (audit_service,
                               briefs,
                               lots_service,
                               suppliers)
-from app.emails import send_brief_response_received_email, render_email_template
+from app.emails import send_brief_response_received_email, render_email_template, send_seller_invited_to_rfx_email
 from dmapiclient.audit import AuditTypes
 from dmutils.file import s3_download_file, s3_upload_file_from_request
 
@@ -209,6 +209,8 @@ def update_brief(brief_id):
 
     data = get_json_from_request()
 
+    # validate the RFX JSON data
+
     publish = False
     if 'publish' in data and data['publish']:
         del data['publish']
@@ -235,6 +237,12 @@ def update_brief(brief_id):
 
     if publish:
         brief.publish(closed_at=closed_at)
+        if 'sellers' in brief.data:
+            for seller_code, seller in brief.data['sellers'].iteritems():
+                supplier = Supplier.query.filter(
+                    Supplier.code == seller_code
+                ).first()
+                send_seller_invited_to_rfx_email(brief, supplier)
 
     brief.data = data
     db.session.add(brief)
