@@ -87,21 +87,21 @@ def insert_assessment(id):
     """
     try:
         json_payload = get_json_from_request()
-        
+
         user_id = current_user.id
         existing_for_user = case_studies_service.get_case_study_assessments(id, user_id)
-        
+
         if len(existing_for_user) > 0:
             pass
 
         approved_criterias = json_payload.get('approved_criterias', [])
         assessment = CaseStudyAssessment(
-             case_study_id=id,
-             user_id=user_id,
-             comment=json_payload.get('comment'),
-             status=json_payload.get('status'),
-             approved_criterias=[
-                 CaseStudyAssessmentDomainCriteria(
+            case_study_id=id,
+            user_id=user_id,
+            comment=json_payload.get('comment'),
+            status=json_payload.get('status'),
+            approved_criterias=[
+                CaseStudyAssessmentDomainCriteria(
                     domain_criteria_id=ac
                 ) for ac in approved_criterias]
         )

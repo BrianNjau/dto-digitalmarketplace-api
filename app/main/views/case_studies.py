@@ -142,6 +142,7 @@ def list_case_studies():
         )
     )
 
+
 @main.route('/admin/casestudy/<int:case_study_id>', methods=['GET'])
 def get_case_study_admin(case_study_id):
     case_study = case_studies_service.get(case_study_id)
@@ -152,6 +153,7 @@ def get_case_study_admin(case_study_id):
         case_study=case_study,
         domain=domain
     )
+
 
 @main.route('/admin/casestudy/<int:case_study_id>/assessment', methods=['POST'])
 def add_case_study_admin(case_study_id):
@@ -173,12 +175,14 @@ def add_case_study_admin(case_study_id):
         assessment=assessment
     )
 
+
 @main.route('/admin/casestudy/assessment', methods=['GET'])
 def get_case_study_assessments_admin():
     case_studies = case_studies_service.get_case_studies()
     return jsonify(
         case_studies=case_studies
     )
+
 
 @main.route('/admin/casestudy/assessment/<int:case_study_assessment_id>')
 def get_case_study_assessment_admin(case_study_assessment_id):
