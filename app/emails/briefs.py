@@ -165,7 +165,11 @@ def send_seller_requested_feedback_from_buyer_email(brief):
 def send_seller_invited_to_rfx_email(brief, invited_supplier):
     from app.api.services import audit_service, audit_types  # to circumvent circular dependency
 
-    to_addresses = [invited_supplier.data['email']]
+    to_addresses = []
+    if 'contact_email' in invited_supplier.data:
+        to_addresses = [invited_supplier.data['contact_email']]
+    elif 'email' in invited_supplier.data:
+        to_addresses = [invited_supplier.data['email']]
 
     if len(to_addresses) > 0:
         email_body = render_email_template(
