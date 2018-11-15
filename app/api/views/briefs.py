@@ -211,7 +211,7 @@ def update_brief(brief_id):
     data = get_json_from_request()
 
     # validate the RFX JSON request data
-    errors = RFXDataValidator(brief).validate_all()
+    errors = RFXDataValidator(brief).validate()
     if len(errors) > 0:
         abort(', '.join(errors))
 

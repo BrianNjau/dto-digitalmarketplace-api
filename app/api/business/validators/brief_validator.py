@@ -3,7 +3,7 @@ class RFXDataValidator(object):
     def __init__(self, brief):
         self.brief = brief
 
-    def validate_all(self):
+    def validate(self):
         errors = []
 
         try:
