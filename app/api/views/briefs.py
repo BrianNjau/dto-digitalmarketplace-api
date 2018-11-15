@@ -11,7 +11,7 @@ from sqlalchemy.exc import DataError
 
 from app.api import api
 from app.api.csv import generate_brief_responses_csv
-from app.api.business.validators import SupplierValidator
+from app.api.business.validators import SupplierValidator, RFXDataValidator
 from app.api.helpers import abort, forbidden, not_found, role_required, is_current_user_in_brief
 from app.api.services import (audit_service,
                               brief_overview_service,
@@ -210,7 +210,10 @@ def update_brief(brief_id):
 
     data = get_json_from_request()
 
-    # validate the RFX JSON data
+    # validate the RFX JSON request data
+    errors = RFXDataValidator(brief).validate_all()
+    if len(errors) > 0:
+        abort(', '.join(errors))
 
     publish = False
     if 'publish' in data and data['publish']:
