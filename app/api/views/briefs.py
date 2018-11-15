@@ -190,6 +190,7 @@ def get_brief(brief_id):
                    brief_response_count=brief_response_count,
                    invited_seller_count=invited_seller_count,
                    is_invited_seller=is_invited_seller,
+                   is_brief_owner=user_is_privileged,
                    domains=domains)
 
 
