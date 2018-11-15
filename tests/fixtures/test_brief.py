@@ -587,13 +587,13 @@ def rfx_lot(app, request):
         yield Lot.query.filter(Lot.slug == 'rfx').first()
 
 
-def test_rfq_draft_visible_to_author(client, overview_users, rfx_lot):
+def test_rfx_draft_visible_to_author(client, overview_users, rfx_lot):
     res = client.post('/2/login', data=json.dumps({
         'emailAddress': 'me@digital.gov.au', 'password': 'test'
     }), content_type='application/json')
     assert res.status_code == 200
 
-    res = client.post('/2/brief/rfq', content_type='application/json')
+    res = client.post('/2/brief/rfx', content_type='application/json')
     assert res.status_code == 200
 
     response = json.loads(res.data)
@@ -603,26 +603,26 @@ def test_rfq_draft_visible_to_author(client, overview_users, rfx_lot):
     assert res.status_code == 200
 
 
-def test_rfq_brief_create_success(client, overview_users, rfx_lot):
+def test_rfx_brief_create_success(client, overview_users, rfx_lot):
     res = client.post('/2/login', data=json.dumps({
         'emailAddress': 'me@digital.gov.au', 'password': 'test'
     }), content_type='application/json')
     assert res.status_code == 200
 
-    res = client.post('/2/brief/rfq', content_type='application/json')
+    res = client.post('/2/brief/rfx', content_type='application/json')
     assert res.status_code == 200
 
     response = json.loads(res.data)
     assert response['id'] == 1
 
 
-def test_rfq_publish_success_next_day_correct_dates(client, overview_users, rfx_lot):
+def test_rfx_publish_success_next_day_correct_dates(client, overview_users, rfx_lot):
     res = client.post('/2/login', data=json.dumps({
         'emailAddress': 'me@digital.gov.au', 'password': 'test'
     }), content_type='application/json')
     assert res.status_code == 200
 
-    res = client.post('/2/brief/rfq', content_type='application/json')
+    res = client.post('/2/brief/rfx', content_type='application/json')
     assert res.status_code == 200
 
     res = client.patch('/2/brief/1', content_type='application/json', data=json.dumps({
@@ -635,13 +635,13 @@ def test_rfq_publish_success_next_day_correct_dates(client, overview_users, rfx_
     assert response['dates']['questions_closing_date'] == pendulum.today().add(days=1).format('%Y-%m-%d')
 
 
-def test_rfq_publish_success_three_days_correct_dates(client, overview_users, rfx_lot):
+def test_rfx_publish_success_three_days_correct_dates(client, overview_users, rfx_lot):
     res = client.post('/2/login', data=json.dumps({
         'emailAddress': 'me@digital.gov.au', 'password': 'test'
     }), content_type='application/json')
     assert res.status_code == 200
 
-    res = client.post('/2/brief/rfq', content_type='application/json')
+    res = client.post('/2/brief/rfx', content_type='application/json')
     assert res.status_code == 200
 
     res = client.patch('/2/brief/1', content_type='application/json', data=json.dumps({
@@ -657,13 +657,13 @@ def test_rfq_publish_success_three_days_correct_dates(client, overview_users, rf
     assert response['dates']['questions_closing_date'] == question_closing_date
 
 
-def test_rfq_publish_success_under_one_week_correct_dates(client, overview_users, rfx_lot):
+def test_rfx_publish_success_under_one_week_correct_dates(client, overview_users, rfx_lot):
     res = client.post('/2/login', data=json.dumps({
         'emailAddress': 'me@digital.gov.au', 'password': 'test'
     }), content_type='application/json')
     assert res.status_code == 200
 
-    res = client.post('/2/brief/rfq', content_type='application/json')
+    res = client.post('/2/brief/rfx', content_type='application/json')
     assert res.status_code == 200
 
     res = client.patch('/2/brief/1', content_type='application/json', data=json.dumps({
@@ -679,13 +679,13 @@ def test_rfq_publish_success_under_one_week_correct_dates(client, overview_users
     assert response['dates']['questions_closing_date'] == question_closing_date
 
 
-def test_rfq_publish_success_over_one_week_correct_dates(client, overview_users, rfx_lot):
+def test_rfx_publish_success_over_one_week_correct_dates(client, overview_users, rfx_lot):
     res = client.post('/2/login', data=json.dumps({
         'emailAddress': 'me@digital.gov.au', 'password': 'test'
     }), content_type='application/json')
     assert res.status_code == 200
 
-    res = client.post('/2/brief/rfq', content_type='application/json')
+    res = client.post('/2/brief/rfx', content_type='application/json')
     assert res.status_code == 200
 
     res = client.patch('/2/brief/1', content_type='application/json', data=json.dumps({
@@ -700,23 +700,23 @@ def test_rfq_publish_success_over_one_week_correct_dates(client, overview_users,
     )
 
 
-def test_rfq_brief_create_failure_as_seller(client, supplier_user, rfx_lot):
+def test_rfx_brief_create_failure_as_seller(client, supplier_user, rfx_lot):
     res = client.post('/2/login', data=json.dumps({
         'emailAddress': 'j@examplecompany.biz', 'password': 'testpassword'
     }), content_type='application/json')
     assert res.status_code == 200
 
-    res = client.post('/2/brief/rfq', content_type='application/json')
+    res = client.post('/2/brief/rfx', content_type='application/json')
     assert res.status_code == 403
 
 
-def test_rfq_brief_update_success(client, overview_users, rfx_lot):
+def test_rfx_brief_update_success(client, overview_users, rfx_lot):
     res = client.post('/2/login', data=json.dumps({
         'emailAddress': 'me@digital.gov.au', 'password': 'test'
     }), content_type='application/json')
     assert res.status_code == 200
 
-    res = client.post('/2/brief/rfq', content_type='application/json')
+    res = client.post('/2/brief/rfx', content_type='application/json')
     assert res.status_code == 200
 
     response = json.loads(res.data)
@@ -730,13 +730,13 @@ def test_rfq_brief_update_success(client, overview_users, rfx_lot):
     assert response['closedAt'] == pendulum.today().add(weeks=2).format('%Y-%m-%d')
 
 
-def test_rfq_brief_update_failure_closing_date_invalid(client, overview_users, rfx_lot):
+def test_rfx_brief_update_failure_closing_date_invalid(client, overview_users, rfx_lot):
     res = client.post('/2/login', data=json.dumps({
         'emailAddress': 'me@digital.gov.au', 'password': 'test'
     }), content_type='application/json')
     assert res.status_code == 200
 
-    res = client.post('/2/brief/rfq', content_type='application/json')
+    res = client.post('/2/brief/rfx', content_type='application/json')
     assert res.status_code == 200
 
     response = json.loads(res.data)

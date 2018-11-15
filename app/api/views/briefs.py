@@ -114,10 +114,10 @@ def _can_do_brief_response(brief_id):
     return supplier, brief
 
 
-@api.route('/brief/rfq', methods=['POST'])
+@api.route('/brief/rfx', methods=['POST'])
 @login_required
 @role_required('buyer')
-def create_rfq_brief():
+def create_rfx_brief():
     if current_user.role != 'buyer':
         return forbidden('Unauthorised to create a brief')
     try:
@@ -469,7 +469,7 @@ def upload_brief_response_file(brief_id, supplier_code, slug):
 @api.route('/brief/<int:brief_id>/attachments/<slug>', methods=['POST'])
 @login_required
 @role_required('buyer')
-def upload_brief_rfq_attachment_file(brief_id, slug):
+def upload_brief_rfx_attachment_file(brief_id, slug):
     brief = briefs.get(brief_id)
 
     if not brief:
@@ -527,7 +527,7 @@ def download_brief_responses(brief_id):
 
 @api.route('/brief/<int:brief_id>/attachments/<slug>', methods=['GET'])
 @login_required
-def download_brief_rfq_attachment(brief_id, slug):
+def download_brief_rfx_attachment(brief_id, slug):
     brief = Brief.query.filter(
         Brief.id == brief_id
     ).first_or_404()
