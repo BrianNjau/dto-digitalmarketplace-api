@@ -176,6 +176,8 @@ def get_brief(brief_id):
     if not user_is_privileged:
         brief.data['sellers'] = {}
         brief.responses_zip_filesize = None
+        if not is_invited_seller:
+            brief.data['industryBriefing'] = ''
 
     # add the domains available for the buyer during RFX brief build
     domains = []
