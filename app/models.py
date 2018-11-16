@@ -696,7 +696,7 @@ class Supplier(db.Model):
             db.session.delete(sd)
             db.session.flush()
 
-    def update_domain_assessment_status(self, name_or_id, status, user=''):
+    def update_domain_assessment_status(self, name_or_id, status, user=None, audit_data=None):
         d = Domain.get_by_name_or_id(name_or_id)
 
         sd = SupplierDomain.query.filter_by(supplier_id=self.id, domain_id=d.id).first()
@@ -709,8 +709,8 @@ class Supplier(db.Model):
             sd.price_status = 'approved'
             db.session.add(AuditEvent(
                 audit_type=AuditTypes.assessed_domain,
-                user=user,
-                data={},
+                user=user if user else '',
+                data=audit_data if audit_data else {},
                 db_object=sd
             ))
         db.session.flush()
@@ -2432,8 +2432,6 @@ class Application(db.Model):
             self.supplier_code = data['code']
         except KeyError:
             pass
-
-        get_validator('application').validate(data)
 
         return data
 
