@@ -587,6 +587,20 @@ def rfx_lot(app, request):
         yield Lot.query.filter(Lot.slug == 'rfx').first()
 
 
+@pytest.fixture()
+def rfx_brief(client, app, rfx_lot, overview_users):
+    with app.app_context():
+        db.session.add(Brief(
+            id=1,
+            data={'title': 'RFX TEST'},
+            framework=Framework.query.filter(Framework.slug == "digital-marketplace").first(),
+            lot=Lot.query.filter(Lot.slug == 'rfx').first(),
+            users=[overview_users[0]]
+        ))
+        db.session.commit()
+        yield Brief.query.all()
+
+
 def test_rfx_draft_visible_to_author(client, overview_users, rfx_lot):
     res = client.post('/2/login', data=json.dumps({
         'emailAddress': 'me@digital.gov.au', 'password': 'test'
@@ -616,13 +630,10 @@ def test_rfx_brief_create_success(client, overview_users, rfx_lot):
     assert response['id'] == 1
 
 
-def test_rfx_publish_success_next_day_correct_dates(client, overview_users, rfx_lot):
+def test_rfx_publish_success_next_day_correct_dates(client, overview_users, rfx_lot, rfx_brief):
     res = client.post('/2/login', data=json.dumps({
         'emailAddress': 'me@digital.gov.au', 'password': 'test'
     }), content_type='application/json')
-    assert res.status_code == 200
-
-    res = client.post('/2/brief/rfx', content_type='application/json')
     assert res.status_code == 200
 
     res = client.patch('/2/brief/1', content_type='application/json', data=json.dumps({
@@ -635,13 +646,10 @@ def test_rfx_publish_success_next_day_correct_dates(client, overview_users, rfx_
     assert response['dates']['questions_closing_date'] == pendulum.today().add(days=1).format('%Y-%m-%d')
 
 
-def test_rfx_publish_success_three_days_correct_dates(client, overview_users, rfx_lot):
+def test_rfx_publish_success_three_days_correct_dates(client, overview_users, rfx_lot, rfx_brief):
     res = client.post('/2/login', data=json.dumps({
         'emailAddress': 'me@digital.gov.au', 'password': 'test'
     }), content_type='application/json')
-    assert res.status_code == 200
-
-    res = client.post('/2/brief/rfx', content_type='application/json')
     assert res.status_code == 200
 
     res = client.patch('/2/brief/1', content_type='application/json', data=json.dumps({
@@ -657,13 +665,10 @@ def test_rfx_publish_success_three_days_correct_dates(client, overview_users, rf
     assert response['dates']['questions_closing_date'] == question_closing_date
 
 
-def test_rfx_publish_success_under_one_week_correct_dates(client, overview_users, rfx_lot):
+def test_rfx_publish_success_under_one_week_correct_dates(client, overview_users, rfx_lot, rfx_brief):
     res = client.post('/2/login', data=json.dumps({
         'emailAddress': 'me@digital.gov.au', 'password': 'test'
     }), content_type='application/json')
-    assert res.status_code == 200
-
-    res = client.post('/2/brief/rfx', content_type='application/json')
     assert res.status_code == 200
 
     res = client.patch('/2/brief/1', content_type='application/json', data=json.dumps({
@@ -679,13 +684,10 @@ def test_rfx_publish_success_under_one_week_correct_dates(client, overview_users
     assert response['dates']['questions_closing_date'] == question_closing_date
 
 
-def test_rfx_publish_success_over_one_week_correct_dates(client, overview_users, rfx_lot):
+def test_rfx_publish_success_over_one_week_correct_dates(client, overview_users, rfx_lot, rfx_brief):
     res = client.post('/2/login', data=json.dumps({
         'emailAddress': 'me@digital.gov.au', 'password': 'test'
     }), content_type='application/json')
-    assert res.status_code == 200
-
-    res = client.post('/2/brief/rfx', content_type='application/json')
     assert res.status_code == 200
 
     res = client.patch('/2/brief/1', content_type='application/json', data=json.dumps({
@@ -710,17 +712,11 @@ def test_rfx_brief_create_failure_as_seller(client, supplier_user, rfx_lot):
     assert res.status_code == 403
 
 
-def test_rfx_brief_update_success(client, overview_users, rfx_lot):
+def test_rfx_brief_update_success(client, overview_users, rfx_lot, rfx_brief):
     res = client.post('/2/login', data=json.dumps({
         'emailAddress': 'me@digital.gov.au', 'password': 'test'
     }), content_type='application/json')
     assert res.status_code == 200
-
-    res = client.post('/2/brief/rfx', content_type='application/json')
-    assert res.status_code == 200
-
-    response = json.loads(res.data)
-    assert response['id'] == 1
 
     res = client.patch('/2/brief/1', content_type='application/json', data=json.dumps({
         'closedAt': pendulum.today().add(weeks=2).format('%Y-%m-%d')
@@ -730,17 +726,11 @@ def test_rfx_brief_update_success(client, overview_users, rfx_lot):
     assert response['closedAt'] == pendulum.today().add(weeks=2).format('%Y-%m-%d')
 
 
-def test_rfx_brief_update_failure_closing_date_invalid(client, overview_users, rfx_lot):
+def test_rfx_brief_update_failure_closing_date_invalid(client, overview_users, rfx_lot, rfx_brief):
     res = client.post('/2/login', data=json.dumps({
         'emailAddress': 'me@digital.gov.au', 'password': 'test'
     }), content_type='application/json')
     assert res.status_code == 200
-
-    res = client.post('/2/brief/rfx', content_type='application/json')
-    assert res.status_code == 200
-
-    response = json.loads(res.data)
-    assert response['id'] == 1
 
     res = client.patch('/2/brief/1', content_type='application/json', data=json.dumps({
         'publish': True,
