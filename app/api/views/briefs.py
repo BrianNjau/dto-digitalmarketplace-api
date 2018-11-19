@@ -205,6 +205,9 @@ def update_brief(brief_id):
     if not brief:
         not_found("Invalid brief id '{}'".format(brief_id))
 
+    if brief.status != 'draft':
+        abort('Cannot edit a {} brief'.format(brief.status))
+
     if current_user.role == 'buyer':
         brief_user_ids = [user.id for user in brief.users]
         if current_user.id not in brief_user_ids:
