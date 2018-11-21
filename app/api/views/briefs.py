@@ -179,6 +179,14 @@ def get_brief(brief_id):
         if not is_invited_seller:
             brief.data['industryBriefing'] = ''
 
+    # remove private data for anonymous users
+    if current_user.is_anonymous:
+        brief.data['proposalType'] = []
+        brief.data['evaluationType'] = []
+        brief.data['responseTemplate'] = []
+        brief.data['requirementsDocument'] = []
+        brief.data['attachments'] = []
+
     # add the domains available for the buyer during RFX brief build
     domains = []
     if user_is_privileged:
