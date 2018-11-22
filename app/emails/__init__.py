@@ -14,6 +14,7 @@ from .briefs import (
     send_brief_response_received_email,
     send_brief_closed_email,
     send_seller_requested_feedback_from_buyer_email,
-    send_seller_invited_to_rfx_email
+    send_seller_invited_to_rfx_email,
+    send_seller_invited_to_atm_email
 )  # noqa
 from .util import render_email_template, escape_token_markdown  # noqa

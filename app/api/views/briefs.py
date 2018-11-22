@@ -11,7 +11,7 @@ from sqlalchemy.exc import DataError
 
 from app.api import api
 from app.api.csv import generate_brief_responses_csv
-from app.api.business.validators import SupplierValidator, RFXDataValidator
+from app.api.business.validators import SupplierValidator, RFXDataValidator, ATMDataValidator
 from app.api.helpers import abort, forbidden, not_found, role_required, is_current_user_in_brief
 from app.api.services import (audit_service,
                               brief_overview_service,
@@ -19,7 +19,12 @@ from app.api.services import (audit_service,
                               briefs,
                               lots_service,
                               suppliers)
-from app.emails import send_brief_response_received_email, render_email_template, send_seller_invited_to_rfx_email
+from app.emails import (
+    send_brief_response_received_email,
+    render_email_template,
+    send_seller_invited_to_rfx_email,
+    send_seller_invited_to_atm_email
+)
 from dmapiclient.audit import AuditTypes
 from dmutils.file import s3_download_file, s3_upload_file_from_request
 
@@ -139,6 +144,31 @@ def create_rfx_brief():
     return jsonify(brief.serialize(with_users=False))
 
 
+@api.route('/brief/atm', methods=['POST'])
+@login_required
+@role_required('buyer')
+def create_atm_brief():
+    if current_user.role != 'buyer':
+        return forbidden('Unauthorised to create a brief')
+    try:
+        lot = Lot.query.filter(Lot.slug == 'atm').first()
+        framework = Framework.query.filter(Framework.slug == 'digital-marketplace').first()
+        user = User.query.get(current_user.id)
+        brief = Brief(
+            users=[user],
+            framework=framework,
+            lot=lot,
+            data={}
+        )
+        db.session.add(brief)
+        db.session.commit()
+    except Exception as e:
+        rollbar.report_exc_info()
+        return jsonify(message=e.message), 400
+
+    return jsonify(brief.serialize(with_users=False))
+
+
 @api.route('/brief/<int:brief_id>', methods=["GET"])
 def get_brief(brief_id):
     brief = Brief.query.filter(
@@ -223,10 +253,17 @@ def update_brief(brief_id):
 
     data = get_json_from_request()
 
-    # validate the RFX JSON request data
-    errors = RFXDataValidator(brief).validate()
-    if len(errors) > 0:
-        abort(', '.join(errors))
+    if brief.lot.slug == 'rfx':
+        # validate the RFX JSON request data
+        errors = RFXDataValidator(brief).validate()
+        if len(errors) > 0:
+            abort(', '.join(errors))
+
+    if brief.lot.slug == 'atm':
+        # validate the ATM JSON request data
+        errors = ATMDataValidator(brief).validate()
+        if len(errors) > 0:
+            abort(', '.join(errors))
 
     publish = False
     if 'publish' in data and data['publish']:
@@ -264,7 +301,10 @@ def update_brief(brief_id):
                 supplier = Supplier.query.filter(
                     Supplier.code == seller_code
                 ).first()
-                send_seller_invited_to_rfx_email(brief, supplier)
+                if brief.lot.slug == 'rfx':
+                    send_seller_invited_to_rfx_email(brief, supplier)
+                elif brief.lot.slug == 'atm':
+                    send_seller_invited_to_atm_email(brief, supplier)
 
     brief.data = data
     db.session.add(brief)
@@ -518,7 +558,10 @@ def download_brief_responses(brief_id):
         return forbidden("You can only download documents for closed briefs")
 
     response = ('', 404)
-    if brief.lot.slug == 'digital-professionals' or brief.lot.slug == 'training' or brief.lot.slug == 'rfx':
+    if (brief.lot.slug == 'digital-professionals' or
+            brief.lot.slug == 'training' or
+            brief.lot.slug == 'rfx' or
+            brief.lot.slug == 'atm'):
         try:
             file = s3_download_file(
                 'brief-{}-resumes.zip'.format(brief_id),

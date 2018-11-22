@@ -737,3 +737,179 @@ def test_rfx_brief_update_failure_closing_date_invalid(client, overview_users, r
         'closedAt': 'baddate'
     }))
     assert res.status_code == 400
+
+
+@pytest.fixture()
+def atm_lot(app, request):
+    with app.app_context():
+        db.session.add(Lot(
+            id=12,
+            slug='atm',
+            name='ATM',
+            one_service_limit=True,
+            data={"unitPlural": "services", "unitSingular": "service"}
+        ))
+        db.session.flush()
+
+        framework = Framework.query.filter(Framework.slug == 'digital-marketplace').first()
+        db.session.add(FrameworkLot(
+            framework_id=framework.id,
+            lot_id=12
+        ))
+
+        db.session.flush()
+        db.session.commit()
+
+        yield Lot.query.filter(Lot.slug == 'atm').first()
+
+
+@pytest.fixture()
+def atm_brief(client, app, atm_lot, overview_users):
+    with app.app_context():
+        db.session.add(Brief(
+            id=1,
+            data={'title': 'ATM TEST'},
+            framework=Framework.query.filter(Framework.slug == "digital-marketplace").first(),
+            lot=Lot.query.filter(Lot.slug == 'atm').first(),
+            users=[overview_users[0]]
+        ))
+        db.session.commit()
+        yield Brief.query.all()
+
+
+def test_atm_draft_visible_to_author(client, overview_users, atm_lot):
+    res = client.post('/2/login', data=json.dumps({
+        'emailAddress': 'me@digital.gov.au', 'password': 'test'
+    }), content_type='application/json')
+    assert res.status_code == 200
+
+    res = client.post('/2/brief/atm', content_type='application/json')
+    assert res.status_code == 200
+
+    response = json.loads(res.data)
+    assert response['id'] == 1
+
+    res = client.get('/2/brief/1', content_type='application/json')
+    assert res.status_code == 200
+
+
+def test_atm_brief_create_success(client, overview_users, atm_lot):
+    res = client.post('/2/login', data=json.dumps({
+        'emailAddress': 'me@digital.gov.au', 'password': 'test'
+    }), content_type='application/json')
+    assert res.status_code == 200
+
+    res = client.post('/2/brief/atm', content_type='application/json')
+    assert res.status_code == 200
+
+    response = json.loads(res.data)
+    assert response['id'] == 1
+
+
+def test_atm_publish_success_next_day_correct_dates(client, overview_users, atm_lot, atm_brief):
+    res = client.post('/2/login', data=json.dumps({
+        'emailAddress': 'me@digital.gov.au', 'password': 'test'
+    }), content_type='application/json')
+    assert res.status_code == 200
+
+    res = client.patch('/2/brief/1', content_type='application/json', data=json.dumps({
+        'publish': True,
+        'closedAt': pendulum.today().add(days=1).format('%Y-%m-%d')
+    }))
+    assert res.status_code == 200
+    response = json.loads(res.data)
+    assert response['closedAt'] == pendulum.today().add(days=1).format('%Y-%m-%d')
+    assert response['dates']['questions_closing_date'] == pendulum.today().add(days=1).format('%Y-%m-%d')
+
+
+def test_atm_publish_success_three_days_correct_dates(client, overview_users, atm_lot, atm_brief):
+    res = client.post('/2/login', data=json.dumps({
+        'emailAddress': 'me@digital.gov.au', 'password': 'test'
+    }), content_type='application/json')
+    assert res.status_code == 200
+
+    res = client.patch('/2/brief/1', content_type='application/json', data=json.dumps({
+        'publish': True,
+        'closedAt': pendulum.today().add(days=3).format('%Y-%m-%d')
+    }))
+    assert res.status_code == 200
+    response = json.loads(res.data)
+    assert response['closedAt'] == pendulum.today().add(days=3).format('%Y-%m-%d')
+    question_closing_date = pendulum.instance(workday(pendulum.today(), 2)).format('%Y-%m-%d')
+    if question_closing_date > response['closedAt']:
+        question_closing_date = response['closedAt']
+    assert response['dates']['questions_closing_date'] == question_closing_date
+
+
+def test_atm_publish_success_under_one_week_correct_dates(client, overview_users, atm_lot, atm_brief):
+    res = client.post('/2/login', data=json.dumps({
+        'emailAddress': 'me@digital.gov.au', 'password': 'test'
+    }), content_type='application/json')
+    assert res.status_code == 200
+
+    res = client.patch('/2/brief/1', content_type='application/json', data=json.dumps({
+        'publish': True,
+        'closedAt': pendulum.today().add(days=4).format('%Y-%m-%d')
+    }))
+    assert res.status_code == 200
+    response = json.loads(res.data)
+    assert response['closedAt'] == pendulum.today().add(days=4).format('%Y-%m-%d')
+    question_closing_date = pendulum.instance(workday(pendulum.today(), 2)).format('%Y-%m-%d')
+    if question_closing_date > response['closedAt']:
+        question_closing_date = response['closedAt']
+    assert response['dates']['questions_closing_date'] == question_closing_date
+
+
+def test_atm_publish_success_over_one_week_correct_dates(client, overview_users, atm_lot, atm_brief):
+    res = client.post('/2/login', data=json.dumps({
+        'emailAddress': 'me@digital.gov.au', 'password': 'test'
+    }), content_type='application/json')
+    assert res.status_code == 200
+
+    res = client.patch('/2/brief/1', content_type='application/json', data=json.dumps({
+        'publish': True,
+        'closedAt': pendulum.today().add(days=10).format('%Y-%m-%d')
+    }))
+    assert res.status_code == 200
+    response = json.loads(res.data)
+    assert response['closedAt'] == pendulum.today().add(days=10).format('%Y-%m-%d')
+    assert response['dates']['questions_closing_date'] == (
+        pendulum.instance(workday(pendulum.today(), 5)).format('%Y-%m-%d')
+    )
+
+
+def test_atm_brief_create_failure_as_seller(client, supplier_user, atm_lot):
+    res = client.post('/2/login', data=json.dumps({
+        'emailAddress': 'j@examplecompany.biz', 'password': 'testpassword'
+    }), content_type='application/json')
+    assert res.status_code == 200
+
+    res = client.post('/2/brief/atm', content_type='application/json')
+    assert res.status_code == 403
+
+
+def test_atm_brief_update_success(client, overview_users, atm_lot, atm_brief):
+    res = client.post('/2/login', data=json.dumps({
+        'emailAddress': 'me@digital.gov.au', 'password': 'test'
+    }), content_type='application/json')
+    assert res.status_code == 200
+
+    res = client.patch('/2/brief/1', content_type='application/json', data=json.dumps({
+        'closedAt': pendulum.today().add(weeks=2).format('%Y-%m-%d')
+    }))
+    assert res.status_code == 200
+    response = json.loads(res.data)
+    assert response['closedAt'] == pendulum.today().add(weeks=2).format('%Y-%m-%d')
+
+
+def test_atm_brief_update_failure_closing_date_invalid(client, overview_users, atm_lot, atm_brief):
+    res = client.post('/2/login', data=json.dumps({
+        'emailAddress': 'me@digital.gov.au', 'password': 'test'
+    }), content_type='application/json')
+    assert res.status_code == 200
+
+    res = client.patch('/2/brief/1', content_type='application/json', data=json.dumps({
+        'publish': True,
+        'closedAt': 'baddate'
+    }))
+    assert res.status_code == 400

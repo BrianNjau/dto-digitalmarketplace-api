@@ -2197,7 +2197,7 @@ class BriefResponse(db.Model):
 
         # only perform schema validation on non RFX responses
         errs = []
-        if self.brief.lot.slug != 'rfx':
+        if self.brief.lot.slug != 'rfx' and self.brief.lot.slug != 'atm':
             errs = get_validation_errors(
                 'brief-responses-{}-{}'.format(self.brief.framework.slug, self.brief.lot.slug),
                 self.data,
@@ -2218,6 +2218,7 @@ class BriefResponse(db.Model):
         if (
             self.brief.lot.slug != 'training' and
             self.brief.lot.slug != 'rfx' and
+            self.brief.lot.slug != 'atm' and
             'essentialRequirements' not in errs and
             len(filter(None, self.data.get('essentialRequirements', []))) !=
             len(self.brief.data['essentialRequirements'])
