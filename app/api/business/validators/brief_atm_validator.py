@@ -15,10 +15,8 @@ class ATMDataValidator(object):
                 {'name': 'location', 'type': list},
                 {'name': 'summary', 'type': basestring},
                 {'name': 'industryBriefing', 'type': basestring},
-                {'name': 'sellerCategory', 'type': basestring},
                 {'name': 'sellers', 'type': dict},
                 {'name': 'attachments', 'type': list},
-                {'name': 'requirementsDocument', 'type': list},
                 {'name': 'responseTemplate', 'type': list},
                 {'name': 'evaluationType', 'type': list},
                 {'name': 'proposalType', 'type': list},
@@ -31,7 +29,14 @@ class ATMDataValidator(object):
                 {'name': 'budgetRange', 'type': basestring},
                 {'name': 'workingArrangements', 'type': basestring},
                 {'name': 'publish', 'type': bool},
-                {'name': 'sellerSelector', 'type': basestring}
+                {'name': 'sellerSelector', 'type': basestring},
+                {'name': 'securityClearance', 'type': basestring},
+                {'name': 'workAlreadyDone', 'type': basestring},
+                {'name': 'endUsers', 'type': basestring},
+                {'name': 'backgroundInformation', 'type': basestring},
+                {'name': 'outcome', 'type': basestring},
+                {'name': 'timeframeConstraints', 'type': basestring},
+                {'name': 'contactNumber', 'type': basestring}
             ]
 
             request_keys = self.brief.data.keys()
