@@ -88,7 +88,7 @@ class BriefsService(Service):
         location = location or []
         status_filters = [x for x in status if x in ['live', 'closed']]
         open_to_filters = [x for x in open_to if x in ['all', 'selected', 'one']]
-        brief_type_filters = [x for x in brief_type if x in ['outcomes', 'training', 'specialists']]
+        brief_type_filters = [x for x in brief_type if x in ['outcomes', 'training', 'specialists', 'ask the market']]
         location_filters = [x for x in location if x in ['ACT', 'NSW', 'NT', 'QLD', 'SA', 'TAS', 'VIC', 'WA', 'Remote']]
 
         query = (db.session
@@ -134,7 +134,8 @@ class BriefsService(Service):
             switcher = {
                 'outcomes': db.session.query(Lot.id).filter(Lot.slug == 'digital-outcome').first(),
                 'training': db.session.query(Lot.id).filter(Lot.slug == 'training').first(),
-                'specialists': db.session.query(Lot.id).filter(Lot.slug == 'digital-professionals').first()
+                'specialists': db.session.query(Lot.id).filter(Lot.slug == 'digital-professionals').first(),
+                'ask the market': db.session.query(Lot.id).filter(Lot.slug == 'atm').first()
             }
             lot_cond = or_(*[Brief._lot_id == switcher.get(x) for x in brief_type_filters])
 
