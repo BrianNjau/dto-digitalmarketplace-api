@@ -4,6 +4,7 @@ from app.models import (
     CaseStudy,
     CaseStudyAssessment,
     CaseStudyAssessmentDomainCriteria,
+    DomainCriteria,
     Supplier,
     User,
     db
@@ -81,6 +82,22 @@ class CaseStudyService(Service):
         return result._asdict()
 
     def get_case_studies(self):
+        case_study_assessment_query = (
+            db
+            .session
+            .query(
+                CaseStudyAssessmentDomainCriteria.case_study_assessment_id,
+                func.array_agg(
+                    func.json_build_object(
+                        'domain_criteria_id', CaseStudyAssessmentDomainCriteria.domain_criteria_id,
+                        'domain_criteria', DomainCriteria.name
+                    )
+                ).label('criterias_met')
+            )
+            .join(DomainCriteria)
+            .group_by(CaseStudyAssessmentDomainCriteria.case_study_assessment_id)
+            .subquery()
+        )
         case_study_query = (
             db
             .session
@@ -89,14 +106,20 @@ class CaseStudyService(Service):
                 func.count(CaseStudyAssessment.id).label('assessment_count'),
                 func.array_agg(
                     func.json_build_object(
+                        'id', CaseStudyAssessment.id,
                         'user_id', CaseStudyAssessment.user_id,
                         'username', User.name,
                         'status', CaseStudyAssessment.status,
-                        'comment', CaseStudyAssessment.comment
+                        'comment', CaseStudyAssessment.comment,
+                        'criterias_met', case_study_assessment_query.c.criterias_met
                     )
                 ).label('assessment_results')
             )
             .join(CaseStudyAssessment, isouter=True)
+            .join(
+                case_study_assessment_query,
+                case_study_assessment_query.c.case_study_assessment_id == CaseStudyAssessment.id,
+                isouter=True)
             .join(User, isouter=True)
             .group_by(CaseStudy.id)
             .filter(CaseStudy.status == 'unassessed')
