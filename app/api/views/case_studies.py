@@ -56,7 +56,7 @@ def get_case_study_assessments(id):
 @api.route('/casestudy/<int:id>/assessment', methods=['POST'])
 @login_required
 @role_required('admin')
-def insert_assessment(id):
+def add_assessment(id):
     """Add a case study assessment (role=admin)
     ---
     tags:

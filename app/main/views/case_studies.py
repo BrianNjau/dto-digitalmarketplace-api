@@ -176,6 +176,25 @@ def add_case_study_admin(case_study_id):
     )
 
 
+@main.route('/admin/casestudy/<int:case_study_id>/status', methods=['PUT'])
+def update_case_study_status(case_study_id):
+    updater_json = validate_and_return_updater_request()
+    json_payload = get_json_from_request()
+    user = users.first(email_address=updater_json.get('updated_by'))
+    if not user:
+        abort(404)
+
+    case_study = case_studies_service.get(case_study_id)
+
+    data = json_payload.get('data')
+    case_study.status = data.get('status')
+    saved = case_studies_service.save(case_study)
+
+    return jsonify(
+        case_study=saved
+    )
+
+
 @main.route('/admin/casestudy/assessment', methods=['GET'])
 def get_case_study_assessments_admin():
     case_studies = case_studies_service.get_case_studies()
