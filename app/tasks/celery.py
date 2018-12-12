@@ -4,6 +4,7 @@ from urllib import quote_plus
 from os import getenv
 from kombu.transport import SQS
 from flask import current_app
+from app import db
 
 
 QUEUE_NAME = getenv('AWS_SQS_QUEUE_NAME')
@@ -42,13 +43,16 @@ def make_celery(flask_app):
         broker=broker_url,
         include=[
             'app.api.services',
+            'app.emails',
+            'app.emails.util',
             'app.tasks.email',
             'app.tasks.mailchimp',
             'app.tasks.brief_tasks',
             'app.tasks.s3',
             'app.tasks.brief_response_tasks',
             'app.tasks.supplier_tasks',
-            'app.tasks.jira'
+            'app.tasks.jira',
+            'app.tasks.dreamail'
         ]
     )
     celery.conf.update(flask_app.config)
@@ -57,6 +61,9 @@ def make_celery(flask_app):
 
     class ContextTask(TaskBase):
         abstract = True
+
+        def after_return(self, *args, **kwargs):
+            db.session.remove()
 
         def __call__(self, *args, **kwargs):
             if current_app:

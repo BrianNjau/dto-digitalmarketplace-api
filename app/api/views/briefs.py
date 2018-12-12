@@ -11,6 +11,7 @@ from sqlalchemy.exc import DataError
 from app.api import api
 from app.api.csv import generate_brief_responses_csv
 from app.api.business.validators import SupplierValidator
+from app.api.business import supplier_business
 from app.api.helpers import abort, forbidden, not_found, role_required, is_current_user_in_brief
 from app.api.services import (audit_service,
                               brief_overview_service,
@@ -55,9 +56,9 @@ def _can_do_brief_response(brief_id):
     if not supplier:
         forbidden("Invalid supplier Code '{}'".format(current_user.supplier_code))
 
-    errors = SupplierValidator(supplier).validate_all()
-    if len(errors) > 0:
-        abort(errors)
+    validation_result = SupplierValidator(supplier).validate_all()
+    if len(validation_result.errors) > 0:
+        abort(validation_result.errors)
 
     def domain(email):
         return email.split('@')[-1]
@@ -304,10 +305,9 @@ def get_brief_responses(brief_id):
 
     supplier_code = getattr(current_user, 'supplier_code', None)
     if current_user.role == 'supplier':
-        supplier = suppliers.get_supplier_by_code(supplier_code)
-        supplier_errors = SupplierValidator(supplier).validate_all()
-        if len(supplier_errors) > 0:
-            abort(supplier_errors)
+        validation_result = supplier_business.get_supplier_messages(supplier_code, True)
+        if len(validation_result.errors) > 0:
+            abort(validation_result.errors)
 
     if current_user.role == 'buyer' and brief.status != 'closed':
         brief_responses = []
