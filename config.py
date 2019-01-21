@@ -12,6 +12,10 @@ CELERYBEAT_SCHEDULE = {
         'task': 'app.tasks.mailchimp.send_new_briefs_email',
         'schedule': crontab(hour=17, minute=0)
     },
+    'send_document_expiry_reminder': {
+        'task': 'app.tasks.mailchimp.send_document_expiry_reminder',
+        'schedule': crontab(hour=6, minute=0)
+    },
     'process_closed_briefs': {
         'task': 'app.tasks.brief_tasks.process_closed_briefs',
         'schedule': crontab(hour=6, minute=0)
@@ -175,7 +179,7 @@ class Config:
     GENERIC_EMAIL_DOMAINS = ['bigpond.com', 'digital.gov.au', 'gmail.com', 'hotmail.com', 'icloud.com',
                              'iinet.net.au', 'internode.on.net', 'live.com.au', 'me.com', 'msn.com',
                              'optusnet.com.au', 'outlook.com', 'outlook.com.au', 'ozemail.com.au',
-                             'yahoo.com', 'yahoo.com.au']
+                             'tpg.com.au', 'yahoo.com', 'yahoo.com.au']
 
     FRONTEND_ADDRESS = 'https://dm-dev.apps.y.cld.gov.au'
     ADMIN_ADDRESS = 'https://dm-dev-admin.apps.y.cld.gov.au'
@@ -185,7 +189,7 @@ class Config:
     CSRF_ENABLED = True
     BASIC_AUTH = False
 
-    ALLOWED_EXTENSIONS = ['pdf', 'odt', 'doc', 'docx']
+    ALLOWED_EXTENSIONS = ['pdf', 'odt', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx']
 
     S3_BUCKET_NAME = ''
     S3_ENDPOINT_URL = 's3-ap-southeast-2.amazonaws.com'

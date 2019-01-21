@@ -1,7 +1,9 @@
+from enum import Enum
+
+import rollbar
+
 from app.api.helpers import Service
 from app.models import AuditEvent
-from enum import Enum
-import rollbar
 
 
 class AuditService(Service):
@@ -49,3 +51,6 @@ class AuditTypes(Enum):
     delete_brief = 'delete_brief'
     seller_requested_feedback_from_buyer_email = 'seller_requested_feedback_from_buyer_email'
     seller_to_review_pricing_case_study_email = 'seller_to_review_pricing_case_study_email'
+    seller_invited_to_rfx_opportunity = 'seller_invited_to_rfx_opportunity'
+    seller_to_review_pricing_case_study_email_part_2 = 'seller_to_review_pricing_case_study_email_part_2'
+    sent_expiring_documents_email = 'sent_expiring_documents_email'

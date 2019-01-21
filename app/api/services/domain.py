@@ -1,5 +1,6 @@
 from app.api.helpers import Service
-from app.models import db, Domain
+from app.models import Domain
+from app import db
 from six import string_types
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload
