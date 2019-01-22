@@ -197,7 +197,8 @@ def update_case_study_status(case_study_id):
 
 @main.route('/admin/casestudy/assessment', methods=['GET'])
 def get_case_study_assessments_admin():
-    case_studies = case_studies_service.get_case_studies()
+    search = request.args.get('search', None)
+    case_studies = case_studies_service.get_case_studies(search=search)
     return jsonify(
         case_studies=case_studies
     )
