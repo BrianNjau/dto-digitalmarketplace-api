@@ -1,4 +1,5 @@
 from sqlalchemy import func
+from sqlalchemy.dialects.postgresql import aggregate_order_by
 from app.api.helpers import Service
 from app.models import (
     CaseStudy,
@@ -16,21 +17,6 @@ class CaseStudyService(Service):
 
     def __init__(self, *args, **kwargs):
         super(CaseStudyService, self).__init__(*args, **kwargs)
-
-    def add_assessment(self, assessment):
-        case_study_assessment = CaseStudyAssessment(
-            status=assessment.get('status'),
-            comment=assessment.get('comment'),
-            user_id=assessment.get('user_id'),
-            case_study_id=assessment.get('case_study_id'),
-            approved_criterias=[
-                CaseStudyAssessmentDomainCriteria(
-                    domain_criteria_id=a
-                ) for a in assessment.get('approved_criteria', [])
-            ]
-        )
-        db.session.add(case_study_assessment)
-        return self.commit_changes()
 
     def get_case_study_assessments(self, case_study_id=None, user_id=None):
         query = (
@@ -105,13 +91,16 @@ class CaseStudyService(Service):
                 CaseStudy.id,
                 func.count(CaseStudyAssessment.id).label('assessment_count'),
                 func.array_agg(
-                    func.json_build_object(
-                        'id', CaseStudyAssessment.id,
-                        'user_id', CaseStudyAssessment.user_id,
-                        'username', User.name,
-                        'status', CaseStudyAssessment.status,
-                        'comment', CaseStudyAssessment.comment,
-                        'criterias_met', case_study_assessment_query.c.criterias_met
+                    aggregate_order_by(
+                        func.json_build_object(
+                            'id', CaseStudyAssessment.id,
+                            'user_id', CaseStudyAssessment.user_id,
+                            'username', User.name,
+                            'status', CaseStudyAssessment.status,
+                            'comment', CaseStudyAssessment.comment,
+                            'criterias_met', case_study_assessment_query.c.criterias_met
+                        ),
+                        CaseStudyAssessment.id
                     )
                 ).label('assessment_results')
             )

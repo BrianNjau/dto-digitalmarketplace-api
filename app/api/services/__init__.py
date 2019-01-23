@@ -10,6 +10,7 @@ from .brief_responses import BriefResponsesService
 from .users import UsersService
 from .key_value import KeyValueService
 from .case_studies import CaseStudyService
+from .case_study_assessments import CaseStudyAssessmentService
 from .frameworks import FrameworksService
 
 application_service = ApplicationService()
@@ -25,4 +26,5 @@ brief_responses_service = BriefResponsesService()
 users = UsersService()
 key_values_service = KeyValueService()
 case_studies_service = CaseStudyService()
+case_study_assessments_service = CaseStudyAssessmentService()
 frameworks_service = FrameworksService()

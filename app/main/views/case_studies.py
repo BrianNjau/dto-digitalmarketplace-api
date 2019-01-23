@@ -12,6 +12,7 @@ from app.utils import (
 from app.service_utils import validate_and_return_supplier
 from app.api.services import (
     case_studies_service,
+    case_study_assessments_service,
     domain_service,
     users
 )
@@ -156,7 +157,27 @@ def get_case_study_admin(case_study_id):
 
 
 @main.route('/admin/casestudy/<int:case_study_id>/assessment', methods=['POST'])
-def add_case_study_admin(case_study_id):
+def add_case_study_assessment_admin(case_study_id):
+    updater_json = validate_and_return_updater_request()
+    json_payload = get_json_from_request()
+    user = users.first(email_address=updater_json.get('updated_by'))
+    if not user:
+        abort(404)
+
+    assessor_user_id = json_payload.get('assessor_user_id', None)
+    assessment = {
+        'user_id': assessor_user_id,
+        'case_study_id': case_study_id
+    }
+
+    assessment = case_study_assessments_service.add_assessment(assessment)
+    return jsonify(
+        assessment=assessment
+    )
+
+
+@main.route('/admin/casestudy/<int:case_study_id>/assessment/<int:case_study_assessment_id>', methods=['PUT'])
+def update_case_study_assessment_admin(case_study_id, case_study_assessment_id):
     updater_json = validate_and_return_updater_request()
     json_payload = get_json_from_request()
     user = users.first(email_address=updater_json.get('updated_by'))
@@ -169,7 +190,8 @@ def add_case_study_admin(case_study_id):
 
     assessment['user_id'] = user.id
     assessment['case_study_id'] = case_study_id
-    assessment = case_studies_service.add_assessment(assessment)
+
+    assessment = case_study_assessments_service.update_assessment(case_study_assessment_id, assessment)
 
     return jsonify(
         assessment=assessment
