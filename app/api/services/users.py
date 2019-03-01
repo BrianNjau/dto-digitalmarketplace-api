@@ -2,7 +2,12 @@ from sqlalchemy import func, desc
 from sqlalchemy.sql.functions import concat
 from app.api.helpers import Service
 from app import db
-from app.models import User
+from app.models import (
+    Domain,
+    Supplier,
+    SupplierDomain,
+    User
+)
 
 
 class UsersService(Service):
@@ -45,10 +50,23 @@ class UsersService(Service):
 
         return user_by_supplier_query.first()
 
-    def get_sellers_by_email(self, emails):
-        return (db.session
-                  .query(User)
-                  .filter(User.email_address.in_(emails))
-                  .filter(User.active)
-                  .filter(User.role == 'supplier')
-                  .all())
+    def get_sellers_by_email(self, emails, area_of_expertise, lot_id):
+        query = db.session.query(User)
+
+        if lot_id == 9:
+            query = (
+                query
+                .join(Supplier)
+                .join(SupplierDomain)
+                .join(Domain, Domain.id == SupplierDomain.domain_id)
+                .filter(Domain.name == area_of_expertise)
+                .filter(SupplierDomain.status == 'assessed')
+            )
+
+        query = (
+            query
+            .filter(User.email_address.in_(emails))
+            .filter(User.active)
+            .filter(User.role == 'supplier')
+        )
+        return query.all()

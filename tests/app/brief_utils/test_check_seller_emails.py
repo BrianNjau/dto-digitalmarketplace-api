@@ -16,7 +16,7 @@ def test_check_one_seller_email_not_found():
         patch.object(suppliers,
                      'get_suppliers_by_contact_email',
                      return_value=[]) as get_suppliers_by_contact_email:
-            error = check_seller_emails(brief_data, errs)
+            error = check_seller_emails(brief_data, 1, errs)
             assert error is not None
             assert error['sellerEmail'] == 'email_not_found~nofound@a.com'
 
@@ -28,7 +28,7 @@ def test_check_one_seller_email_found():
     }
     errs = {}
     with patch.object(users, 'get_sellers_by_email', return_value=[User()]) as get_sellers_by_email:
-        error = check_seller_emails(brief_data, errs)
+        error = check_seller_emails(brief_data, 1, errs)
         assert error is None
 
 
@@ -45,7 +45,7 @@ def test_check_one_seller_email_unanswered():
     errs = {}
     with patch.object(users, 'get_sellers_by_email', return_value=[]) as get_sellers_by_email:
         for test_case in test_cases:
-            error = check_seller_emails(test_case, errs)
+            error = check_seller_emails(test_case, 1, errs)
             assert error is not None
             assert error['sellerEmail'] == 'answer_required'
 
@@ -60,7 +60,7 @@ def test_check_some_seller_email_unanswered():
     errs = {}
     with patch.object(users, 'get_sellers_by_email', return_value=[]) as get_sellers_by_email:
         for test_case in test_cases:
-            error = check_seller_emails(test_case, errs)
+            error = check_seller_emails(test_case, 1, errs)
             assert error is not None
             assert error['sellerEmailList'] == 'answer_required'
 
@@ -75,7 +75,7 @@ def test_check_some_seller_email_answered():
     errs = {}
     with patch.object(users, 'get_sellers_by_email', return_value=[User()]) as get_sellers_by_email:
         for test_case in test_cases:
-            error = check_seller_emails(test_case, errs)
+            error = check_seller_emails(test_case, 1, errs)
             assert error is None
 
 
@@ -88,7 +88,7 @@ def test_check_some_seller_email_found():
     }
     errs = {}
     with patch.object(users, 'get_sellers_by_email', return_value=[User()]) as get_sellers_by_email:
-        error = check_seller_emails(brief_data, errs)
+        error = check_seller_emails(brief_data, 1, errs)
         assert error is None
 
 
@@ -105,7 +105,7 @@ def test_check_some_seller_email_not_found():
         patch.object(suppliers,
                      'get_suppliers_by_contact_email',
                      return_value=[]) as get_suppliers_by_contact_email:
-            error = check_seller_emails(brief_data, errs)
+            error = check_seller_emails(brief_data, 1, errs)
             assert error is not None
             assert error['sellerEmailList'] == 'email_not_found~notfound@a.com'
 
@@ -121,7 +121,7 @@ def test_check_seller_email_return_none_when_error():
         'sellerEmailList': 'invalid_format'
     }
     with patch.object(users, 'get_sellers_by_email', return_value=[]) as get_sellers_by_email:
-        error = check_seller_emails(brief_data, errs)
+        error = check_seller_emails(brief_data, 1, errs)
         assert error is None
 
 
@@ -139,7 +139,7 @@ def test_contact_email_found_for_one_seller():
                      return_value=[Supplier(data={
                          'contact_email': 'found@a.com'
                      })]) as get_suppliers_by_contact_email:
-            error = check_seller_emails(brief_data, errs)
+            error = check_seller_emails(brief_data, 1, errs)
             assert error is None
 
 
@@ -157,5 +157,5 @@ def test_contact_email_found_for_some_sellers():
                      return_value=[Supplier(data={
                          'contact_email': 'found@a.com'
                      })]) as get_suppliers_by_contact_email:
-            error = check_seller_emails(brief_data, errs)
+            error = check_seller_emails(brief_data, 1, errs)
             assert error is None

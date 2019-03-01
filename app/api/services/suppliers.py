@@ -6,8 +6,14 @@ from sqlalchemy.orm import joinedload, noload, raiseload
 
 from app import db
 from app.api.helpers import Service
-from app.models import (Framework, Supplier, SupplierDomain, SupplierFramework,
-                        User)
+from app.models import (
+    Domain,
+    Framework,
+    Supplier,
+    SupplierDomain,
+    SupplierFramework,
+    User
+)
 
 
 class SuppliersService(Service):
@@ -16,11 +22,24 @@ class SuppliersService(Service):
     def __init__(self, *args, **kwargs):
         super(SuppliersService, self).__init__(*args, **kwargs)
 
-    def get_suppliers_by_contact_email(self, emails):
-        return (db.session.query(Supplier)
-                .filter(func.lower(Supplier.data['contact_email'].astext).in_(emails))
-                .filter(Supplier.status != 'deleted')
-                .all())
+    def get_suppliers_by_contact_email(self, emails, area_of_expertise, lot_id):
+        query = db.session.query(Supplier)
+
+        if lot_id == 9:
+            query = (
+                query
+                .join(SupplierDomain, SupplierDomain.supplier_id == Supplier.id)
+                .join(Domain, Domain.id == SupplierDomain.domain_id)
+                .filter(Domain.name == area_of_expertise)
+                .filter(SupplierDomain.status == 'assessed')
+            )
+
+        query = (
+            query
+            .filter(func.lower(Supplier.data['contact_email'].astext).in_(emails))
+            .filter(Supplier.status != 'deleted')
+        )
+        return query.all()
 
     def get_supplier_by_code(self, code):
         return (

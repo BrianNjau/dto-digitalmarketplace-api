@@ -43,10 +43,11 @@ def validate_brief_data(brief, enforce_required=True, required_fields=None):
             for key in criteria_weighting_keys:
                 errs[key] = 'total_should_be_100'
 
-    seller_email_error = check_seller_emails(brief.data, errs)
-    if seller_email_error:
-        for k, value in seller_email_error.iteritems():
-            errs[k] = value
+    if 'sellerSelector' in required_fields:
+        seller_email_error = check_seller_emails(brief.data, brief.lot_id, errs)
+        if seller_email_error:
+            for k, value in seller_email_error.iteritems():
+                errs[k] = value
 
     lds_errors = check_lds(brief, required_fields)
     for lds_error in lds_errors:
@@ -76,7 +77,7 @@ def get_supplier_service_eligible_for_brief(supplier, brief):
     return services.first()
 
 
-def check_seller_emails(brief_data, errs):
+def check_seller_emails(brief_data, lot_id, errs):
     seller_selector = brief_data.get('sellerSelector', None)
     if seller_selector == 'allSellers':
         return None
@@ -101,11 +102,12 @@ def check_seller_emails(brief_data, errs):
 
     # if they exist in db
     error = {seller_email_key: 'email_not_found'}
+    area_of_expertise = brief_data.get('areaOfExpertise', None)
 
     if any(emails_to_check):
         # Buyers may enter emails with upper case
         seller_emails = [email.lower() for email in emails_to_check]
-        found_users = users.get_sellers_by_email(seller_emails)
+        found_users = users.get_sellers_by_email(seller_emails, area_of_expertise, lot_id)
 
         if len(found_users) != len(emails_to_check):
             # Check to see if contact emails were used
@@ -113,7 +115,7 @@ def check_seller_emails(brief_data, errs):
             contact_emails_to_check = [email.lower() for email in seller_emails if email not in found_user_emails]
             found_suppliers = [
                 f.data.get('contact_email').lower()
-                for f in suppliers.get_suppliers_by_contact_email(contact_emails_to_check)
+                for f in suppliers.get_suppliers_by_contact_email(contact_emails_to_check, area_of_expertise, lot_id)
             ]
             diff = set(seller_emails) - set(found_user_emails + found_suppliers)
             if len(diff) > 0:
