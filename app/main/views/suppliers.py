@@ -1018,7 +1018,7 @@ def update_supplier_domain(supplier_code, supplier_domain_id):
         ))
         db.session.commit()
 
-        publish_tasks.supplier_domain.delay(supplier_domain.serialize(), 'updated', supplier_code=supplier_code)
+        publish_tasks.supplier_domain.delay(supplier_domain.serializable, 'updated', supplier_code=supplier_code)
 
     supplier = (
         db
