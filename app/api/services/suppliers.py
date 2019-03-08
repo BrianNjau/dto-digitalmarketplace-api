@@ -23,9 +23,11 @@ class SuppliersService(Service):
         super(SuppliersService, self).__init__(*args, **kwargs)
 
     def get_suppliers_by_contact_email(self, emails, area_of_expertise, lot_id):
+        from . import lots_service
+        lot = lots_service.find(slug='digital-professionals').one_or_none()
         query = db.session.query(Supplier)
 
-        if lot_id == 9:
+        if lot_id == lot.id:
             query = (
                 query
                 .join(SupplierDomain, SupplierDomain.supplier_id == Supplier.id)

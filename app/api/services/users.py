@@ -51,9 +51,11 @@ class UsersService(Service):
         return user_by_supplier_query.first()
 
     def get_sellers_by_email(self, emails, area_of_expertise, lot_id):
+        from . import lots_service
+        lot = lots_service.find(slug='digital-professionals').one_or_none()
         query = db.session.query(User)
 
-        if lot_id == 9:
+        if lot_id == lot.id:
             query = (
                 query
                 .join(Supplier)
