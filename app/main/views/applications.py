@@ -44,19 +44,27 @@ def save_application(application):
 @main.route('/applications', methods=['POST'])
 def create_application():
     application_json = get_application_json()
-
+    json_payload = get_json_from_request()
     application = Application()
     application.update_from_json(application_json)
 
     save_application(application)
+    name = json_payload.get('name')
+    updated_by = json_payload.get('updated_by')
     db.session.add(AuditEvent(
         audit_type=AuditTypes.create_application,
-        user='',
+        user=updated_by,
         data={},
         db_object=application
     ))
     db.session.commit()
-    publish_tasks.application.delay(application.serializable, 'created')
+    publish_tasks.application.delay(
+        publish_tasks.compress_application(application),
+        'created',
+        name=name,
+        email_address=updated_by,
+        from_expired=True
+    )
 
     return jsonify(application=application.serializable), 201
 
@@ -78,7 +86,10 @@ def update_application(application_id):
             data={},
             db_object=application
         ))
-        publish_tasks.application.delay(application.serializable, 'reverted')
+        publish_tasks.application.delay(
+            publish_tasks.compress_application(application),
+            'reverted'
+        )
 
     application.update_from_json(application_json)
     save_application(application)
@@ -112,7 +123,10 @@ def update_application_admin(application_id):
 
         application.update_from_json(application_json)
         save_application(application)
-        publish_tasks.application.delay(application.serializable, 'updated')
+        publish_tasks.application.delay(
+            publish_tasks.compress_application(application),
+            'updated'
+        )
 
         return jsonify(application=application.serializable), 200
     else:
@@ -188,7 +202,10 @@ def application_approval(application_id, result):
     application.set_approval(approved=result)
     db.session.commit()
 
-    publish_tasks.application.delay(application.serializable, 'approved' if result else 'approval_rejected')
+    publish_tasks.application.delay(
+        publish_tasks.compress_application(application),
+        'approved' if result else 'approval_rejected'
+    )
     return jsonify(application=application.serializable), 200
 
 
@@ -300,7 +317,6 @@ def delete_application(application_id):
     ))
     application.status = 'deleted'
 
-    deleted_application = application.serialize()
     users = User.query.filter(
         User.application_id == application_id
     ).all()
@@ -311,7 +327,10 @@ def delete_application(application_id):
 
     try:
         db.session.commit()
-        publish_tasks.application.delay(deleted_application, 'delete')
+        publish_tasks.application.delay(
+            publish_tasks.compress_application(application),
+            'deleted'
+        )
     except IntegrityError as e:
         db.session.rollback()
         abort(400, "Database Error: {0}".format(e))
@@ -436,7 +455,10 @@ def submit_application(application_id):
             send_submitted_new_seller_notification(application.id)
 
     db.session.commit()
-    publish_tasks.application.delay(application.serializable, 'submitted')
+    publish_tasks.application.delay(
+        publish_tasks.compress_application(application),
+        'submitted'
+    )
     return jsonify(application=application.serializable,
                    signed_agreement=signed_agreement)
 

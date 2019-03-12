@@ -13,6 +13,7 @@ from .case_studies import CaseStudyService
 from .case_study_assessments import CaseStudyAssessmentService
 from .publish import Publish
 from .frameworks import FrameworksService
+from .user_claims import UserClaimService
 
 application_service = ApplicationService()
 audit_service = AuditService()
@@ -30,3 +31,4 @@ case_studies_service = CaseStudyService()
 case_study_assessments_service = CaseStudyAssessmentService()
 publish = Publish()
 frameworks_service = FrameworksService()
+user_claims_service = UserClaimService()

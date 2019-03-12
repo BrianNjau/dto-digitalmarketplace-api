@@ -292,6 +292,7 @@ def create_user():
         db.session.add(audit)
         db.session.commit()
 
+        user = db.session.query(User).options(noload('*')).filter(User.id == user.id).one_or_none()
         publish_tasks.user.delay(user.serialize(), 'created')
 
         if user.role == 'buyer':
@@ -319,7 +320,9 @@ def update_user(user_id):
     """
     update_details = validate_and_return_updater_request()
 
-    user = User.query.filter(
+    user = User.query.options(
+        noload('*')
+    ).filter(
         User.id == user_id
     ).first_or_404()
 

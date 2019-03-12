@@ -18,7 +18,7 @@ class DomainService(Service):
                 func.lower(Domain.name) == func.lower(name_or_id)
             ).one_or_none()
         else:
-            domain = self.get(name_or_id).one_or_none()
+            domain = self.get(name_or_id)
 
         return domain
 
