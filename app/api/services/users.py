@@ -72,3 +72,6 @@ class UsersService(Service):
             .filter(User.role == 'supplier')
         )
         return query.all()
+
+    def get_by_email(self, email):
+        return self.find(email_address=email).one_or_none()
