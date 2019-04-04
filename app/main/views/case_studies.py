@@ -232,3 +232,11 @@ def get_case_study_assessment_admin(case_study_assessment_id):
     return jsonify(
         case_study_assessment=case_study_assessment
     )
+
+
+@main.route('/casestudy/users/<string:role>', methods=['GET'])
+def list_users_by_role(role):
+    user_list = users.find(role=role).all()
+    return jsonify(
+        user_list=user_list
+    )
