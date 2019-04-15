@@ -172,30 +172,17 @@ def send_assessment_approval_notification(supplier_id, domain_id):
 
 def send_assessment_requested_notification(assessment, requested_by):
     TEMPLATE_FILENAME = 'assessment_requested.md'
-    df = DateFormatter(current_app.config['DEADLINES_TZ_NAME'])
-    FRONTEND_ADDRESS = current_app.config['FRONTEND_ADDRESS']
     supplier = Supplier.query.get(assessment.supplier_domain.supplier_id)
-    brief = assessment.briefs[0]
-    brief_url = '{}/digital-marketplace/opportunities/{}'.format(FRONTEND_ADDRESS, brief.id)
-    brief_template_file_details = 'DOCX 11KB' if brief.lot.slug == 'training' else 'XLS 130KB'
-    brief_template_url = (
-        '{}/static/media/documents/Training_opportunities_questions_for_sellers.docx'.format(FRONTEND_ADDRESS)
-        if brief.lot.slug == 'training'
-        else '{}/digital-marketplace/opportunities/{}/response'.format(FRONTEND_ADDRESS, brief.id))
-    brief_deadline = df.datetimeformat(brief.applications_closed_at).replace('(', '').replace(')', '')
     email_addresses = list(set([supplier.contacts[0].email, requested_by]))
+    assessment_criteria_url = 'https://marketplace1.zendesk.com/hc/en-gb/articles/333757011655-Assessment-criteria'
 
-    subject = "{} assessment requested".format(assessment.supplier_domain.domain.name)
+    subject = "Assessment request for {} received".format(assessment.supplier_domain.domain.name)
     # prepare copy
     email_body = render_email_template(
         TEMPLATE_FILENAME,
+        supplier_name=supplier.name,
         domain_name=assessment.supplier_domain.domain.name,
-        brief_name=brief.data['title'],
-        brief_url=brief_url,
-        brief_lot=brief.lot.slug,
-        brief_template_file_details=brief_template_file_details,
-        brief_template_url=brief_template_url,
-        brief_deadline=brief_deadline
+        assessment_criteria_url=assessment_criteria_url
     )
 
     send_or_handle_error(
