@@ -87,7 +87,8 @@ def send_approval_notification(application_id):
     to_address = application.supplier.contacts[0].email
 
     url_sellers_guide = FRONTEND_ADDRESS + '/sellers-guide'
-    url_assessments = FRONTEND_ADDRESS + '/sellers-guide#assessments'
+    url_assessments = 'https://marketplace1.zendesk.com/hc/en-gb/articles/115011292847-Request-an-assessment'
+    url_responding = 'https://marketplace1.zendesk.com/hc/en-gb/articles/360000634456-Responding-to-an-opportunity'
     url_latest_opportunities = FRONTEND_ADDRESS + '/2/opportunities'
     url_seller_page = FRONTEND_ADDRESS + '/supplier/' + str(application.supplier.code)
 
@@ -96,6 +97,7 @@ def send_approval_notification(application_id):
         TEMPLATE_FILENAME,
         business_name=application.supplier.name,
         url_assessments=url_assessments,
+        url_responding=url_responding,
         url_sellers_guide=url_sellers_guide,
         url_latest_opportunities=url_latest_opportunities,
         url_seller_page=url_seller_page
