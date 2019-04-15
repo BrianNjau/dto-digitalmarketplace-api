@@ -148,7 +148,6 @@ def send_assessment_approval_notification(supplier_id, domain_id):
     users = User.query.filter(User.supplier_code == supplier.code, User.active).all()
 
     email_addresses = [u.email_address for u in users]
-    url_latest_opportunities = FRONTEND_ADDRESS + '/2/opportunities'
     url_seller_page = FRONTEND_ADDRESS + '/supplier/' + str(supplier.code)
 
     # prepare copy
@@ -156,11 +155,10 @@ def send_assessment_approval_notification(supplier_id, domain_id):
         TEMPLATE_FILENAME,
         business_name=supplier.name,
         domain_name=domain.name,
-        url_latest_opportunities=url_latest_opportunities,
         url_seller_page=url_seller_page
     )
 
-    subject = "You’re approved for a new service in the Digital Marketplace"
+    subject = "Assessment for {} approved".format(domain.name)
 
     send_or_handle_error(
         email_addresses,
