@@ -212,8 +212,7 @@ def send_assessment_rejected_notification(supplier_id, assessment_id, domain_nam
         TEMPLATE_FILENAME,
         reject_message=message,
         domain_name=domain_name,
-        opportunity_name=assessment.briefs[0].data['title'],
-        opportunity_id=assessment.briefs[0].id
+        supplier_name=supplier.name
     )
 
     send_or_handle_error(
