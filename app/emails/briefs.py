@@ -23,6 +23,7 @@ def send_brief_response_received_email(supplier, brief, brief_response):
     brief_title = brief.data['title']
     if len(brief_title) > 30:
         brief_title = '{}...'.format(brief_title[:30])
+    subject = subject.format(brief_title)
 
     # prepare copy
     email_body = render_email_template(
@@ -36,7 +37,7 @@ def send_brief_response_received_email(supplier, brief, brief_response):
     send_or_handle_error(
         to_address,
         email_body,
-        subject.format(brief_title),
+        subject,
         current_app.config['DM_GENERIC_NOREPLY_EMAIL'],
         current_app.config['DM_GENERIC_SUPPORT_NAME'],
         event_description_for_errors='brief response recieved'
