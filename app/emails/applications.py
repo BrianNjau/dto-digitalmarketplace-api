@@ -82,7 +82,7 @@ def send_approval_notification(application_id):
         subject = "Your updated profile is live"
     else:
         TEMPLATE_FILENAME = 'application_approved_new_seller.md'
-        subject = "You’re now listed in the Digital Marketplace"
+        subject = "You are now registered with the Marketplace"
 
     to_address = application.supplier.contacts[0].email
 
