@@ -67,7 +67,7 @@ class CaseStudyService(Service):
         )
         return result._asdict()
 
-    def get_case_studies(self, search=None):
+    def get_case_studies(self, search=None, case_study_id=None):
         case_study_assessment_query = (
             db
             .session
@@ -110,9 +110,10 @@ class CaseStudyService(Service):
                 case_study_assessment_query.c.case_study_assessment_id == CaseStudyAssessment.id,
                 isouter=True)
             .join(User, isouter=True)
+            # .filter( CaseStudyAssessment.status == 'unassessed')
             .group_by(CaseStudy.id)
         )
-        if not search:
+        if not search and not case_study_id:
             case_study_query = case_study_query.filter(CaseStudy.status == 'unassessed')
         case_study_query = case_study_query.subquery()
 
@@ -134,7 +135,9 @@ class CaseStudyService(Service):
 
             .order_by(CaseStudy.supplier_code, CaseStudy.data['service'].astext)
         )
-        if search:
+        if case_study_id:
+            query = query.filter(CaseStudy.id == int(case_study_id))
+        elif search:
             try:
                 query = query.filter(CaseStudy.supplier_code == int(search))
             except ValueError:

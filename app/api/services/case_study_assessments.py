@@ -31,6 +31,14 @@ class CaseStudyAssessmentService(Service):
         db.session.add(case_study_assessment)
         return self.commit_changes()
 
+    def delete_assessment(self, case_study_assessment_id, assessment):
+        casestudy_assessment = CaseStudyAssessment.query.filter(
+            CaseStudyAssessment.id == case_study_assessment_id
+        ).first_or_404()
+        db.session.delete(casestudy_assessment)
+
+        return self.commit_changes()
+
     def update_assessment(self, case_study_assessment_id, assessment):
         case_study_assessment = (
             db

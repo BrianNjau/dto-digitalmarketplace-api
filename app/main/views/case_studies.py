@@ -176,6 +176,25 @@ def add_case_study_assessment_admin(case_study_id):
     )
 
 
+@main.route('/admin/casestudy/<int:case_study_id>/assessment/<int:case_study_assessment_id>', methods=['DELETE'])
+def delete_case_study_assessment_admin(case_study_id, case_study_assessment_id):
+    updater_json = validate_and_return_updater_request()
+    json_payload = get_json_from_request()
+    user = users.first(email_address=updater_json.get('updated_by'))
+    if not user:
+        abort(404)
+
+    assessor_user_id = json_payload.get('assessor_user_id', None)
+    assessment = json_payload.get('assessment')
+    if not assessment:
+        abort(404)
+
+    assessment = case_study_assessments_service.delete_assessment(case_study_assessment_id, assessment)
+    return jsonify(
+        assessment=assessment
+    )
+
+
 @main.route('/admin/casestudy/<int:case_study_id>/assessment/<int:case_study_assessment_id>', methods=['PUT'])
 def update_case_study_assessment_admin(case_study_id, case_study_assessment_id):
     updater_json = validate_and_return_updater_request()
@@ -220,7 +239,8 @@ def update_case_study_status(case_study_id):
 @main.route('/admin/casestudy/assessment', methods=['GET'])
 def get_case_study_assessments_admin():
     search = request.args.get('search', None)
-    case_studies = case_studies_service.get_case_studies(search=search)
+    case_study_id = request.args.get('case_study_id', None)
+    case_studies = case_studies_service.get_case_studies(search=search, case_study_id=case_study_id, )
     return jsonify(
         case_studies=case_studies
     )
