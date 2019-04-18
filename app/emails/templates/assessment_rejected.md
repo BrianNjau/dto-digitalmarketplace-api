@@ -12,6 +12,8 @@ If you wish to provide services under {{ domain_name }} through the Marketplace 
 
 Please read our [seller guide](https://marketplace1.zendesk.com/hc/en-gb) and consider the [assessment criteria](https://marketplace1.zendesk.com/hc/en-gb/articles/333757011655-Assessment-criteria) for the category before updating your case study.
 
+If you have any questions or need guidance, [contact the Marketplace](https://marketplace.service.gov.au/contact-us).
+
 Thank you
 
 The Digital Marketplace team
