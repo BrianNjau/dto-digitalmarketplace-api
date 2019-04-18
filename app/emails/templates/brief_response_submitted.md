@@ -7,9 +7,8 @@ We received your response for:
 
 If you have questions about the opportunity:
 
-  1. [Log in](https://marketplace.service.gov.au/login) to your seller account.
-  1. Open the opportunity and scroll down to 'Questions and answers'.
-  1. Click 'Ask a question'.
+  1. Go to the [Ask a question page]({{ ask_question_url }}).
+  1. Submit your question.
 
 For questions on your account, please [contact the Marketplace](https://marketplace.service.gov.au/contact-us).
 

@@ -18,6 +18,9 @@ def send_brief_response_received_email(supplier, brief, brief_response):
     else:
         brief_url = current_app.config['FRONTEND_ADDRESS'] + '/' + brief.framework.slug + '/opportunities/' \
             + str(brief.id)
+    ask_question_url = '{}/login?next=%2Fsellers%2Fopportunities%2F{}%2Fask-a-question'.format(
+        current_app.config['FRONTEND_ADDRESS'], brief.id
+    )
 
     subject = "You've applied for {} successfully!"
     brief_title = brief.data['title']
@@ -29,6 +32,7 @@ def send_brief_response_received_email(supplier, brief, brief_response):
     email_body = render_email_template(
         'brief_response_submitted.md',
         brief_url=brief_url,
+        ask_question_url=ask_question_url,
         brief_title=brief_title,
         supplier_name=supplier.name,
         organisation=brief.data['organisation']
