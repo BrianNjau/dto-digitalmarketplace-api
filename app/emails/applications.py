@@ -6,7 +6,7 @@ from flask import current_app
 from app.models import Assessment, Application, User, Supplier, Domain
 
 from dmutils.formats import DateFormatter
-from .util import render_email_template, send_or_handle_error
+from .util import render_email_template, render_email_from_string, send_or_handle_error
 
 
 def send_submitted_existing_seller_notification(application_id):
@@ -196,7 +196,6 @@ def send_assessment_requested_notification(assessment, requested_by):
 
 
 def send_assessment_rejected_notification(supplier_id, assessment_id, domain_name, message):
-    TEMPLATE_FILENAME = 'assessment_rejected.md'
     supplier = Supplier.query.get(supplier_id)
 
     users = User.query.filter(User.supplier_code == supplier.code, User.active).all()
@@ -207,10 +206,8 @@ def send_assessment_rejected_notification(supplier_id, assessment_id, domain_nam
 
     subject = "Outcome of assessment for %s" % (domain_name)
 
-    # prepare copy
-    email_body = render_email_template(
-        TEMPLATE_FILENAME,
-        reject_message=message,
+    email_body = render_email_from_string(
+        message,
         domain_name=domain_name,
         supplier_name=supplier.name
     )
