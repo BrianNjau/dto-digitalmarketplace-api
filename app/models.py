@@ -7,6 +7,7 @@ import re
 import io
 import yaml
 import six
+import os
 
 from flask import current_app
 from flask_sqlalchemy import BaseQuery
@@ -1764,22 +1765,24 @@ class Brief(db.Model):
             closed_at_parsed = combine_date_and_time(
                 pendulum.parse(closed_at),
                 t, DEADLINES_TZ_NAME).in_tz('UTC')
-            if closed_at_parsed <= pendulum.now('UTC').add(days=3):
+            now_plus_three_days = combine_date_and_time(
+                pendulum.now().add(days=3),
+                t, DEADLINES_TZ_NAME).in_tz('UTC')
+            if closed_at_parsed <= now_plus_three_days:
                 questions_closed_at = workday(closed_at_parsed, -1)
                 if (self.published_day > questions_closed_at):
                     questions_closed_at = self.published_day
-            elif closed_at_parsed < pendulum.now('UTC').add(days=8):
-                questions_closed_at = workday(self.published_day, 2)
             else:
-                questions_closed_at = workday(self.published_day, 5)
+                questions_closed_at = workday(closed_at_parsed, -2)
 
             if questions_closed_at > closed_at_parsed:
                 questions_closed_at = closed_at_parsed
 
+            self.questions_closed_at = None
+            self.closed_at = closed_at_parsed
             self.questions_closed_at = combine_date_and_time(
                 questions_closed_at,
                 t, DEADLINES_TZ_NAME).in_tz('UTC')
-            self.closed_at = closed_at_parsed
         else:
             self.closed_at = combine_date_and_time(
                 self.published_day + parse_interval(self.requirements_length),
@@ -2223,6 +2226,13 @@ class BriefResponse(db.Model):
                 must_upload = True
             return must_upload
 
+        def strip_quotes_from_criteria_keys(criteria):
+            new = {}
+            for k, v in criteria.iteritems():
+                stripped = k.strip("'")
+                new[stripped] = v
+            return new
+
         try:
             clean_non_strings()
         except TypeError:
@@ -2258,11 +2268,12 @@ class BriefResponse(db.Model):
         if self.brief.lot.slug == 'atm':
             evaluationCriteria = self.brief.data['evaluationCriteria']
             if evaluationCriteria:
-                missing = [x for x in evaluationCriteria if x['criteria'] not in self.data['criteria'].keys()]
+                clean_criteria = strip_quotes_from_criteria_keys(self.data['criteria'])
+                missing = [x for x in evaluationCriteria if x['criteria'] not in clean_criteria.keys()]
                 if missing:
                     errs['criteria'] = 'answer_required'
                 else:
-                    empty = [x for x in evaluationCriteria if not self.data['criteria'][x['criteria']]]
+                    empty = [x for x in evaluationCriteria if not clean_criteria[x['criteria']]]
                     if empty:
                         errs['criteria'] = 'answer_required'
 
@@ -2278,9 +2289,8 @@ class BriefResponse(db.Model):
         if self.brief.lot.slug not in ['digital-outcome', 'atm'] or atm_must_upload_doc():
             attachedDocumentURL = self.data.get('attachedDocumentURL', [])
             if attachedDocumentURL:
-                p = re.compile('.+\.(pdf|odt|doc|docx)$', re.IGNORECASE)
                 for ad in attachedDocumentURL:
-                    if not p.match(ad):
+                    if not os.path.splitext(ad)[1][1:].lower() in current_app.config.get('ALLOWED_EXTENSIONS'):
                         errs['attachedDocumentURL'] = 'file_incorrect_format'
             else:
                 errs['attachedDocumentURL'] = 'answer_required'

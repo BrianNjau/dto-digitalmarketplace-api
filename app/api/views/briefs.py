@@ -131,6 +131,10 @@ def _can_do_brief_response(brief_id):
 
     lot = lots_service.first(slug='digital-professionals')
     if brief.lot_id == lot.id:
+        # Check the supplier can respond to the category
+        brief_category = brief.data.get('areaOfExpertise', None)
+        if brief_category and brief_category not in supplier.assessed_domains:
+            abort("Supplier needs to be assessed in '{}'".format(brief_category))
         # Check if there are more than 3 brief response already from this supplier when professional aka specialists
         brief_response_count = brief_responses_service.find(supplier_code=supplier.code,
                                                             brief_id=brief.id,
@@ -397,7 +401,7 @@ def get_brief(brief_id):
             brief.data['contactNumber'] = ''
 
     domains = []
-    for domain in domain_service.all():
+    for domain in domain_service.get_active_domains():
         domains.append({
             'id': str(domain.id),
             'name': domain.name
@@ -931,7 +935,7 @@ def download_brief_responses(brief_id):
             not_found("Brief documents not found for brief id '{}'".format(brief_id))
 
         response = Response(file, mimetype='application/zip')
-        response.headers['Content-Disposition'] = 'attachment; filename="brief-{}-responses.zip"'.format(brief_id)
+        response.headers['Content-Disposition'] = 'attachment; filename="opportunity-{}-responses.zip"'.format(brief_id)
     elif brief.lot.slug == 'digital-outcome':
         responses = BriefResponse.query.filter(
             BriefResponse.brief_id == brief_id,
