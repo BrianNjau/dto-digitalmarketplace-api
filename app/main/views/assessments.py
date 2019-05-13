@@ -171,7 +171,7 @@ def get_supplier_assessments(supplier_code):
         .all()
     )
 
-    assessments = {'assessed': [], 'unassessed': [], 'briefs': []}
+    assessments = {'assessed': [], 'unassessed': [], 'rejected': [], 'briefs': []}
 
     for row in existing_assessment:
         for assessment in row.assessments:
@@ -182,5 +182,7 @@ def get_supplier_assessments(supplier_code):
                     assessments['assessed'].append(row.domain.name)
                 if row.status == 'unassessed':
                     assessments['unassessed'].append(row.domain.name)
+                if row.status == 'rejected':
+                    assessments['rejected'].append(row.domain.name)
 
     return jsonify(assessments), 200
