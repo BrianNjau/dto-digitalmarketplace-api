@@ -1,16 +1,11 @@
-Hi {{supplier_name}} team,
+Hi,
 
 We received your response for:
 
 **Opportunity title:** [{{ brief_title }}]({{ brief_url }})  
 **Posted by:** {{organisation}}
 
-If you have questions about the opportunity:
-
-  1. Go to the [Ask a question page]({{ ask_question_url }}).
-  1. Submit your question.
-
-For questions on your account, please [contact the Marketplace](https://marketplace.service.gov.au/contact-us).
+If you have any questions or need guidance, please [contact the Marketplace](https://marketplace.service.gov.au/contact-us).
 
 Regards,  
 The Digital Marketplace team  

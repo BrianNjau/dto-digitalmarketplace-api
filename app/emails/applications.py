@@ -54,8 +54,6 @@ def send_submitted_new_seller_notification(application_id):
     # prepare copy
     email_body = render_email_template(
         TEMPLATE_FILENAME,
-        business_name=application.data['name'],
-        contact_name=application.data['contact_name'],
         url_sellers_guide=url_sellers_guide
     )
 
@@ -79,7 +77,7 @@ def send_approval_notification(application_id):
 
     if len(application.supplier.legacy_domains) > 0 or application.type == 'edit':
         TEMPLATE_FILENAME = 'application_approved_existing_seller.md'
-        subject = "Your updated profile is live"
+        subject = "Updates to your seller profile are now live"
     else:
         TEMPLATE_FILENAME = 'application_approved_new_seller.md'
         subject = "You are now registered with the Marketplace"
