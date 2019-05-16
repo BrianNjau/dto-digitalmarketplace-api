@@ -2844,6 +2844,28 @@ class TeamMember(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
 
+class TeamMemberPermission(db.Model):
+    __tablename__ = 'team_member_permission'
+
+    id = db.Column(db.Integer, primary_key=True)
+    team_member_id = db.Column(db.Integer, db.ForeignKey('team_member.id'), nullable=False)
+    permission = db.Column(
+        db.Enum(
+            *[
+                'create_drafts',
+                'publish_opportunities',
+                'answer_seller_questions',
+                'download_responses',
+                'create_work_orders',
+                'download_reporting_data'
+            ],
+            name='permission_type_enum'
+        ),
+        index=True,
+        nullable=False
+    )
+
+
 # Index for .last_for_object queries. Without a composite index the
 # query executes an index backward scan on created_at with filter,
 # which takes a long time for old events
