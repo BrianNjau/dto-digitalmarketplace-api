@@ -2835,6 +2835,15 @@ class Team(db.Model):
     email_address = db.Column(db.String)
 
 
+class TeamMember(db.Model):
+    __tablename__ = 'team_member'
+
+    id = db.Column(db.Integer, primary_key=True)
+    is_team_lead = db.Column(db.Boolean, default=False, nullable=False)
+    team_id = db.Column(db.Integer, db.ForeignKey('team.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+
 # Index for .last_for_object queries. Without a composite index the
 # query executes an index backward scan on created_at with filter,
 # which takes a long time for old events
