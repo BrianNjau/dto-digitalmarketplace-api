@@ -2833,6 +2833,17 @@ class Team(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String, nullable=False)
     email_address = db.Column(db.String)
+    status = db.Column(
+        db.Enum(
+            *[
+                'drafted',
+                'completed',
+                'deleted'
+            ],
+            name='team_status_enum'
+        ),
+        nullable=False
+    )
 
 
 class TeamMember(db.Model):
