@@ -93,7 +93,8 @@ from app.api.views import (briefs,  # noqa
                            tasks,
                            dashboards,
                            opportunities,
-                           key_values)
+                           key_values,
+                           teams)
 
 from app.api.views.reports import (  # noqa
     brief,
