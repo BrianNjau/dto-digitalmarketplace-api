@@ -1,4 +1,4 @@
-from sqlalchemy import func, desc
+from sqlalchemy import func, desc, select
 from app.api.helpers import Service
 from app import db
 from app.models import BriefResponse, Supplier
@@ -69,3 +69,9 @@ class BriefResponsesService(Service):
         return {
             "brief_response_count": brief_response_count
         }
+
+    def lock_brief_response(self, brief_id, supplier_code):
+        db.session.execute(select([func.pg_advisory_lock(brief_id, supplier_code)]))
+
+    def unlock_brief_response(self, brief_id, supplier_code):
+        db.session.execute(select([func.pg_advisory_unlock(brief_id, supplier_code)]))

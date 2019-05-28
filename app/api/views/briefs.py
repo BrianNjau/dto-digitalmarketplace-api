@@ -1009,8 +1009,11 @@ def download_brief_response_file(brief_id, supplier_code, slug):
 @api.route('/brief/<int:brief_id>/respond', methods=["POST"])
 @login_required
 def post_brief_response(brief_id):
-
     brief_response_json = get_json_from_request()
+
+    if not hasattr(current_user, 'role') or current_user.role == 'supplier':
+        brief_responses_service.lock_brief_response(brief_id, current_user.supplier_code)
+
     supplier, brief = _can_do_brief_response(brief_id)
     try:
         brief_response = BriefResponse(
@@ -1045,6 +1048,9 @@ def post_brief_response(brief_id):
         brief_response_json['brief_id'] = brief_id
         rollbar.report_exc_info(extra_data=brief_response_json)
         return jsonify(message=e.message), 400
+    finally:
+        if not hasattr(current_user, 'role') or current_user.role == 'supplier':
+            brief_responses_service.unlock_brief_response(brief_id, current_user.supplier_code)
 
     try:
         send_brief_response_received_email(supplier, brief, brief_response)
