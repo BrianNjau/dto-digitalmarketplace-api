@@ -2836,7 +2836,7 @@ class Team(db.Model):
     status = db.Column(
         db.Enum(
             *[
-                'drafted',
+                'created',
                 'completed',
                 'deleted'
             ],
