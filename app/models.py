@@ -1181,6 +1181,7 @@ class User(db.Model):
 
     application = db.relationship('Application', lazy='joined', innerjoin=False)
     frameworks = relationship("UserFramework")
+    teams = relationship('Team', back_populates='team_members', secondary='team_member')
 
     @validates('email_address')
     def validate_email_address(self, key, value):
@@ -2844,6 +2845,8 @@ class Team(db.Model):
         ),
         nullable=False
     )
+
+    team_members = relationship('User', back_populates='teams', secondary='team_member')
 
 
 class TeamMember(db.Model):
