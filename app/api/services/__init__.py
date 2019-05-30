@@ -13,6 +13,8 @@ from .key_value import KeyValueService
 from .publish import Publish
 from .frameworks import FrameworksService
 from .user_claims import UserClaimService
+from .teams import TeamsService
+from .team_members import TeamMembersService
 
 application_service = ApplicationService()
 audit_service = AuditService()
@@ -29,4 +31,6 @@ users = UsersService()
 key_values_service = KeyValueService()
 publish = Publish()
 frameworks_service = FrameworksService()
+teams = TeamsService()
+team_members = TeamMembersService()
 user_claims_service = UserClaimService()
