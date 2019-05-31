@@ -3,7 +3,7 @@ from flask import jsonify
 from flask_login import current_user, login_required
 
 from app.api import api
-from app.api.helpers import role_required
+from app.api.helpers import not_found, role_required
 from app.api.services import (AuditTypes, audit_service, team_members, teams,
                               users)
 
@@ -30,6 +30,17 @@ def create_team():
         )
     except Exception as e:
         rollbar.report_exc_info()
+
+    return jsonify(team.serialize())
+
+
+@api.route('/team/<int:team_id>', methods=["GET"])
+@login_required
+@role_required('buyer')
+def get_team(team_id):
+    team = teams.find(id=team_id).one_or_none()
+    if not team:
+        not_found("No team with id '%s' found" % (team_id))
 
     return jsonify(team.serialize())
 
