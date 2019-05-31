@@ -57,7 +57,7 @@ def send_submitted_new_seller_notification(application_id):
         url_sellers_guide=url_sellers_guide
     )
 
-    subject = "Thanks for your Digital Marketplace application"
+    subject = "You're one step away from joining the Digital Marketplace"
 
     send_or_handle_error(
         to_address,
