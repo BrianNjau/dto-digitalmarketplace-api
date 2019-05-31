@@ -1765,22 +1765,24 @@ class Brief(db.Model):
             closed_at_parsed = combine_date_and_time(
                 pendulum.parse(closed_at),
                 t, DEADLINES_TZ_NAME).in_tz('UTC')
-            if closed_at_parsed <= pendulum.now('UTC').add(days=3):
+            now_plus_three_days = combine_date_and_time(
+                pendulum.now().add(days=3),
+                t, DEADLINES_TZ_NAME).in_tz('UTC')
+            if closed_at_parsed <= now_plus_three_days:
                 questions_closed_at = workday(closed_at_parsed, -1)
                 if (self.published_day > questions_closed_at):
                     questions_closed_at = self.published_day
-            elif closed_at_parsed < pendulum.now('UTC').add(days=8):
-                questions_closed_at = workday(self.published_day, 2)
             else:
-                questions_closed_at = workday(self.published_day, 5)
+                questions_closed_at = workday(closed_at_parsed, -2)
 
             if questions_closed_at > closed_at_parsed:
                 questions_closed_at = closed_at_parsed
 
+            self.questions_closed_at = None
+            self.closed_at = closed_at_parsed
             self.questions_closed_at = combine_date_and_time(
                 questions_closed_at,
                 t, DEADLINES_TZ_NAME).in_tz('UTC')
-            self.closed_at = closed_at_parsed
         else:
             self.closed_at = combine_date_and_time(
                 self.published_day + parse_interval(self.requirements_length),
@@ -2196,23 +2198,24 @@ class BriefResponse(db.Model):
                             result.append('')
                     return result
 
-            try:
-                self.data['essentialRequirements'] = \
-                    clean(self.data['essentialRequirements'])
-            except KeyError:
-                pass
+            if self.brief.lot.slug not in ['specialist']:
+                try:
+                    self.data['essentialRequirements'] = \
+                        clean(self.data['essentialRequirements'])
+                except KeyError:
+                    pass
 
-            try:
-                self.data['niceToHaveRequirements'] = \
-                    clean(self.data['niceToHaveRequirements'])
-            except KeyError:
-                pass
+                try:
+                    self.data['niceToHaveRequirements'] = \
+                        clean(self.data['niceToHaveRequirements'])
+                except KeyError:
+                    pass
 
-            try:
-                self.data['attachedDocumentURL'] = \
-                    filter(None, clean(self.data['attachedDocumentURL']))
-            except KeyError:
-                pass
+                try:
+                    self.data['attachedDocumentURL'] = \
+                        filter(None, clean(self.data['attachedDocumentURL']))
+                except KeyError:
+                    pass
 
         def atm_must_upload_doc():
             must_upload = False
@@ -2276,7 +2279,7 @@ class BriefResponse(db.Model):
                         errs['criteria'] = 'answer_required'
 
         # only perform schema validation on non RFX or ATM responses
-        if self.brief.lot.slug != 'rfx' and self.brief.lot.slug != 'atm':
+        if (self.brief.lot.slug not in ['rfx', 'atm', 'specialist']):
             errs = get_validation_errors(
                 'brief-responses-{}-{}'.format(self.brief.framework.slug, self.brief.lot.slug),
                 self.data,
@@ -2294,14 +2297,39 @@ class BriefResponse(db.Model):
                 errs['attachedDocumentURL'] = 'answer_required'
 
         if (
-            self.brief.lot.slug != 'training' and
-            self.brief.lot.slug != 'rfx' and
-            self.brief.lot.slug != 'atm' and
+            self.brief.lot.slug not in ['training', 'rfx', 'atm'] and
             'essentialRequirements' not in errs and
             len(filter(None, self.data.get('essentialRequirements', []))) !=
             len(self.brief.data['essentialRequirements'])
         ):
             errs['essentialRequirements'] = 'answer_required'
+
+        if self.brief.lot.slug in ['specialist']:
+            if not self.data.get('specialistGivenNames'):
+                errs['specialistGivenNames'] = 'answer_required'
+            if not self.data.get('specialistSurname'):
+                errs['specialistSurname'] = 'answer_required'
+
+            if self.brief.data.get('preferredFormatForRates') == 'dailyRate':
+                if not self.data.get('dayRateExcludingGST'):
+                    errs['dayRateExcludingGST'] = 'answer_required'
+                if not self.data.get('dayRate'):
+                    errs['dayRate'] = 'answer_required'
+            elif self.brief.data.get('preferredFormatForRates') == 'hourlyRate':
+                if not self.data.get('hourRateExcludingGST'):
+                    errs['hourRateExcludingGST'] = 'answer_required'
+                if not self.data.get('hourRate'):
+                    errs['hourRate'] = 'answer_required'
+
+            if not self.data.get('visaStatus'):
+                errs['visaStatus'] = 'answer_required'
+
+            if self.brief.data.get('securityClearance') == 'mustHave':
+                if not self.data.get('securityClearance'):
+                    errs['securityClearance'] = 'answer_required'
+
+            if not self.data.get('previouslyWorked'):
+                errs['previouslyWorked'] = 'answer_required'
 
         if max_day_rate and 'dayRate' not in errs:
             if float(self.data['dayRate']) > float(max_day_rate):

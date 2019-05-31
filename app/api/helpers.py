@@ -117,6 +117,11 @@ def user_info(user):
         supplier_code = None
 
     try:
+        notification_count = current_user.notification_count
+    except AttributeError:
+        notification_count = None
+
+    try:
         framework = current_user.frameworks[0].framework.slug if current_user.frameworks else 'digital-marketplace'
     except AttributeError:
         framework = None
@@ -132,7 +137,8 @@ def user_info(user):
         "supplierCode": supplier_code,
         "emailAddress": email_address,
         "csrfToken": get_csrf_token(),
-        "framework": framework
+        "framework": framework,
+        "notificationCount": notification_count
     }
 
 
@@ -214,6 +220,30 @@ def parse_date(dt):
 
 def get_email_domain(email_address):
     return email_address.split('@')[-1]
+
+
+def prepare_specialist_responses(brief, responses):
+    candidates = []
+
+    for response in responses:
+        essential_responses = zip(
+            brief.data.get('essentialRequirements', []),
+            response.data.get('essentialRequirements', [])
+        )
+
+        nice_to_have_responses = zip(
+            brief.data.get('niceToHaveRequirements', []),
+            response.data.get('niceToHaveRequirements', [])
+        )
+
+        candidates.append({
+            'essential_responses': essential_responses,
+            'name': response.data.get('specialistName', 'Unknown'),
+            'nice_to_have_responses': nice_to_have_responses,
+            'seller': response.supplier.name
+        })
+
+    return candidates
 
 
 class ServiceException(Exception):
