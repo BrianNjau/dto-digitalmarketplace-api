@@ -8,7 +8,7 @@ We will assess and review your case study against the [assessment criteria]({{as
 
   1. We will notify you of the outcome of the assessment by email once completed.
   1. You can then log in to your account and open the opportunity page.
-  1. Select 'Apply for opportunity' button to submit your response.
+  1. Select 'Apply for opportunity' to submit your response.
 
 **If you are not successful:**
 
