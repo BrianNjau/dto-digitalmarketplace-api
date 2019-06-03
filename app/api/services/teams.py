@@ -16,3 +16,8 @@ class TeamsService(Service):
         db.session.commit()
 
         return team
+
+    def save_team(self, data):
+        team = self.find(id=data['id']).one_or_none()
+        self.update(team, name=data['name'], email_address=data['emailAddress'])
+        return team

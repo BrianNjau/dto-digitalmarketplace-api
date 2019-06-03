@@ -6,6 +6,7 @@ from app.api import api
 from app.api.helpers import not_found, role_required
 from app.api.services import (AuditTypes, audit_service, team_members, teams,
                               users)
+from app.models import Team
 
 from ...utils import get_json_from_request
 
@@ -45,9 +46,11 @@ def get_team(team_id):
     return jsonify(team.serialize())
 
 
-@api.route('/team/update', methods=['POST'])
+@api.route('/team/<int:team_id>/update', methods=['POST'])
 @login_required
 @role_required('buyer')
-def update_team():
+def update_team(team_id):
     data = get_json_from_request()
-    return jsonify(data)
+    team = teams.save_team(data)
+
+    return jsonify(team.serialize())
