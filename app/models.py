@@ -2851,8 +2851,8 @@ class Team(db.Model):
     def serialize(self):
         return {
             'id': self.id,
-            'name': self.name,
-            'emailAddress': self.email_address,
+            'name': self.name if self.name is not None else '',
+            'emailAddress': self.email_address if self.email_address is not None else '',
             'status': self.status
         }
 
