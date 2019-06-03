@@ -3,7 +3,7 @@ from flask import jsonify
 from flask_login import current_user, login_required
 
 from app.api import api
-from app.api.helpers import not_found, role_required
+from app.api.helpers import get_email_domain, not_found, role_required
 from app.api.services import (AuditTypes, audit_service, team_members, teams,
                               users)
 from app.models import Team
@@ -43,7 +43,11 @@ def get_team(team_id):
     if not team:
         not_found("No team with id '%s' found" % (team_id))
 
-    return jsonify(team.serialize())
+    domain = get_email_domain(current_user.email_address)
+    serialized_team = team.serialize()
+    serialized_team.update(domain=domain)
+
+    return jsonify(serialized_team)
 
 
 @api.route('/team/<int:team_id>/update', methods=['POST'])
