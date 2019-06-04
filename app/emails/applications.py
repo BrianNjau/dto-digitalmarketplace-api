@@ -156,7 +156,7 @@ def send_assessment_approval_notification(supplier_id, domain_id):
         url_seller_page=url_seller_page
     )
 
-    subject = "Assessment for {} approved".format(domain.name)
+    subject = "Assessment for {} is approved".format(domain.name)
 
     send_or_handle_error(
         email_addresses,
