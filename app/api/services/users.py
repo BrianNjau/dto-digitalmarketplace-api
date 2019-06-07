@@ -24,7 +24,7 @@ class UsersService(Service):
 
         return name
 
-    def get_team_members(self, current_user_id, email_domain):
+    def get_team_members(self, current_user_id, email_domain, keywords=None):
         user = (
             db
             .session
@@ -64,6 +64,10 @@ class UsersService(Service):
                 User.email_address.like('%@{}'.format(email_domain))
             )
         )
+
+        if keywords:
+            results = results.filter(User.name.ilike('%{}%'.format(keywords.encode('utf-8'))))
+
         results = results.filter(
             User.supplier_code == user.supplier_code,
             User.role == user.role
