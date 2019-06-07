@@ -1,9 +1,9 @@
 import rollbar
-from flask import jsonify
+from flask import jsonify, request
 from flask_login import current_user, login_required
 
 from app.api import api
-from app.api.helpers import get_email_domain, not_found, role_required
+from app.api.helpers import abort, get_email_domain, not_found, role_required
 from app.api.services import (AuditTypes, audit_service, team_members, teams,
                               users)
 from app.models import Team
@@ -58,3 +58,20 @@ def update_team(team_id):
     team = teams.save_team(data)
 
     return jsonify(team.serialize())
+
+
+@api.route('/team/members/search', methods=['GET'])
+@login_required
+@role_required('buyer')
+def find_team_members():
+    keywords = request.args.get('keywords') or ''
+    if keywords:
+        results = users.get_team_members(
+            current_user.id,
+            get_email_domain(current_user.email_address),
+            keywords=keywords
+        )
+
+        return jsonify(users=results), 200
+    else:
+        abort('You must provide a keywords param.')
