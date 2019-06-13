@@ -9,9 +9,12 @@ class TeamsService(Service):
         super(TeamsService, self).__init__(*args, **kwargs)
 
     def create_team(self, user):
-        team = Team(status='created')
-        user.teams.append(team)
+        team = Team(
+            name='My team',
+            status='created'
+        )
 
+        user.teams.append(team)
         db.session.add(team)
         db.session.commit()
 
