@@ -23,14 +23,11 @@ def create_team():
         rollbar.report_exc_info()
         return jsonify(message=e.message), 400
 
-    try:
-        audit_service.log_audit_event(
-            audit_type=AuditTypes.create_team,
-            db_object=team,
-            user=current_user.email_address
-        )
-    except Exception as e:
-        rollbar.report_exc_info()
+    audit_service.log_audit_event(
+        audit_type=AuditTypes.create_team,
+        db_object=team,
+        user=current_user.email_address
+    )
 
     return jsonify(team.serialize())
 
