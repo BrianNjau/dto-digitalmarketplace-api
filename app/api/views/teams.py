@@ -52,7 +52,14 @@ def get_team(team_id):
 @role_required('buyer')
 def update_team(team_id):
     data = get_json_from_request()
-    team = teams.save_team(data)
+    stage = data.get('stage', None)
+    team_data = data.get('team', None)
+
+    if not stage:
+        abort('Missing stage')
+
+    if stage == 'about':
+        team = teams.save_team(team_data)
 
     return jsonify(team.serialize())
 
