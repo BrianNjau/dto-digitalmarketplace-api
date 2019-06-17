@@ -1,8 +1,9 @@
-from sqlalchemy import func, desc, literal, and_
-from sqlalchemy.sql.expression import select, case
-from app.api.helpers import Service
+from sqlalchemy import and_, desc, func, literal
+from sqlalchemy.sql.expression import case, select
+
 from app import db
-from app.models import User, Supplier
+from app.api.helpers import Service, abort
+from app.models import Supplier, User
 
 
 class UsersService(Service):
@@ -96,3 +97,16 @@ class UsersService(Service):
 
     def get_by_email(self, email):
         return self.find(email_address=email).one_or_none()
+
+    def add_to_team(self, user_id, team):
+        user = self.get(user_id)
+
+        if len(user.teams) > 0:
+            current_team = user.teams.pop()
+            abort('Users can only be in one team. {} is already a member of team: {}'
+                  .format(user.name, current_team.name))
+
+        user.teams.append(team)
+        db.session.commit()
+
+        return user

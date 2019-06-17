@@ -49,7 +49,7 @@ def update_team(team_id):
     data = get_json_from_request()
     team = team_business.update_team(data)
 
-    return jsonify(team.serialize())
+    return jsonify({})
 
 
 @api.route('/team/members/search', methods=['GET'])
