@@ -3,6 +3,7 @@ from flask import jsonify, request
 from flask_login import current_user, login_required
 
 from app.api import api
+from app.api.business import team_business
 from app.api.helpers import abort, get_email_domain, not_found, role_required
 from app.api.services import (AuditTypes, audit_service, team_members, teams,
                               users)
@@ -52,14 +53,7 @@ def get_team(team_id):
 @role_required('buyer')
 def update_team(team_id):
     data = get_json_from_request()
-    stage = data.get('stage', None)
-    team_data = data.get('team', None)
-
-    if not stage:
-        abort('Missing stage')
-
-    if stage == 'about':
-        team = teams.save_team(team_data)
+    team = team_business.update_team(data)
 
     return jsonify(team.serialize())
 
