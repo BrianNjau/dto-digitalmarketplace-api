@@ -1,4 +1,19 @@
+from flask_login import current_user
+
+from app.api.helpers import abort, get_email_domain
 from app.api.services import teams
+
+
+def get_team(team_id):
+    team = teams.find(id=team_id).one_or_none()
+    if not team:
+        not_found('No team with id {} found'.format(team_id))
+
+    domain = get_email_domain(current_user.email_address)
+    serialized_team = team.serialize()
+    serialized_team.update(domain=domain)
+
+    return serialized_team
 
 
 def update_team(data):

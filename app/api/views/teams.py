@@ -37,15 +37,9 @@ def create_team():
 @login_required
 @role_required('buyer')
 def get_team(team_id):
-    team = teams.find(id=team_id).one_or_none()
-    if not team:
-        not_found("No team with id '%s' found" % (team_id))
+    team = team_business.get_team(team_id)
 
-    domain = get_email_domain(current_user.email_address)
-    serialized_team = team.serialize()
-    serialized_team.update(domain=domain)
-
-    return jsonify(serialized_team)
+    return jsonify(team)
 
 
 @api.route('/team/<int:team_id>/update', methods=['POST'])
