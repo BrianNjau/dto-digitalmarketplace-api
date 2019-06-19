@@ -2848,14 +2848,6 @@ class Team(db.Model):
 
     team_members = relationship('User', back_populates='teams', secondary='team_member')
 
-    def serialize(self):
-        return {
-            'id': self.id,
-            'name': self.name if self.name is not None else '',
-            'emailAddress': self.email_address if self.email_address is not None else '',
-            'status': self.status
-        }
-
 
 class TeamMember(db.Model):
     __tablename__ = 'team_member'

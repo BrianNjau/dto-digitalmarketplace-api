@@ -10,10 +10,10 @@ def get_team(team_id):
         not_found('No team with id {} found'.format(team_id))
 
     domain = get_email_domain(current_user.email_address)
-    serialized_team = team.serialize()
-    serialized_team.update(domain=domain)
+    team = teams.get_team(team_id)
+    team.update(domain=domain)
 
-    return serialized_team
+    return team
 
 
 def update_team(data):

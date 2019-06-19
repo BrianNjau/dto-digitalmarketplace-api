@@ -20,6 +20,7 @@ def create_team():
         user = users.get(current_user.id)
         team = teams.create_team(user)
         team_members.set_team_lead(team_id=team.id, user_id=user.id)
+        team_data = team_business.get_team(team.id)
     except Exception as e:
         rollbar.report_exc_info()
         return jsonify(message=e.message), 400
@@ -30,7 +31,7 @@ def create_team():
         user=current_user.email_address
     )
 
-    return jsonify(team.serialize())
+    return jsonify(team_data)
 
 
 @api.route('/team/<int:team_id>', methods=["GET"])
