@@ -50,7 +50,7 @@ def update_team(team_id):
     data = get_json_from_request()
     team = team_business.update_team(data)
 
-    return jsonify({})
+    return jsonify(team)
 
 
 @api.route('/team/members/search', methods=['GET'])

@@ -1,3 +1,4 @@
+from flask_login import current_user
 from sqlalchemy import and_, desc, func, literal
 from sqlalchemy.sql.expression import case, select
 
@@ -110,3 +111,16 @@ class UsersService(Service):
         db.session.commit()
 
         return user
+
+    def remove_from_team(self, user_id, team_id):
+        if user_id == current_user.id:
+            abort('You can\'t remove yourself from a team. Another team lead must do this.')
+
+        user = self.get(user_id)
+
+        for index, team in enumerate(user.teams):
+            if team.id == team_id:
+                user.teams.pop(index)
+                db.session.commit()
+
+                return user
