@@ -62,7 +62,7 @@ def update_team_leads(data):
 
     for user_id in team_leads_to_add:
         user = users.add_to_team(user_id, team)
-        team_members.set_team_lead(team_id=team.id, user_id=user.id)
+        team_members.promote_to_team_lead(team_id=team.id, user_id=user.id)
 
     for user_id in team_leads_to_demote:
         team_members.demote_team_lead(team_id=team.id, user_id=user_id)

@@ -19,7 +19,7 @@ def create_team():
     try:
         user = users.get(current_user.id)
         team = teams.create_team(user)
-        team_members.set_team_lead(team_id=team.id, user_id=user.id)
+        team_members.promote_to_team_lead(team_id=team.id, user_id=user.id)
         team_data = team_business.get_team(team.id)
     except Exception as e:
         rollbar.report_exc_info()
