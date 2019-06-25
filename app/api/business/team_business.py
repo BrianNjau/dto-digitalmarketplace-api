@@ -17,19 +17,10 @@ def get_team(team_id):
 
 
 def update_team(data):
-    stage = data.get('stage', None)
-    team_data = data.get('team', None)
+    update_team_information(data)
+    update_team_leads_and_members(data)
 
-    if not stage:
-        abort('Missing stage')
-
-    if stage == 'about':
-        update_team_information(team_data)
-
-    if stage == 'leads' or stage == 'members':
-        update_team_leads_and_members(team_data)
-
-    team = teams.get_team(team_data['id'])
+    team = teams.get_team(data['id'])
     return team
 
 
