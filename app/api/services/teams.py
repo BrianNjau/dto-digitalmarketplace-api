@@ -65,6 +65,8 @@ class TeamsService(Service):
         team = (db.session
                   .query(Team.id, Team.name, Team.email_address.label('emailAddress'), Team.status,
                          aggregated_team_leads.columns.teamLeads, aggregated_team_members.columns.teamMembers)
+                  .join(aggregated_team_leads, aggregated_team_leads.columns.team_id == Team.id, isouter=True)
+                  .join(aggregated_team_members, aggregated_team_members.columns.team_id == Team.id, isouter=True)
                   .filter(Team.id == team_id)
                   .one_or_none())
 
