@@ -15,6 +15,7 @@ from .frameworks import FrameworksService
 from .user_claims import UserClaimService
 from .teams import TeamsService
 from .team_members import TeamMembersService
+from .team_member_permissions import TeamMemberPermissionsService
 
 application_service = ApplicationService()
 audit_service = AuditService()
@@ -33,4 +34,5 @@ publish = Publish()
 frameworks_service = FrameworksService()
 teams = TeamsService()
 team_members = TeamMembersService()
+team_member_permissions = TeamMemberPermissionsService()
 user_claims_service = UserClaimService()
