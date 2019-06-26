@@ -40,7 +40,9 @@ class TeamsService(Service):
                                    .query(team_leads.columns.team_id,
                                           func.json_object_agg(
                                               team_leads.columns.user_id,
-                                              team_leads.columns.name
+                                              func.json_build_object(
+                                                  'name', team_leads.columns.name
+                                              )
                                           ).label('teamLeads'))
                                    .group_by(team_leads.columns.team_id)
                                    .subquery('aggregated_team_leads'))
@@ -57,7 +59,9 @@ class TeamsService(Service):
                                      .query(team_members.columns.team_id,
                                             func.json_object_agg(
                                                 team_members.columns.user_id,
-                                                team_members.columns.name
+                                                func.json_build_object(
+                                                    'name', team_members.columns.name
+                                                )
                                             ).label('teamMembers'))
                                      .group_by(team_members.columns.team_id)
                                      .subquery('aggregated_team_members'))
