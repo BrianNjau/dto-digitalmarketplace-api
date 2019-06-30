@@ -29,7 +29,7 @@ class TeamsService(Service):
 
     def get_team(self, team_id):
         team_leads = (db.session
-                        .query(TeamMember.team_id, TeamMember.user_id, User.name)
+                        .query(TeamMember.team_id, TeamMember.user_id, User.name, User.email_address)
                         .join(Team, Team.id == TeamMember.team_id)
                         .join(User, User.id == TeamMember.user_id)
                         .filter(Team.id == team_id,
@@ -41,6 +41,7 @@ class TeamsService(Service):
                                           func.json_object_agg(
                                               team_leads.columns.user_id,
                                               func.json_build_object(
+                                                  'emailAddress', team_leads.columns.email_address,
                                                   'name', team_leads.columns.name
                                               )
                                           ).label('teamLeads'))
@@ -48,7 +49,7 @@ class TeamsService(Service):
                                    .subquery('aggregated_team_leads'))
 
         team_members = (db.session
-                          .query(TeamMember.team_id, TeamMember.user_id, User.name)
+                          .query(TeamMember.team_id, TeamMember.user_id, User.name, User.email_address)
                           .join(Team, Team.id == TeamMember.team_id)
                           .join(User, User.id == TeamMember.user_id)
                           .filter(Team.id == team_id,
@@ -60,6 +61,7 @@ class TeamsService(Service):
                                             func.json_object_agg(
                                                 team_members.columns.user_id,
                                                 func.json_build_object(
+                                                    'emailAddress', team_members.columns.email_address,
                                                     'name', team_members.columns.name
                                                 )
                                             ).label('teamMembers'))
