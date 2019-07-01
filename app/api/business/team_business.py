@@ -43,8 +43,7 @@ def update_team_information(data):
         'name': data['name']
     }
 
-    team = teams.save_team(team_data)
-    return team
+    teams.save_team(team_data)
 
 
 def update_team_leads_and_members(data):
@@ -90,8 +89,6 @@ def update_team_leads_and_members(data):
         team_member = team_members.find(user_id=user_id).one_or_none()
         delete_team_member_permissions(team_member.id)
         user = users.remove_from_team(user_id, team.id)
-
-    return get_team(team.id)
 
 
 def update_permissions(data):
