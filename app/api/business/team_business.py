@@ -3,7 +3,7 @@ from flask_login import current_user
 from app.api.helpers import abort, get_email_domain
 from app.api.services import (team_member_permissions, team_members, teams,
                               users)
-from app.models import TeamMemberPermission
+from app.models import TeamMemberPermission, permission_types
 
 
 def get_team(team_id):
@@ -13,6 +13,14 @@ def get_team(team_id):
 
     domain = get_email_domain(current_user.email_address)
     team = teams.get_team(team_id)
+
+    for user_id, team_member in team['teamMembers'].iteritems():
+        missing_permissions = [permission for permission in permission_types
+                               if permission not in team_member['permissions']]
+
+        for permission in missing_permissions:
+            team_member['permissions'][permission] = False
+
     team.update(domain=domain)
 
     return team
