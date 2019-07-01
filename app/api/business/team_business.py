@@ -14,12 +14,13 @@ def get_team(team_id):
     domain = get_email_domain(current_user.email_address)
     team = teams.get_team(team_id)
 
-    for user_id, team_member in team['teamMembers'].iteritems():
-        missing_permissions = [permission for permission in permission_types
-                               if permission not in team_member['permissions']]
+    if team['teamMembers'] is not None:
+        for user_id, team_member in team['teamMembers'].iteritems():
+            missing_permissions = [permission for permission in permission_types
+                                   if permission not in team_member['permissions']]
 
-        for permission in missing_permissions:
-            team_member['permissions'][permission] = False
+            for permission in missing_permissions:
+                team_member['permissions'][permission] = False
 
     team.update(domain=domain)
 
@@ -82,8 +83,12 @@ def update_team_leads_and_members(data):
 
     for user_id in team_members_to_promote:
         team_members.promote_to_team_lead(team_id=team.id, user_id=user_id)
+        team_member = team_members.find(user_id=user_id).one_or_none()
+        delete_team_member_permissions(team_member.id)
 
     for user_id in team_members_to_remove:
+        team_member = team_members.find(user_id=user_id).one_or_none()
+        delete_team_member_permissions(team_member.id)
         user = users.remove_from_team(user_id, team.id)
 
     return get_team(team.id)
@@ -123,3 +128,15 @@ def update_permissions(data):
                     team_member_id=team_member.id,
                     permission=permission
                 ))
+
+
+def delete_team_member_permissions(team_member_id):
+    permissions_to_remove = team_member_permissions.find(team_member_id=team_member_id).all()
+    for permission in permissions_to_remove:
+        permission_to_remove = team_member_permissions.find(
+            team_member_id=team_member_id,
+            permission=permission.permission
+        ).one_or_none()
+
+        if permission_to_remove is not None:
+            team_member_permissions.delete(permission_to_remove)
