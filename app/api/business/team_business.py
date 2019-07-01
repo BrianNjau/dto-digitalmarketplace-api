@@ -95,10 +95,10 @@ def update_permissions(data):
 
     for user_id, incoming_team_member in incoming_team_members.iteritems():
         incoming_permissions = incoming_team_member.get('permissions', {})
-        permissions_to_add = [permission for permission, value in incoming_permissions.iteritems()
-                              if value is True]
-        permissions_to_remove = [permission for permission, value in incoming_permissions.iteritems()
-                                 if value is False]
+        permissions_to_add = [permission for permission, granted in incoming_permissions.iteritems()
+                              if granted is True]
+        permissions_to_remove = [permission for permission, granted in incoming_permissions.iteritems()
+                                 if granted is False]
 
         team_member = team_members.find(team_id=team_id, user_id=user_id).one_or_none()
         current_permissions = team_member_permissions.find(team_member_id=team_member.id).all()
