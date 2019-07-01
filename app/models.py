@@ -665,7 +665,7 @@ class Supplier(db.Model):
                                  default=localnow)
 
     domains = relationship("SupplierDomain", back_populates="supplier")
-    signed_agreements = db.relationship('SignedAgreement', single_parent=True)
+    signed_agreements = db.relationship('SignedAgreement', single_parent=True, order_by="SignedAgreement.agreement_id")
     frameworks = relationship("SupplierFramework")
     text_vector = column_property(func.setweight(func.to_tsvector(func.coalesce(name, '')), 'A').op('||')(
         func.setweight(func.to_tsvector(func.coalesce(summary, '')), 'B')).op('||')(
@@ -2199,23 +2199,24 @@ class BriefResponse(db.Model):
                             result.append('')
                     return result
 
-            try:
-                self.data['essentialRequirements'] = \
-                    clean(self.data['essentialRequirements'])
-            except KeyError:
-                pass
+            if self.brief.lot.slug not in ['specialist']:
+                try:
+                    self.data['essentialRequirements'] = \
+                        clean(self.data['essentialRequirements'])
+                except KeyError:
+                    pass
 
-            try:
-                self.data['niceToHaveRequirements'] = \
-                    clean(self.data['niceToHaveRequirements'])
-            except KeyError:
-                pass
+                try:
+                    self.data['niceToHaveRequirements'] = \
+                        clean(self.data['niceToHaveRequirements'])
+                except KeyError:
+                    pass
 
-            try:
-                self.data['attachedDocumentURL'] = \
-                    filter(None, clean(self.data['attachedDocumentURL']))
-            except KeyError:
-                pass
+                try:
+                    self.data['attachedDocumentURL'] = \
+                        filter(None, clean(self.data['attachedDocumentURL']))
+                except KeyError:
+                    pass
 
         def atm_must_upload_doc():
             must_upload = False
@@ -2279,7 +2280,7 @@ class BriefResponse(db.Model):
                         errs['criteria'] = 'answer_required'
 
         # only perform schema validation on non RFX or ATM responses
-        if self.brief.lot.slug != 'rfx' and self.brief.lot.slug != 'atm':
+        if (self.brief.lot.slug not in ['rfx', 'atm', 'specialist']):
             errs = get_validation_errors(
                 'brief-responses-{}-{}'.format(self.brief.framework.slug, self.brief.lot.slug),
                 self.data,
@@ -2297,14 +2298,39 @@ class BriefResponse(db.Model):
                 errs['attachedDocumentURL'] = 'answer_required'
 
         if (
-            self.brief.lot.slug != 'training' and
-            self.brief.lot.slug != 'rfx' and
-            self.brief.lot.slug != 'atm' and
+            self.brief.lot.slug not in ['training', 'rfx', 'atm'] and
             'essentialRequirements' not in errs and
             len(filter(None, self.data.get('essentialRequirements', []))) !=
             len(self.brief.data['essentialRequirements'])
         ):
             errs['essentialRequirements'] = 'answer_required'
+
+        if self.brief.lot.slug in ['specialist']:
+            if not self.data.get('specialistGivenNames'):
+                errs['specialistGivenNames'] = 'answer_required'
+            if not self.data.get('specialistSurname'):
+                errs['specialistSurname'] = 'answer_required'
+
+            if self.brief.data.get('preferredFormatForRates') == 'dailyRate':
+                if not self.data.get('dayRateExcludingGST'):
+                    errs['dayRateExcludingGST'] = 'answer_required'
+                if not self.data.get('dayRate'):
+                    errs['dayRate'] = 'answer_required'
+            elif self.brief.data.get('preferredFormatForRates') == 'hourlyRate':
+                if not self.data.get('hourRateExcludingGST'):
+                    errs['hourRateExcludingGST'] = 'answer_required'
+                if not self.data.get('hourRate'):
+                    errs['hourRate'] = 'answer_required'
+
+            if not self.data.get('visaStatus'):
+                errs['visaStatus'] = 'answer_required'
+
+            if self.brief.data.get('securityClearance') == 'mustHave':
+                if not self.data.get('securityClearance'):
+                    errs['securityClearance'] = 'answer_required'
+
+            if not self.data.get('previouslyWorked'):
+                errs['previouslyWorked'] = 'answer_required'
 
         if max_day_rate and 'dayRate' not in errs:
             if float(self.data['dayRate']) > float(max_day_rate):
@@ -2579,6 +2605,10 @@ class Application(db.Model):
                     if self.is_case_study_different(case_study, current_case_study.data):
                         case_study['status'] = 'unassessed'
 
+                # remove auth rep data from edit
+                self.data.pop('representative', None)
+                self.data.pop('phone', None)
+                self.data.pop('email', None)
             else:
                 supplier = Supplier()
             supplier.update_from_json(self.data)
@@ -2636,10 +2666,12 @@ class Application(db.Model):
         ).join(
             SignedAgreement, User
         ).filter(
-            SignedAgreement.application_id == self.id
+            SignedAgreement.supplier_code == self.supplier_code
+        ).order_by(
+            SignedAgreement.agreement_id
         ).all()
 
-        return [a._asdict() for a in agreements]
+        return [{'agreement': a._asdict()} for a in agreements]
 
 
 def check_for_uuid(data):

@@ -90,11 +90,13 @@ from app.api.views import (briefs,  # noqa
                            messages,
                            suppliers,
                            seller_dashboard,
+                           seller_edit,
                            tasks,
                            dashboards,
                            opportunities,
                            key_values,
-                           teams)
+                           teams,
+                           redirects)
 
 from app.api.views.reports import (  # noqa
     brief,

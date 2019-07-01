@@ -1,3 +1,6 @@
+from .agency import AgencyService
+from .agreement import AgreementService
+from .signed_agreement import SignedAgreementService
 from .application import ApplicationService
 from .audit import AuditService, AuditTypes
 from .assessments import AssessmentsService
@@ -6,7 +9,6 @@ from .briefs import BriefsService
 from .suppliers import SuppliersService
 from .supplier_domain import SupplierDomainService
 from .lots import LotsService
-from .brief_overview import BriefOverviewService
 from .brief_responses import BriefResponsesService
 from .users import UsersService
 from .key_value import KeyValueService
@@ -16,7 +18,11 @@ from .user_claims import UserClaimService
 from .teams import TeamsService
 from .team_members import TeamMembersService
 from .team_member_permissions import TeamMemberPermissionsService
+from .work_order import WorkOrderService
 
+agency_service = AgencyService()
+agreement_service = AgreementService()
+signed_agreement_service = SignedAgreementService()
 application_service = ApplicationService()
 audit_service = AuditService()
 audit_types = AuditTypes
@@ -26,7 +32,6 @@ briefs = BriefsService()
 suppliers = SuppliersService()
 supplier_domain_service = SupplierDomainService()
 lots_service = LotsService()
-brief_overview_service = BriefOverviewService()
 brief_responses_service = BriefResponsesService()
 users = UsersService()
 key_values_service = KeyValueService()
@@ -36,3 +41,4 @@ teams = TeamsService()
 team_members = TeamMembersService()
 team_member_permissions = TeamMemberPermissionsService()
 user_claims_service = UserClaimService()
+work_order_service = WorkOrderService()
