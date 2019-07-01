@@ -91,6 +91,8 @@ class TeamsService(Service):
                                                     'name', team_members.columns.name,
                                                     'permissions', aggregated_permissions.columns.permissions)
                                             ).label('teamMembers'))
+                                     .join(aggregated_permissions,
+                                           aggregated_permissions.columns.user_id == team_members.columns.user_id)
                                      .group_by(team_members.columns.team_id)
                                      .subquery('aggregated_team_members'))
 
