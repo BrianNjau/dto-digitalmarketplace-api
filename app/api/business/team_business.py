@@ -90,24 +90,14 @@ def update_team_leads_and_members(data):
 
 
 def update_permissions(data):
-    permissions = {
-        'answerSellerQuestions': 'answer_seller_questions',
-        'createDrafts': 'create_drafts',
-        'createWorkOrders': 'create_work_orders',
-        'downloadReportingData': 'download_reporting_data',
-        'downloadResponses': 'download_responses',
-        'publishOpportunities': 'publish_opportunities'
-    }
-
     incoming_team_members = data.get('teamMembers', {})
-    incoming_permissions = data.get('teamMembers', {})
     team_id = data.get('id')
 
     for user_id, incoming_team_member in incoming_team_members.iteritems():
         incoming_permissions = incoming_team_member.get('permissions', {})
-        permissions_to_add = [permissions[permission] for permission, value in incoming_permissions.iteritems()
+        permissions_to_add = [permission for permission, value in incoming_permissions.iteritems()
                               if value is True]
-        permissions_to_remove = [permissions[permission] for permission, value in incoming_permissions.iteritems()
+        permissions_to_remove = [permission for permission, value in incoming_permissions.iteritems()
                                  if value is False]
 
         team_member = team_members.find(team_id=team_id, user_id=user_id).one_or_none()
