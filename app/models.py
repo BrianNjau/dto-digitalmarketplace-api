@@ -2357,6 +2357,22 @@ class BriefResponse(db.Model):
         return data
 
 
+class BriefQuestion(db.Model):
+    __tablename__ = 'brief_question'
+
+    id = db.Column(db.Integer, primary_key=True)
+    brief_id = db.Column("brief_id", db.Integer, db.ForeignKey("brief.id"), nullable=False)
+    supplier_code = db.Column(db.BigInteger, db.ForeignKey('supplier.code'), nullable=False)
+
+    data = db.Column(JSON, nullable=False)
+
+    created_at = db.Column(DateTime, index=True, nullable=False,
+                             default=utcnow)
+
+    brief = db.relationship("Brief")
+    supplier = db.relationship('Supplier', lazy='joined')
+
+
 class BriefClarificationQuestion(db.Model):
     __tablename__ = 'brief_clarification_question'
 
