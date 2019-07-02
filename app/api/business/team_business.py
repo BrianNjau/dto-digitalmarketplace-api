@@ -47,8 +47,8 @@ def update_team_information(data):
 
 
 def update_team_leads_and_members(data):
-    incoming_team_leads = data.get('teamLeads', [])
-    incoming_team_members = data.get('teamMembers', [])
+    incoming_team_leads = data.get('teamLeads', {})
+    incoming_team_members = data.get('teamMembers', {})
 
     if incoming_team_members is None:
         incoming_team_members = {}
