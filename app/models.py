@@ -2890,6 +2890,16 @@ class TeamMember(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
 
+permission_types = [
+    'create_drafts',
+    'publish_opportunities',
+    'answer_seller_questions',
+    'download_responses',
+    'create_work_orders',
+    'download_reporting_data'
+]
+
+
 class TeamMemberPermission(db.Model):
     __tablename__ = 'team_member_permission'
 
@@ -2897,14 +2907,7 @@ class TeamMemberPermission(db.Model):
     team_member_id = db.Column(db.Integer, db.ForeignKey('team_member.id'), nullable=False)
     permission = db.Column(
         db.Enum(
-            *[
-                'create_drafts',
-                'publish_opportunities',
-                'answer_seller_questions',
-                'download_responses',
-                'create_work_orders',
-                'download_reporting_data'
-            ],
+            *permission_types,
             name='permission_type_enum'
         ),
         index=True,
