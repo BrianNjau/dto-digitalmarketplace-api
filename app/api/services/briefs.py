@@ -66,7 +66,6 @@ class BriefsService(Service):
             'closed': result.count({'status': 'closed'})
         }
 
-
     def get_buyer_dashboard_briefs(self, user_id, status):
         """Returns summary of a user's briefs with the total number of sellers that applied."""
         query = (
@@ -77,14 +76,12 @@ class BriefsService(Service):
                 Brief.data['title'].astext.label('name'),
                 Brief.data['internalReference'].astext.label('internalReference'),
                 Brief.data['sellers'].label('sellers'),
-                
                 Brief.closed_at,
                 Brief.questions_closed_at,
                 Brief.status,
                 User.name.label('owner'),
                 func.count(BriefResponse.id).label('responses'),
                 func.count(BriefClarificationQuestion.question).label('questionsAnswered'),
-                # Framework.slug.label('framework'),
                 Lot.slug.label('lot')
             )
             .join(BriefUser, Lot, User)
@@ -107,7 +104,6 @@ class BriefsService(Service):
         )
 
         return [r._asdict() for r in results]
-
 
     def get_user_briefs(self, current_user_id):
         """Returns summary of a user's briefs with the total number of sellers that applied."""

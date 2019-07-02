@@ -2366,8 +2366,7 @@ class BriefQuestion(db.Model):
 
     data = db.Column(JSON, nullable=False)
 
-    created_at = db.Column(DateTime, index=True, nullable=False,
-                             default=utcnow)
+    created_at = db.Column(DateTime, index=True, nullable=False, default=utcnow)
 
     brief = db.relationship("Brief")
     supplier = db.relationship('Supplier', lazy='joined')

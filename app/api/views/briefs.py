@@ -25,6 +25,7 @@ from app.api.services import (agency_service,
                               audit_service,
                               audit_types,
                               brief_responses_service,
+                              brief_question_service,
                               briefs,
                               domain_service,
                               frameworks_service,
@@ -47,7 +48,8 @@ from dmapiclient.audit import AuditTypes
 from dmutils.file import s3_download_file, s3_upload_file_from_request
 
 from ...models import (AuditEvent, Brief, BriefResponse, Framework, Supplier,
-                       ValidationError, Lot, User, Domain, db, WorkOrder)
+                       ValidationError, Lot, User, Domain, db, WorkOrder,
+                       BriefQuestion)
 from ...utils import get_json_from_request
 
 
@@ -1373,3 +1375,62 @@ def award_brief_to_seller(brief_id):
         db_object=brief)
 
     return jsonify(work_order=work_order), 200
+
+
+@api.route('/brief/<int:brief_id>/ask-a-question', methods=['POST'])
+@login_required
+@role_required('supplier')
+def supplier_asks_a_question(brief_id):
+    """seller asks a question (role=supplier)
+    ---
+    tags:
+        - brief
+    definitions:
+        BriefAwarded:
+            type: object
+            properties:
+                awardedSupplier:
+                    type: string
+    responses:
+        200:
+            description: Brief awarded successfully.
+            schema:
+                $ref: '#/definitions/BriefAwarded'
+        400:
+            description: Bad request.
+        403:
+            description: Unauthorised to award brief to seller.
+        500:
+            description: Unexpected error.
+    """
+    brief = briefs.get(brief_id)
+    if not brief:
+        not_found('brief {} not found'.format(brief_id))
+
+    data = get_json_from_request()
+    supplier_code = data.get('supplierCode')
+    if not supplier_code:
+        abort('Supplier is required.')
+
+    question = data.get('question')
+    if not question:
+        abort('Question is required.')
+
+    brief_question_service.save(BriefQuestion(
+        brief_id=brief_id,
+        supplier_code=current_user.supplier_code,
+        data={
+            "created_by": current_user.email_address,
+            "question": question
+        }
+    ))
+
+    audit_service.log_audit_event(
+        audit_type=audit_types.create_brief_question,
+        user=current_user.email_address,
+        data={
+            'briefId': brief.id
+        },
+        db_object=brief)
+
+    return jsonify(success=True), 200
