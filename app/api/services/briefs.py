@@ -10,6 +10,7 @@ from app.models import (
     Brief,
     BriefResponse,
     BriefUser,
+    BriefQuestion,
     BriefClarificationQuestion,
     AuditEvent,
     Framework,
@@ -81,6 +82,7 @@ class BriefsService(Service):
                 Brief.status,
                 User.name.label('owner'),
                 func.count(BriefResponse.id).label('responses'),
+                func.count(BriefQuestion.id).label('questionsAsked'),
                 func.count(BriefClarificationQuestion.question).label('questionsAnswered'),
                 Lot.slug.label('lot')
             )
@@ -93,6 +95,7 @@ class BriefsService(Service):
             query
             .outerjoin(BriefResponse, Brief.id == BriefResponse.brief_id)
             .outerjoin(BriefClarificationQuestion, Brief.id == BriefClarificationQuestion._brief_id)
+            .outerjoin(BriefQuestion, Brief.id == BriefQuestion.brief_id)
             .group_by(Brief.id, Lot.slug, User.name)
             .order_by(sql_case([
                 (Brief.status == 'draft', 1),
