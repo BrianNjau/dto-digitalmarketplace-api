@@ -6,7 +6,19 @@ from sqlalchemy.orm import joinedload, noload
 import pendulum
 from app.api.helpers import Service
 from app import db
-from app.models import Brief, BriefResponse, BriefUser, AuditEvent, Framework, Lot, User, WorkOrder, BriefAssessor
+from app.models import (
+    Brief,
+    BriefResponse,
+    BriefUser,
+    BriefClarificationQuestion,
+    AuditEvent,
+    Framework,
+    Lot,
+    User,
+    WorkOrder,
+    BriefAssessor,
+    User
+)
 from dmutils.filters import timesince
 
 
@@ -35,6 +47,67 @@ class BriefsService(Service):
             .all()
 
         return [r._asdict() for r in responses]
+
+    def get_brief_counts(self, user_id):
+        result = [r._asdict() for r in (
+            db
+            .session
+            .query(
+                Brief.status
+            )
+            .join(BriefUser)
+            .filter(user_id == BriefUser.user_id)
+            .all()
+        )]
+        return {
+            'withdrawn': result.count({'status': 'withdrawn'}),
+            'draft': result.count({'status': 'draft'}),
+            'live': result.count({'status': 'live'}),
+            'closed': result.count({'status': 'closed'})
+        }
+
+
+    def get_buyer_dashboard_briefs(self, user_id, status):
+        """Returns summary of a user's briefs with the total number of sellers that applied."""
+        query = (
+            db
+            .session
+            .query(
+                Brief.id,
+                Brief.data['title'].astext.label('name'),
+                Brief.data['internalReference'].astext.label('internalReference'),
+                Brief.data['sellers'].label('sellers'),
+                
+                Brief.closed_at,
+                Brief.questions_closed_at,
+                Brief.status,
+                User.name.label('owner'),
+                func.count(BriefResponse.id).label('responses'),
+                func.count(BriefClarificationQuestion.question).label('questionsAnswered'),
+                # Framework.slug.label('framework'),
+                Lot.slug.label('lot')
+            )
+            .join(BriefUser, Lot, User)
+            .filter(user_id == BriefUser.user_id)
+        )
+        if status:
+            query = query.filter(Brief.status == status)
+        results = (
+            query
+            .outerjoin(BriefResponse, Brief.id == BriefResponse.brief_id)
+            .outerjoin(BriefClarificationQuestion, Brief.id == BriefClarificationQuestion._brief_id)
+            .group_by(Brief.id, Lot.slug, User.name)
+            .order_by(sql_case([
+                (Brief.status == 'draft', 1),
+                (Brief.status == 'live', 2),
+                (Brief.status == 'closed', 3)]),
+                Brief.closed_at.desc().nullslast(),
+                Brief.id.desc())
+            .all()
+        )
+
+        return [r._asdict() for r in results]
+
 
     def get_user_briefs(self, current_user_id):
         """Returns summary of a user's briefs with the total number of sellers that applied."""
