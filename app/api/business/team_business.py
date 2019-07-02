@@ -49,6 +49,10 @@ def update_team_information(data):
 def update_team_leads_and_members(data):
     incoming_team_leads = data.get('teamLeads', [])
     incoming_team_members = data.get('teamMembers', [])
+
+    if incoming_team_members is None:
+        incoming_team_members = {}
+
     incoming_team_lead_ids = [int(team_lead_id) for team_lead_id in incoming_team_leads]
     incoming_team_member_ids = [int(team_member_id) for team_member_id in incoming_team_members]
 
@@ -92,8 +96,11 @@ def update_team_leads_and_members(data):
 
 
 def update_permissions(data):
-    incoming_team_members = data.get('teamMembers', {})
     team_id = data.get('id')
+    incoming_team_members = data.get('teamMembers', {})
+
+    if incoming_team_members is None:
+        incoming_team_members = {}
 
     for user_id, incoming_team_member in incoming_team_members.iteritems():
         incoming_permissions = incoming_team_member.get('permissions', {})
