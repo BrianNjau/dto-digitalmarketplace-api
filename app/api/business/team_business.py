@@ -1,13 +1,34 @@
 from collections import namedtuple
 
+from flask import jsonify
 from flask_login import current_user
 
+from app.api.business.errors import TeamError
 from app.api.helpers import abort, get_email_domain
-from app.api.services import (team_member_permissions, team_members, teams,
+from app.api.services import (audit_service, audit_types,
+                              team_member_permissions, team_members, teams,
                               users)
 from app.emails.teams import (send_team_lead_notification_emails,
                               send_team_member_notification_emails)
 from app.models import TeamMemberPermission, permission_types
+
+
+def create_team():
+    user = users.get(current_user.id)
+    if len(user.teams) == 0:
+        team = teams.create_team(user)
+        team_members.promote_to_team_lead(team_id=team.id, user_id=user.id)
+
+        audit_service.log_audit_event(
+            audit_type=audit_types.create_team,
+            db_object=team,
+            user=current_user.email_address
+        )
+
+        return get_team(team.id)
+    else:
+        team = user.teams[0]
+        raise TeamError('You can only be in one team. You\'re already a member of {}.'.format(team.name))
 
 
 def get_team(team_id):

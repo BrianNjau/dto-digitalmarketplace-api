@@ -12,3 +12,7 @@ class UnauthorisedError(Exception):
 
 class ValidationError(Exception):
     pass
+
+
+class TeamError(Exception):
+    pass

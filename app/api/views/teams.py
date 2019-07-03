@@ -4,6 +4,7 @@ from flask_login import current_user, login_required
 
 from app.api import api
 from app.api.business import team_business
+from app.api.business.errors import TeamError
 from app.api.helpers import abort, get_email_domain, not_found, role_required
 from app.api.services import (AuditTypes, audit_service, team_members, teams,
                               users)
@@ -12,26 +13,17 @@ from app.models import Team
 from ...utils import get_json_from_request
 
 
-@api.route('/team', methods=['POST'])
+@api.route('/team/create', methods=['POST'])
 @login_required
 @role_required('buyer')
 def create_team():
     try:
-        user = users.get(current_user.id)
-        team = teams.create_team(user)
-        team_members.promote_to_team_lead(team_id=team.id, user_id=user.id)
-        team_data = team_business.get_team(team.id)
-    except Exception as e:
+        team = team_business.create_team()
+    except TeamError as e:
         rollbar.report_exc_info()
-        return jsonify(message=e.message), 400
+        abort(e.message)
 
-    audit_service.log_audit_event(
-        audit_type=AuditTypes.create_team,
-        db_object=team,
-        user=current_user.email_address
-    )
-
-    return jsonify(team_data)
+    return jsonify(team)
 
 
 @api.route('/team/<int:team_id>', methods=["GET"])
