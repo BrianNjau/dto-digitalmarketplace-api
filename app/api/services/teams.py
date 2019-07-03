@@ -1,4 +1,4 @@
-from sqlalchemy import and_, func
+from sqlalchemy import and_, desc, func
 
 from app.api.helpers import Service
 from app.models import Team, TeamMember, TeamMemberPermission, User, db
@@ -102,6 +102,32 @@ class TeamsService(Service):
                   .join(aggregated_team_leads, aggregated_team_leads.columns.team_id == Team.id, isouter=True)
                   .join(aggregated_team_members, aggregated_team_members.columns.team_id == Team.id, isouter=True)
                   .filter(Team.id == team_id)
+                  .one_or_none())
+
+        return team._asdict() if team else None
+
+    def get_team_overview(self, team_id, user_id):
+        team_members = (db.session
+                          .query(TeamMember.team_id, User.id, User.name)
+                          .join(TeamMember, TeamMember.user_id == User.id)
+                          .filter(TeamMember.team_id == team_id)
+                          .order_by(
+                              TeamMember.team_id,
+                              desc(TeamMember.is_team_lead),
+                              User.name)
+                          .subquery('team_members'))
+
+        aggregated_team_members = (db.session
+                                     .query(team_members.columns.team_id,
+                                            func.json_agg(
+                                                team_members.columns.name
+                                            ).label('names'))
+                                     .group_by(team_members.columns.team_id)
+                                     .subquery('aggregated_team_members'))
+
+        team = (db.session
+                  .query(Team.id, Team.name, aggregated_team_members.columns.names)
+                  .join(aggregated_team_members, aggregated_team_members.columns.team_id == Team.id)
                   .one_or_none())
 
         return team._asdict() if team else None
