@@ -28,12 +28,13 @@ def get_team(team_id):
 
 
 def update_team(data):
+    team_id = data.get('id')
+
     update_team_information(data)
     update_team_leads_and_members(data)
     update_permissions(data)
 
-    team = teams.get_team(data['id'])
-    return team
+    return get_team(team_id)
 
 
 def update_team_information(data):
