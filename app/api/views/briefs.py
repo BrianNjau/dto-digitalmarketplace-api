@@ -981,8 +981,10 @@ def get_brief_responses(brief_id):
         if 'contactNumber' in brief.data:
             brief.data['contactNumber'] = ''
 
+    questions_asked = 0
     if current_user.role == 'buyer' and brief.status != 'closed':
         brief_responses = []
+        questions_asked = len(brief_question_service.find(brief_id=brief.id).all())
     else:
         brief_responses = brief_responses_service.get_brief_responses(brief_id, supplier_code)
 
@@ -990,7 +992,8 @@ def get_brief_responses(brief_id):
 
     return jsonify(brief=brief.serialize(with_users=False, with_author=False),
                    briefResponses=brief_responses,
-                   oldWorkOrderCreator=old_work_order_creator)
+                   oldWorkOrderCreator=old_work_order_creator,
+                   questionsAsked=questions_asked)
 
 
 @api.route('/brief/<int:brief_id>/respond/documents/<string:supplier_code>/<slug>', methods=['POST'])
