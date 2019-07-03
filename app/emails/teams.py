@@ -35,7 +35,7 @@ def send_team_lead_notification_emails(team_id, user_ids=None):
     audit_service.log_audit_event(
         audit_type=audit_types.team_lead_added,
         data={
-            "to_address": to_addresses
+            'to_address': to_addresses
         },
         db_object=team,
         user=''
