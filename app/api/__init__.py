@@ -95,6 +95,7 @@ from app.api.views import (briefs,  # noqa
                            tasks,
                            dashboards,
                            opportunities,
+                           questions,
                            key_values,
                            teams,
                            redirects)

@@ -68,7 +68,36 @@ class BriefsService(Service):
         }
 
     def get_buyer_dashboard_briefs(self, user_id, status):
-        """Returns summary of a user's briefs with the total number of sellers that applied."""
+        brief_response_subquery = (
+            db
+            .session
+            .query(
+                BriefResponse.brief_id,
+                func.count(BriefResponse.id).label('responses'),
+            )
+            .group_by(BriefResponse.brief_id)
+            .subquery()
+        )
+        brief_question_subquery = (
+            db
+            .session
+            .query(
+                BriefQuestion.brief_id,
+                func.count(BriefQuestion.id).label('questionsAsked'),
+            )
+            .group_by(BriefQuestion.brief_id)
+            .subquery()
+        )
+        brief_clarification_question_subquery = (
+            db
+            .session
+            .query(
+                BriefClarificationQuestion._brief_id,
+                func.count(BriefClarificationQuestion.id).label('questionsAnswered')
+            )
+            .group_by(BriefClarificationQuestion._brief_id)
+            .subquery()
+        )
         query = (
             db
             .session
@@ -81,9 +110,9 @@ class BriefsService(Service):
                 Brief.questions_closed_at,
                 Brief.status,
                 User.name.label('owner'),
-                func.count(BriefResponse.id).label('responses'),
-                func.count(BriefQuestion.id).label('questionsAsked'),
-                func.count(BriefClarificationQuestion.question).label('questionsAnswered'),
+                brief_response_subquery.columns.responses,
+                brief_question_subquery.columns.questionsAsked,
+                brief_clarification_question_subquery.columns.questionsAnswered,
                 Lot.slug.label('lot')
             )
             .join(BriefUser, Lot, User)
@@ -93,10 +122,12 @@ class BriefsService(Service):
             query = query.filter(Brief.status == status)
         results = (
             query
-            .outerjoin(BriefResponse, Brief.id == BriefResponse.brief_id)
-            .outerjoin(BriefClarificationQuestion, Brief.id == BriefClarificationQuestion._brief_id)
-            .outerjoin(BriefQuestion, Brief.id == BriefQuestion.brief_id)
-            .group_by(Brief.id, Lot.slug, User.name)
+            .outerjoin(brief_response_subquery, brief_response_subquery.columns.brief_id == Brief.id)
+            .outerjoin(brief_question_subquery, brief_question_subquery.columns.brief_id == Brief.id)
+            .outerjoin(
+                brief_clarification_question_subquery,
+                brief_clarification_question_subquery.columns.brief_id == Brief.id
+            )
             .order_by(sql_case([
                 (Brief.status == 'draft', 1),
                 (Brief.status == 'live', 2),

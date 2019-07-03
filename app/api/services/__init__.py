@@ -20,6 +20,7 @@ from .team_members import TeamMembersService
 from .team_member_permissions import TeamMemberPermissionsService
 from .work_order import WorkOrderService
 from .brief_question import BriefQuestionService
+from .brief_clarification_question import BriefClarificationQuestionService
 
 agency_service = AgencyService()
 agreement_service = AgreementService()
@@ -44,3 +45,4 @@ team_member_permissions = TeamMemberPermissionsService()
 user_claims_service = UserClaimService()
 work_order_service = WorkOrderService()
 brief_question_service = BriefQuestionService()
+brief_clarification_question_service = BriefClarificationQuestionService()
