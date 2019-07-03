@@ -85,7 +85,7 @@ def get_live_links(brief):
     answer_question_path = (
         get_path_for_brief_link(
             brief,
-            '{path}/supplier-questions/answer-question') if brief.status == 'live' else None)
+            '/2/brief/{brief_id}/questions') if brief.status == 'live' else None)
     links.append(build_brief_link(brief.status == 'closed', answer_question_path, 'Answer a question'))
     return links
 
