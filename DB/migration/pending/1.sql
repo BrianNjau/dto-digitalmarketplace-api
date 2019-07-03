@@ -22,6 +22,7 @@ create table if not exists "public"."brief_question" (
     "brief_id" integer not null,
     "supplier_code" bigint not null,
     "data" json not null,
+    "answered" boolean not null,
     "created_at" timestamp without time zone not null,
     constraint "brief_question_pkey" PRIMARY KEY (id),
     constraint "brief_question_brief_id_fkey" FOREIGN KEY (brief_id) 
@@ -75,3 +76,19 @@ create table if not exists "public"."team_member_permission" (
 CREATE INDEX if not exists ix_brief_question_created_at ON public.brief_question USING btree (created_at);
 
 CREATE INDEX if not exists ix_team_member_permission_permission ON public.team_member_permission USING btree (permission);
+
+alter table "public"."brief_clarification_question" add column if not exists "user_id" integer null;
+
+update brief_clarification_question bcq
+set user_id = bu.user_id
+from brief_user bu
+where bcq.brief_id = bu.brief_id
+and bcq.user_id is null;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'brief_clarification_question_user_id_fkey') THEN
+        alter table "public"."brief_clarification_question" add constraint "brief_clarification_question_user_id_fkey" FOREIGN KEY (user_id) REFERENCES "user"(id);
+        alter table "public"."brief_clarification_question" alter column "user_id" set not null;
+    END IF;
+END$$;
