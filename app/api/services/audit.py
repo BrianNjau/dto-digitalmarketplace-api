@@ -71,3 +71,5 @@ class AuditTypes(Enum):
     create_work_order = 'create_work_order'
     create_brief_question = 'create_brief_question'
     create_brief_clarification_question = 'create_brief_clarification_question'
+    team_lead_added = 'team_lead_added'
+    team_member_added = 'team_member_added'
