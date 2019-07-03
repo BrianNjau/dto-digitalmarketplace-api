@@ -42,6 +42,8 @@ def update_team(data):
     if create_team:
         send_team_lead_notification_emails(team_id)
         send_team_member_notification_emails(team_id)
+        team = teams.find(id=team_id).first()
+        teams.update(team, status='completed')
 
     return get_team(team_id)
 
