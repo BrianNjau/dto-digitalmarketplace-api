@@ -40,7 +40,7 @@ create table if not exists "public"."team" (
     "name" character varying not null,
     "email_address" character varying,
     "status" team_status_enum not null,
-    constraint "team_pkey" PRIMARY KEY using index "team_pkey"
+    constraint "team_pkey" PRIMARY KEY ("id")
 );
 
 
