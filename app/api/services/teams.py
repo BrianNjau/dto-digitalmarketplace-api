@@ -48,52 +48,52 @@ class TeamsService(Service):
                                    .group_by(team_leads.columns.team_id)
                                    .subquery('aggregated_team_leads'))
 
-        team_members = (db.session
-                          .query(
-                              TeamMember.team_id,
-                              TeamMember.user_id,
-                              User.name,
-                              User.email_address,
-                              TeamMemberPermission.permission)
-                          .join(Team, Team.id == TeamMember.team_id)
-                          .join(User, User.id == TeamMember.user_id)
-                          .join(TeamMemberPermission, TeamMemberPermission.team_member_id == TeamMember.id)
-                          .filter(Team.id == team_id,
-                                  TeamMember.is_team_lead.is_(False))
-                          .group_by(
-                              TeamMember.team_id,
-                              TeamMember.user_id,
-                              User.name,
-                              User.email_address,
-                              TeamMemberPermission.permission)
-                          .subquery('team_members'))
+        team_member_permissions = (db.session
+                                     .query(
+                                         TeamMember.team_id,
+                                         TeamMember.user_id,
+                                         TeamMemberPermission.permission)
+                                     .join(Team, Team.id == TeamMember.team_id)
+                                     .join(TeamMemberPermission, TeamMemberPermission.team_member_id == TeamMember.id)
+                                     .filter(Team.id == team_id,
+                                             TeamMember.is_team_lead.is_(False))
+                                     .group_by(
+                                         TeamMember.team_id,
+                                         TeamMember.user_id,
+                                         TeamMemberPermission.permission)
+                                     .subquery('team_member_permissions'))
 
         aggregated_permissions = (db.session
                                     .query(
-                                        team_members.columns.team_id,
-                                        team_members.columns.user_id,
-                                        team_members.columns.name,
+                                        team_member_permissions.columns.team_id,
+                                        team_member_permissions.columns.user_id,
                                         func.json_object_agg(
-                                            team_members.columns.permission, True
+                                            team_member_permissions.columns.permission, True
                                         ).label('permissions'))
                                     .group_by(
-                                        team_members.columns.team_id,
-                                        team_members.columns.user_id,
-                                        team_members.columns.name)
+                                        team_member_permissions.columns.team_id,
+                                        team_member_permissions.columns.user_id)
                                     .subquery('aggregated_permissions'))
 
         aggregated_team_members = (db.session
-                                     .query(team_members.columns.team_id,
+                                     .query(TeamMember.team_id,
                                             func.json_object_agg(
-                                                team_members.columns.user_id,
+                                                TeamMember.user_id,
                                                 func.json_build_object(
-                                                    'emailAddress', team_members.columns.email_address,
-                                                    'name', team_members.columns.name,
-                                                    'permissions', aggregated_permissions.columns.permissions)
-                                            ).label('teamMembers'))
+                                                    'emailAddress', User.email_address,
+                                                    'name', User.name,
+                                                    'permissions',
+                                                    func.coalesce(aggregated_permissions.columns.permissions, '{}')
+                                                )).label('teamMembers'))
+                                     .join(User, User.id == TeamMember.user_id)
                                      .join(aggregated_permissions,
-                                           aggregated_permissions.columns.user_id == team_members.columns.user_id)
-                                     .group_by(team_members.columns.team_id)
+                                           and_(
+                                               aggregated_permissions.columns.team_id == TeamMember.team_id,
+                                               aggregated_permissions.columns.user_id == TeamMember.user_id
+                                           ), isouter=True)
+                                     .filter(TeamMember.team_id == team_id,
+                                             TeamMember.is_team_lead.is_(False))
+                                     .group_by(TeamMember.team_id)
                                      .subquery('aggregated_team_members'))
 
         team = (db.session
