@@ -5,6 +5,7 @@ from flask_login import current_user
 from app.api.helpers import abort, get_email_domain
 from app.api.services import (team_member_permissions, team_members, teams,
                               users)
+from app.emails.teams import send_team_lead_notification_emails
 from app.models import TeamMemberPermission, permission_types
 
 
@@ -35,6 +36,10 @@ def update_team(data):
     update_team_information(data)
     new_team_leads, new_team_members = update_team_leads_and_members(data)
     update_permissions(data)
+
+    create_team = data.get('createTeam')
+    if create_team:
+        send_team_lead_notification_emails(team_id)
 
     return get_team(team_id)
 
