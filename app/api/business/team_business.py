@@ -1,3 +1,5 @@
+from collections import namedtuple
+
 from flask_login import current_user
 
 from app.api.helpers import abort, get_email_domain
@@ -31,7 +33,7 @@ def update_team(data):
     team_id = data.get('id')
 
     update_team_information(data)
-    update_team_leads_and_members(data)
+    new_team_leads, new_team_members = update_team_leads_and_members(data)
     update_permissions(data)
 
     return get_team(team_id)
@@ -94,6 +96,12 @@ def update_team_leads_and_members(data):
         team_member = team_members.find(user_id=user_id).one_or_none()
         delete_team_member_permissions(team_member.id)
         user = users.remove_from_team(user_id, team.id)
+
+    Team = namedtuple('Team', ['new_team_leads', 'new_team_members'])
+    new_team_leads = team_leads_to_add | team_members_to_promote
+    new_team_members = team_members_to_add | team_leads_to_demote
+
+    return Team(new_team_leads=new_team_leads, new_team_members=new_team_members)
 
 
 def update_permissions(data):
