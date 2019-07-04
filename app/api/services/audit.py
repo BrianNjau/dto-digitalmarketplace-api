@@ -73,3 +73,5 @@ class AuditTypes(Enum):
     create_brief_clarification_question = 'create_brief_clarification_question'
     team_lead_added = 'team_lead_added'
     team_member_added = 'team_member_added'
+    sent_brief_question_to_buyer = 'sent_brief_question_to_buyer'
+    sent_brief_question_to_seller = 'sent_brief_question_to_seller'

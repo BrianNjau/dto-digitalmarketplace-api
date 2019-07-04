@@ -40,7 +40,9 @@ from app.emails import (
     send_seller_invited_to_rfx_email,
     send_specialist_brief_seller_invited_email,
     send_specialist_brief_published_email,
-    send_specialist_brief_response_received_email
+    send_specialist_brief_response_received_email,
+    send_brief_clarification_to_buyer,
+    send_brief_clarification_to_seller
 )
 from app.api.helpers import notify_team
 from app.tasks import publish_tasks
@@ -1419,7 +1421,7 @@ def supplier_asks_a_question(brief_id):
     if not question:
         abort('Question is required.')
 
-    brief_question_service.save(BriefQuestion(
+    brief_question = brief_question_service.save(BriefQuestion(
         brief_id=brief_id,
         supplier_code=current_user.supplier_code,
         data={
@@ -1435,5 +1437,10 @@ def supplier_asks_a_question(brief_id):
             'briefId': brief.id
         },
         db_object=brief)
+
+    supplier = suppliers.find(code=current_user.supplier_code).one_or_none()
+
+    send_brief_clarification_to_buyer(brief, brief_question, supplier)
+    send_brief_clarification_to_seller(brief, brief_question, current_user.email_address)
 
     return jsonify(success=True), 200
