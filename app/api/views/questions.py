@@ -36,7 +36,8 @@ def publish_answer(brief_id):
     data = get_json_from_request()
     try:
         questions_business.publish_answer({
-            'email_address': current_user.email_address
+            'email_address': current_user.email_address,
+            'user_id': current_user.id
         }, brief_id, data)
 
     except NotFoundError as nfe:
