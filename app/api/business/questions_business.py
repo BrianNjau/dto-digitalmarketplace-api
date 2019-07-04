@@ -94,3 +94,17 @@ def publish_answer(user_info, brief_id, data):
             'briefId': brief.id
         },
         db_object=brief_clarification_question)
+
+
+def mark_question_as_answered(user_info, question_id, data):
+    question = brief_question_service.get(question_id)
+
+    if not question:
+        raise NotFoundError('Question not found')
+
+    answered = data.get('answered')
+    if answered is None:
+        raise ValidationError('Answered is required')
+
+    question.answered = answered
+    brief_question_service.save(question)
