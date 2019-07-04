@@ -37,9 +37,7 @@ def get_team_overview():
 
     if len(user.teams) > 0:
         team = user.teams[0]
-        team_overview = teams.get_team_overview(team.id)
-        team_member = team_members.find(team_id=team.id, user_id=user.id).first()
-        team_overview.update(is_team_lead=team_member.is_team_lead)
+        team_overview = teams.get_team_overview(team.id, user.id)
 
     return team_overview
 

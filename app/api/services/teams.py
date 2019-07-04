@@ -106,10 +106,10 @@ class TeamsService(Service):
 
         return team._asdict() if team else None
 
-    def get_team_overview(self, team_id):
+    def get_team_overview(self, team_id, user_id):
         team_members = (db.session
-                          .query(TeamMember.team_id, User.id, User.name)
-                          .join(User, User.id == TeamMember.user_id)
+                          .query(User.id, User.name, TeamMember.team_id)
+                          .join(TeamMember, TeamMember.user_id == User.id)
                           .filter(TeamMember.team_id == team_id)
                           .order_by(
                               TeamMember.team_id,
@@ -126,8 +126,8 @@ class TeamsService(Service):
                                      .subquery('aggregated_team_members'))
 
         team = (db.session
-                  .query(Team.id, Team.name, aggregated_team_members.columns.members)
-                  .join(aggregated_team_members, aggregated_team_members.columns.team_id == Team.id)
+                  .query(aggregated_team_members.columns.members, Team.id, Team.name)
+                  .join(Team, Team.id == aggregated_team_members.columns.team_id)
                   .subquery('team'))
 
         result = (db.session
@@ -135,10 +135,15 @@ class TeamsService(Service):
                         func.json_build_object(
                             team.columns.id,
                             func.json_build_object(
-                                'name', team.columns.name,
-                                'members', team.columns.members
+                                'is_team_lead', TeamMember.is_team_lead,
+                                'members', team.columns.members,
+                                'name', team.columns.name
                             )
-                        ).label('overview')
-                    ).one_or_none())
+                        ).label('overview'))
+                    .join(team, TeamMember.team_id == team.columns.id)
+                    .filter(
+                        TeamMember.team_id == team_id,
+                        TeamMember.user_id == user_id)
+                    .one_or_none())
 
         return result._asdict() if result else None
