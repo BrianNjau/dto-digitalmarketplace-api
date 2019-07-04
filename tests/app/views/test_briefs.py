@@ -1067,28 +1067,6 @@ class TestBriefs(BaseApplicationTest):
         )
         assert res.status_code == 404
 
-    def test_add_clarification_question(self):
-        self.setup_dummy_briefs(1, title="The Title", status="live")
-
-        res = self.client.post(
-            "/briefs/1/clarification-questions",
-            data=json.dumps({
-                "clarificationQuestion": {
-                    "question": "What?",
-                    "answer": "That",
-                },
-                "update_details": {"updated_by": "example"},
-            }),
-            content_type="application/json")
-        data = json.loads(res.get_data(as_text=True))
-
-        assert res.status_code == 200
-        assert data["briefs"]["clarificationQuestions"] == [{
-            "question": "What?",
-            "answer": "That",
-            "publishedAt": mock.ANY,
-        }]
-
     def test_clarification_question_strip_whitespace(self):
         self.setup_dummy_briefs(1, title="The Title", status="live")
 
@@ -1200,7 +1178,6 @@ class TestBriefs(BaseApplicationTest):
         self.setup_dummy_briefs(1, title="The Title", status="live")
         with self.app.app_context():
             brief = Brief.query.get(1)
-            brief.add_clarification_question('question', 'answer')
             db.session.add(brief)
             db.session.commit()
 
