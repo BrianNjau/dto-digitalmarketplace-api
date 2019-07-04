@@ -71,3 +71,5 @@ class AuditTypes(Enum):
     create_work_order = 'create_work_order'
     create_brief_question = 'create_brief_question'
     create_brief_clarification_question = 'create_brief_clarification_question'
+    sent_brief_question_to_buyer = 'sent_brief_question_to_buyer'
+    sent_brief_question_to_seller = 'sent_brief_question_to_seller'
