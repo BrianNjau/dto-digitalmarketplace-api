@@ -13,6 +13,15 @@ from app.models import Team
 from ...utils import get_json_from_request
 
 
+@api.route('/teams', methods=['GET'])
+@login_required
+@role_required('buyer')
+def get_team_overview():
+    team = team_business.get_team_overview()
+
+    return jsonify(team)
+
+
 @api.route('/team/create', methods=['POST'])
 @login_required
 @role_required('buyer')
