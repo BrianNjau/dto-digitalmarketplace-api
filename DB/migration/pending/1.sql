@@ -77,7 +77,7 @@ CREATE INDEX if not exists ix_brief_question_created_at ON public.brief_question
 
 CREATE INDEX if not exists ix_team_member_permission_permission ON public.team_member_permission USING btree (permission);
 
-alter table "public"."brief_clarification_question" add column if not exists "user_id" integer null;
+alter table "public"."brief_clarification_question" add column if not exists "user_id" integer;
 
 update brief_clarification_question bcq
 set user_id = bu.user_id
@@ -89,6 +89,7 @@ DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'brief_clarification_question_user_id_fkey') THEN
         alter table "public"."brief_clarification_question" add constraint "brief_clarification_question_user_id_fkey" FOREIGN KEY (user_id) REFERENCES "user"(id);
-        alter table "public"."brief_clarification_question" alter column "user_id" set not null;
     END IF;
 END$$;
+
+alter table "public"."brief_clarification_question" alter column "user_id" set not null;
