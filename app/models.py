@@ -2381,7 +2381,7 @@ class BriefClarificationQuestion(db.Model):
     question = db.Column(db.String, nullable=False)
     answer = db.Column(db.String, nullable=False)
     published_at = db.Column(DateTime, index=True, nullable=False, default=utcnow)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
     brief = db.relationship("Brief")
 
