@@ -135,7 +135,7 @@ class TeamsService(Service):
                         func.json_build_object(
                             team.columns.id,
                             func.json_build_object(
-                                'is_team_lead', TeamMember.is_team_lead,
+                                'isTeamLead', TeamMember.is_team_lead,
                                 'members', team.columns.members,
                                 'name', team.columns.name
                             )
