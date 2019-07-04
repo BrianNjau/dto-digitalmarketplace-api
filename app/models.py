@@ -2365,7 +2365,7 @@ class BriefQuestion(db.Model):
     supplier_code = db.Column(db.BigInteger, db.ForeignKey('supplier.code'), nullable=False)
 
     data = db.Column(JSON, nullable=False)
-
+    answered = db.Column(db.Boolean, nullable=False, default=False)
     created_at = db.Column(DateTime, index=True, nullable=False, default=utcnow)
 
     brief = db.relationship("Brief")
@@ -2380,9 +2380,8 @@ class BriefClarificationQuestion(db.Model):
 
     question = db.Column(db.String, nullable=False)
     answer = db.Column(db.String, nullable=False)
-
-    published_at = db.Column(DateTime, index=True, nullable=False,
-                             default=utcnow)
+    published_at = db.Column(DateTime, index=True, nullable=False, default=utcnow)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
     brief = db.relationship("Brief")
 

@@ -83,7 +83,8 @@ def publish_answer(user_info, brief_id, data):
     brief_clarification_question = brief_clarification_question_service.save(BriefClarificationQuestion(
         _brief_id=brief_id,
         question=question,
-        answer=answer
+        answer=answer,
+        user_id=user_info.get('user_id')
     ))
 
     audit_service.log_audit_event(

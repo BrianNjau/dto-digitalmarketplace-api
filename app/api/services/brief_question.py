@@ -18,6 +18,7 @@ class BriefQuestionService(Service):
                 BriefQuestion.created_at,
                 BriefQuestion.data['question'].astext.label('question'),
                 BriefQuestion.supplier_code,
+                BriefQuestion.answered,
                 Supplier.name.label('supplierName')
             )
             .join(Supplier)

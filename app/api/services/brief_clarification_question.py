@@ -1,5 +1,5 @@
 from app.api.helpers import Service
-from app.models import BriefClarificationQuestion, db
+from app.models import BriefClarificationQuestion, User, db
 
 
 class BriefClarificationQuestionService(Service):
@@ -17,8 +17,11 @@ class BriefClarificationQuestionService(Service):
                 BriefClarificationQuestion._brief_id,
                 BriefClarificationQuestion.published_at,
                 BriefClarificationQuestion.question,
-                BriefClarificationQuestion.answer
+                BriefClarificationQuestion.answer,
+                BriefClarificationQuestion.user_id,
+                User.name
             )
+            .join(User)
             .filter(BriefClarificationQuestion._brief_id == brief_id)
             .order_by(BriefClarificationQuestion.published_at)
             .all()
