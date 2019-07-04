@@ -20,8 +20,9 @@ def create_team():
     try:
         team = team_business.create_team()
     except TeamError as e:
-        rollbar.report_exc_info()
         abort(e.message)
+    except Exception as e:
+        rollbar.report_exc_info()
 
     return jsonify(team)
 
