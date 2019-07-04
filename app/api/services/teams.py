@@ -106,10 +106,10 @@ class TeamsService(Service):
 
         return team._asdict() if team else None
 
-    def get_team_overview(self, team_id, user_id):
+    def get_team_overview(self, team_id):
         team_members = (db.session
                           .query(TeamMember.team_id, User.id, User.name)
-                          .join(TeamMember, TeamMember.user_id == User.id)
+                          .join(User, User.id == TeamMember.user_id)
                           .filter(TeamMember.team_id == team_id)
                           .order_by(
                               TeamMember.team_id,
