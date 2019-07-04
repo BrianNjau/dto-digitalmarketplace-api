@@ -32,12 +32,14 @@ def create_team():
 
 
 def get_team_overview():
+    team_overview = {}
     user = users.get(current_user.id)
-    team = user.teams[0]
 
-    team_overview = teams.get_team_overview(team.id)
-    team_member = team_members.find(team_id=team.id, user_id=user.id).first()
-    team_overview.update(is_team_lead=team_member.is_team_lead)
+    if len(user.teams) > 0:
+        team = user.teams[0]
+        team_overview = teams.get_team_overview(team.id)
+        team_member = team_members.find(team_id=team.id, user_id=user.id).first()
+        team_overview.update(is_team_lead=team_member.is_team_lead)
 
     return team_overview
 
