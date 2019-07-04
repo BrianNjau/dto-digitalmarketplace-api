@@ -121,12 +121,12 @@ class TeamsService(Service):
                                      .query(team_members.columns.team_id,
                                             func.json_agg(
                                                 team_members.columns.name
-                                            ).label('names'))
+                                            ).label('members'))
                                      .group_by(team_members.columns.team_id)
                                      .subquery('aggregated_team_members'))
 
         team = (db.session
-                  .query(Team.id, Team.name, aggregated_team_members.columns.names)
+                  .query(Team.id, Team.name, aggregated_team_members.columns.members)
                   .join(aggregated_team_members, aggregated_team_members.columns.team_id == Team.id)
                   .one_or_none())
 
