@@ -2,7 +2,7 @@ from flask import request, jsonify
 from flask_login import login_required, current_user
 from app.api import api
 from app.api.business import questions_business
-from app.api.helpers import get_email_domain, role_required
+from app.api.helpers import abort, forbidden, get_email_domain, role_required
 from app.api.business.errors import (
     NotFoundError,
     ValidationError
@@ -46,3 +46,24 @@ def publish_answer(brief_id):
         abort(ve.message)
 
     return jsonify(success=True), 200
+
+
+@api.route('/brief/<int:brief_id>/question/<int:question_id>/answered', methods=['POST'])
+@login_required
+@role_required('buyer')
+def mark_question_as_answered(brief_id, question_id):
+    data = get_json_from_request()
+    try:
+        questions_business.mark_question_as_answered({
+            'email_address': current_user.email_address,
+            'user_id': current_user.id
+        }, question_id, data)
+
+    except NotFoundError as nfe:
+        not_found(nfe.message)
+    except ValidationError as ve:
+        abort(ve.message)
+
+    result = questions_business.get_questions(brief_id)
+
+    return jsonify(result), 200
