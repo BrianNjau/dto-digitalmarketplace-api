@@ -2026,18 +2026,6 @@ class Brief(db.Model):
         def has_statuses(self, *statuses):
             return self.filter(Brief.status.in_(statuses))
 
-    def add_clarification_question(self, question, answer):
-        clarification_question = BriefClarificationQuestion(
-            brief=self,
-            question=question,
-            answer=answer,
-        )
-        clarification_question.validate()
-
-        Session.object_session(self).add(clarification_question)
-
-        return clarification_question
-
     def update_from_json(self, data):
         current_data = dict(self.data.items())
         current_data.update(data)
