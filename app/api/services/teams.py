@@ -128,6 +128,17 @@ class TeamsService(Service):
         team = (db.session
                   .query(Team.id, Team.name, aggregated_team_members.columns.members)
                   .join(aggregated_team_members, aggregated_team_members.columns.team_id == Team.id)
-                  .one_or_none())
+                  .subquery('team'))
 
-        return team._asdict() if team else None
+        result = (db.session
+                    .query(
+                        func.json_build_object(
+                            team.columns.id,
+                            func.json_build_object(
+                                'name', team.columns.name,
+                                'members', team.columns.members
+                            )
+                        ).label('overview')
+                    ).one_or_none())
+
+        return result._asdict() if result else None
