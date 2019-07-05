@@ -14,7 +14,25 @@ from ...utils import get_json_from_request
 @login_required
 @role_required('buyer')
 def get_questions(brief_id):
-    result = questions_business.get_questions(brief_id)
+    result = None
+    try:
+        result = questions_business.get_questions(brief_id)
+    except NotFoundError as nfe:
+        not_found(nfe.message)
+
+    return jsonify(result), 200
+
+
+@api.route('/brief/<int:brief_id>/question', methods=['GET'])
+@login_required
+@role_required('buyer')
+def get_question(brief_id):
+    result = None
+    question_id = request.args.get('questionId', None)
+    try:
+        result = questions_business.get_question(brief_id, question_id)
+    except NotFoundError as nfe:
+        not_found(nfe.message)
 
     return jsonify(result), 200
 
@@ -23,7 +41,11 @@ def get_questions(brief_id):
 @login_required
 @role_required('buyer')
 def get_answers(brief_id):
-    result = questions_business.get_answers(brief_id)
+    result = None
+    try:
+        result = questions_business.get_answers(brief_id)
+    except NotFoundError as nfe:
+        not_found(nfe.message)
 
     return jsonify(result), 200
 
@@ -32,7 +54,6 @@ def get_answers(brief_id):
 @login_required
 @role_required('buyer')
 def publish_answer(brief_id):
-
     data = get_json_from_request()
     try:
         questions_business.publish_answer({
@@ -46,24 +67,3 @@ def publish_answer(brief_id):
         abort(ve.message)
 
     return jsonify(success=True), 200
-
-
-@api.route('/brief/<int:brief_id>/question/<int:question_id>/answered', methods=['POST'])
-@login_required
-@role_required('buyer')
-def mark_question_as_answered(brief_id, question_id):
-    data = get_json_from_request()
-    try:
-        questions_business.mark_question_as_answered({
-            'email_address': current_user.email_address,
-            'user_id': current_user.id
-        }, question_id, data)
-
-    except NotFoundError as nfe:
-        not_found(nfe.message)
-    except ValidationError as ve:
-        abort(ve.message)
-
-    result = questions_business.get_questions(brief_id)
-
-    return jsonify(result), 200
