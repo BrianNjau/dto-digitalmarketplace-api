@@ -39,6 +39,9 @@ def get_team_overview():
         team = user.teams[0]
         team_overview = teams.get_team_overview(team.id, user.id)
 
+    organisation = users.get_user_organisation(get_email_domain(user.email_address))
+    team_overview.update(organisation=organisation)
+
     return team_overview
 
 
