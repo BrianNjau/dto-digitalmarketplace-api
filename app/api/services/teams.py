@@ -128,6 +128,7 @@ class TeamsService(Service):
         team = (db.session
                   .query(aggregated_team_members.columns.members, Team.id, Team.name)
                   .join(Team, Team.id == aggregated_team_members.columns.team_id)
+                  .filter(Team.status == 'completed')
                   .subquery('team'))
 
         result = (db.session
