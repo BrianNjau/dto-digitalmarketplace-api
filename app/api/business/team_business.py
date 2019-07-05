@@ -15,7 +15,9 @@ from app.models import TeamMemberPermission, permission_types
 
 def create_team():
     user = users.get(current_user.id)
-    if len(user.teams) == 0:
+    completed_teams = [team for team in user.teams if team.status == 'completed']
+
+    if len(completed_teams) == 0:
         team = teams.create_team(user)
         team_members.promote_to_team_lead(team_id=team.id, user_id=user.id)
 
@@ -27,16 +29,17 @@ def create_team():
 
         return get_team(team.id)
     else:
-        team = user.teams[0]
+        team = completed_teams[0]
         raise TeamError('You can only be in one team. You\'re already a member of {}.'.format(team.name))
 
 
 def get_team_overview():
     team_overview = {}
     user = users.get(current_user.id)
+    completed_teams = [team for team in user.teams if team.status == 'completed']
 
-    if len(user.teams) > 0:
-        team = user.teams[0]
+    if len(completed_teams) > 0:
+        team = completed_teams[0]
         team_overview = teams.get_team_overview(team.id, user.id)
 
     organisation = users.get_user_organisation(get_email_domain(user.email_address))

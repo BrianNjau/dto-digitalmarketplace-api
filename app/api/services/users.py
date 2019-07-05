@@ -101,9 +101,10 @@ class UsersService(Service):
 
     def add_to_team(self, user_id, team):
         user = self.get(user_id)
+        completed_teams = [team for team in user.teams if team.status == 'completed']
 
-        if len(user.teams) > 0:
-            current_team = user.teams.pop()
+        if len(completed_teams) > 0:
+            current_team = completed_teams.pop()
             abort('Users can only be in one team. {} is already a member of team: {}'
                   .format(user.name, current_team.name))
 
