@@ -2126,6 +2126,16 @@ class BriefUser(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), primary_key=True)
 
 
+class BriefResponseDownload(db.Model):
+    __tablename__ = 'brief_response_download'
+
+    id = db.Column(db.Integer, primary_key=True)
+    brief_id = db.Column(db.Integer, db.ForeignKey('brief.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    created_at = db.Column(DateTime, index=True, nullable=False, default=utcnow)
+    brief = db.relationship('Brief')
+
+
 class BriefResponse(db.Model):
     __tablename__ = 'brief_response'
 
