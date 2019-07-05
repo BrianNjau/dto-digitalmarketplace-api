@@ -31,6 +31,30 @@ def get_counts(brief_id, questions=None, answers=None):
     }
 
 
+def get_question(brief_id, question_id):
+    brief = briefs.find(id=brief_id).one_or_none()
+    if not brief:
+        raise NotFoundError("Invalid brief id '{}'".format(brief_id))
+
+    question = brief_question_service.find(id=question_id).one_or_none()
+    question_result = None
+    if question:
+        question_result = {
+            "id": question.id,
+            "data": question.data
+        }
+
+    return {
+        "question": question_result,
+        "brief": {
+            "title": brief.data.get('title'),
+            "id": brief.id,
+            "questionsCloseAt": brief.questions_closed_at,
+            "internalReference": brief.data.get('internalReference')
+        }
+    }
+
+
 def get_questions(brief_id):
     brief = briefs.find(id=brief_id).one_or_none()
     if not brief:
@@ -72,8 +96,8 @@ def publish_answer(user_info, brief_id, data):
     if not brief:
         raise NotFoundError("Invalid brief id '{}'".format(brief_id))
 
-    question = data.get('question')
-    if not question:
+    publish_question = data.get('question')
+    if not publish_question:
         raise ValidationError('Question is required')
 
     answer = data.get('answer')
@@ -82,10 +106,16 @@ def publish_answer(user_info, brief_id, data):
 
     brief_clarification_question = brief_clarification_question_service.save(BriefClarificationQuestion(
         _brief_id=brief_id,
-        question=question,
+        question=publish_question,
         answer=answer,
         user_id=user_info.get('user_id')
     ))
+
+    question_id = data.get('questionId')
+    if question_id:
+        question = brief_question_service.get(question_id)
+        question.answered = True
+        brief_question_service.save(question)
 
     audit_service.log_audit_event(
         audit_type=audit_types.create_brief_clarification_question,
@@ -94,17 +124,3 @@ def publish_answer(user_info, brief_id, data):
             'briefId': brief.id
         },
         db_object=brief_clarification_question)
-
-
-def mark_question_as_answered(user_info, question_id, data):
-    question = brief_question_service.get(question_id)
-
-    if not question:
-        raise NotFoundError('Question not found')
-
-    answered = data.get('answered')
-    if answered is None:
-        raise ValidationError('Answered is required')
-
-    question.answered = answered
-    brief_question_service.save(question)
