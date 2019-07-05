@@ -11,6 +11,8 @@ END$$;
 
 create sequence if not exists "public"."brief_question_id_seq";
 
+create sequence if not exists "public"."brief_response_download_id_seq";
+
 create sequence if not exists "public"."team_id_seq";
 
 create sequence if not exists "public"."team_member_id_seq";
@@ -93,3 +95,22 @@ BEGIN
 END$$;
 
 alter table "public"."brief_clarification_question" alter column "user_id" set not null;
+
+
+create table if not exists "public"."brief_response_download" (
+    "id" integer not null default nextval('brief_response_download_id_seq'::regclass),
+    "brief_id" integer not null,
+    "user_id" integer not null,
+    "created_at" timestamp without time zone not null,
+    constraint "brief_response_download_pkey" PRIMARY KEY ("id"),
+    constraint "brief_response_download_brief_id_fkey" FOREIGN KEY (brief_id)
+        REFERENCES public.brief(id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION,
+    constraint "brief_response_download_user_id_fkey" FOREIGN KEY (user_id)
+        REFERENCES public."user"(id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+);
+
+CREATE INDEX if not exists ix_brief_response_download_created_at ON public.brief_response_download USING btree (created_at);

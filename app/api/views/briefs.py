@@ -25,6 +25,7 @@ from app.api.services import (agency_service,
                               audit_service,
                               audit_types,
                               brief_responses_service,
+                              brief_response_download_service,
                               brief_question_service,
                               briefs,
                               domain_service,
@@ -51,7 +52,7 @@ from dmutils.file import s3_download_file, s3_upload_file_from_request
 
 from ...models import (AuditEvent, Brief, BriefResponse, Framework, Supplier,
                        ValidationError, Lot, User, Domain, db, WorkOrder,
-                       BriefQuestion)
+                       BriefQuestion, BriefResponseDownload)
 from ...utils import get_json_from_request
 
 
@@ -984,9 +985,14 @@ def get_brief_responses(brief_id):
             brief.data['contactNumber'] = ''
 
     questions_asked = 0
-    if current_user.role == 'buyer' and brief.status != 'closed':
-        brief_responses = []
-        questions_asked = len(brief_question_service.find(brief_id=brief.id).all())
+    brief_response_downloaded = []
+    brief_responses = []
+    if current_user.role == 'buyer':
+        if brief.status == 'closed':
+            brief_response_downloaded = brief_response_download_service.get_responses_downloaded(brief.id)
+            brief_responses = brief_responses_service.get_brief_responses(brief_id, supplier_code)
+        elif brief.status == 'live':
+            questions_asked = len(brief_question_service.find(brief_id=brief.id).all())
     else:
         brief_responses = brief_responses_service.get_brief_responses(brief_id, supplier_code)
 
@@ -995,7 +1001,8 @@ def get_brief_responses(brief_id):
     return jsonify(brief=brief.serialize(with_users=False, with_author=False),
                    briefResponses=brief_responses,
                    oldWorkOrderCreator=old_work_order_creator,
-                   questionsAsked=questions_asked)
+                   questionsAsked=questions_asked,
+                   briefResponseDownloaded=brief_response_downloaded)
 
 
 @api.route('/brief/<int:brief_id>/respond/documents/<string:supplier_code>/<slug>', methods=['POST'])
@@ -1068,6 +1075,10 @@ def download_brief_responses(brief_id):
         return forbidden("You can only download documents for closed briefs")
 
     response = ('', 404)
+    brief_response_download_service.save(BriefResponseDownload(
+        brief_id=brief.id,
+        user_id=current_user.id
+    ))
     if brief.lot.slug in ['digital-professionals', 'training', 'rfx', 'atm', 'specialist']:
         try:
             file = s3_download_file(
