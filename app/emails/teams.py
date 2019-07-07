@@ -9,7 +9,13 @@ from .util import render_email_template, send_or_handle_error
 
 def send_team_lead_notification_emails(team_id, user_ids=None):
     team = teams.find(id=team_id).first()
-    team_leads = team_members.find(team_id=team_id, is_team_lead=True).all()
+
+    if user_ids is None or len(user_ids) == 0:
+        # Team leads added through the create flow
+        team_leads = team_members.find(team_id=team_id, is_team_lead=True).all()
+    else:
+        # Team leads added through the edit flow
+        team_leads = team_members.get_team_leads_by_user_id(user_ids)
 
     to_addresses = []
     for team_lead in team_leads:

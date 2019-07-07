@@ -82,6 +82,12 @@ def update_team(data):
         send_team_member_notification_emails(team_id)
         team = teams.find(id=team_id).first()
         teams.update(team, status='completed')
+    else:
+        if len(new_team_leads) > 0:
+            send_team_lead_notification_emails(team_id, new_team_leads)
+
+        if len(new_team_members) > 0:
+            send_team_member_notification_emails(team_id, new_team_members)
 
     return get_team(team_id)
 
