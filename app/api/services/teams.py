@@ -27,7 +27,7 @@ class TeamsService(Service):
         self.update(team, name=data['name'], email_address=data['email_address'])
         return team
 
-    def get_user_teams(user_id):
+    def get_user_teams(self, user_id):
         return (db.session
                   .query(Team)
                   .filter(Team.status == 'completed')
