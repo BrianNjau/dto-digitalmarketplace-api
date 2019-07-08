@@ -22,11 +22,6 @@ class TeamService(Service):
 
         return team
 
-    def save_team(self, data):
-        team = self.find(id=data['id']).one_or_none()
-        self.update(team, name=data['name'], email_address=data['email_address'])
-        return team
-
     def get_teams_for_user(self, user_id, status='completed'):
         return (db.session
                   .query(Team)

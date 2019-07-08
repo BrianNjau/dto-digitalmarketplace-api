@@ -113,13 +113,10 @@ def update_team(data):
 
 
 def update_team_information(data):
-    team_data = {
-        'email_address': data['emailAddress'],
-        'id': data['id'],
-        'name': data['name']
-    }
-
-    team_service.save_team(team_data)
+    team = team_service.get(data.get('id'))
+    team.name = data.get('name')
+    team.email_address = data.get('emailAddress')
+    team_service.update(team)
 
 
 def update_team_leads_and_members(data):
