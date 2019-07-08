@@ -6,7 +6,7 @@ from flask_login import current_user
 from app.api.business.errors import TeamError
 from app.api.helpers import abort, get_email_domain
 from app.api.services import (audit_service, audit_types,
-                              team_member_permissions, team_members, teams,
+                              team_member_permissions, team_members, team_service,
                               users)
 from app.emails.teams import (send_team_lead_notification_emails,
                               send_team_member_notification_emails)
@@ -15,10 +15,10 @@ from app.models import TeamMemberPermission, permission_types
 
 def add_user_to_team(user_id, team_id):
     user = users.get(user_id)
-    user_teams = teams.get_teams_for_user(user_id)
+    teams = team_service.get_teams_for_user(user_id)
 
-    if len(user_teams) > 0:
-        team = user_teams.pop()
+    if len(teams) > 0:
+        team = teams.pop()
         abort('Users can only be in one team. {} is already a member of {}.'.format(user.name, team.name))
 
     team_members.create(team_id=team_id, user_id=user_id)
@@ -38,7 +38,7 @@ def create_team():
     completed_teams = [team for team in user.teams if team.status == 'completed']
 
     if len(completed_teams) == 0:
-        team = teams.create_team(user)
+        team = team_service.create_team(user)
         team_members.promote_to_team_lead(team_id=team.id, user_id=user.id)
 
         audit_service.log_audit_event(
@@ -60,7 +60,7 @@ def get_team_overview():
 
     if len(completed_teams) > 0:
         team = completed_teams[0]
-        team_overview = teams.get_team_overview(team.id, user.id)
+        team_overview = team_service.get_team_overview(team.id, user.id)
 
     organisation = users.get_user_organisation(get_email_domain(user.email_address))
     team_overview.update(organisation=organisation)
@@ -69,12 +69,12 @@ def get_team_overview():
 
 
 def get_team(team_id):
-    team = teams.find(id=team_id).one_or_none()
+    team = team_service.find(id=team_id).one_or_none()
     if not team:
         not_found('No team with id {} found'.format(team_id))
 
     domain = get_email_domain(current_user.email_address)
-    team = teams.get_team(team_id)
+    team = team_service.get_team(team_id)
 
     if team['teamMembers'] is not None:
         for user_id, team_member in team['teamMembers'].iteritems():
@@ -100,8 +100,8 @@ def update_team(data):
     if create_team:
         send_team_lead_notification_emails(team_id)
         send_team_member_notification_emails(team_id)
-        team = teams.find(id=team_id).first()
-        teams.update(team, status='completed')
+        team = team_service.find(id=team_id).first()
+        team_service.update(team, status='completed')
     else:
         if len(new_team_leads) > 0:
             send_team_lead_notification_emails(team_id, new_team_leads)
@@ -119,7 +119,7 @@ def update_team_information(data):
         'name': data['name']
     }
 
-    teams.save_team(team_data)
+    team_service.save_team(team_data)
 
 
 def update_team_leads_and_members(data):
@@ -132,7 +132,7 @@ def update_team_leads_and_members(data):
     incoming_team_lead_ids = [int(team_lead_id) for team_lead_id in incoming_team_leads]
     incoming_team_member_ids = [int(team_member_id) for team_member_id in incoming_team_members]
 
-    team = teams.get(data.get('id'))
+    team = team_service.get(data.get('id'))
     current_team_leads = team_members.find(team_id=team.id, is_team_lead=True)
     current_team_members = team_members.find(team_id=team.id, is_team_lead=False)
     current_team_lead_ids = [team_lead.user_id for team_lead in current_team_leads]

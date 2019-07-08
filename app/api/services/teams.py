@@ -4,11 +4,11 @@ from app.api.helpers import Service
 from app.models import Team, TeamMember, TeamMemberPermission, User, db
 
 
-class TeamsService(Service):
+class TeamService(Service):
     __model__ = Team
 
     def __init__(self, *args, **kwargs):
-        super(TeamsService, self).__init__(*args, **kwargs)
+        super(TeamService, self).__init__(*args, **kwargs)
 
     def create_team(self, user):
         team = Team(

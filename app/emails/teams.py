@@ -1,14 +1,14 @@
 from flask import current_app
 from flask_login import current_user
 
-from app.api.services import (audit_service, audit_types, team_members, teams,
+from app.api.services import (audit_service, audit_types, team_members, team_service,
                               users)
 
 from .util import render_email_template, send_or_handle_error
 
 
 def send_team_lead_notification_emails(team_id, user_ids=None):
-    team = teams.find(id=team_id).first()
+    team = team_service.find(id=team_id).first()
 
     if user_ids is None or len(user_ids) == 0:
         # Team leads added through the create flow
@@ -49,7 +49,7 @@ def send_team_lead_notification_emails(team_id, user_ids=None):
 
 
 def send_team_member_notification_emails(team_id, user_ids=None):
-    team = teams.find(id=team_id).first()
+    team = team_service.find(id=team_id).first()
 
     if user_ids is None or len(user_ids) == 0:
         # Team members added through the create flow
