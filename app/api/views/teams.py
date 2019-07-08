@@ -5,10 +5,8 @@ from flask_login import current_user, login_required
 from app.api import api
 from app.api.business import team_business
 from app.api.business.errors import TeamError
-from app.api.helpers import abort, get_email_domain, not_found, role_required
-from app.api.services import (AuditTypes, audit_service, team_members, teams,
-                              users)
-from app.models import Team
+from app.api.helpers import abort, get_email_domain, role_required
+from app.api.services import users
 
 from ...utils import get_json_from_request
 
