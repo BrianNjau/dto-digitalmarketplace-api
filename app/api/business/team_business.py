@@ -35,10 +35,11 @@ def remove_user_from_team(user_id, team_id):
 
 def create_team():
     user = users.get(current_user.id)
-    completed_teams = [team for team in user.teams if team.status == 'completed']
+    completed_teams = team_service.get_teams_for_user(user.id)
 
     if len(completed_teams) == 0:
-        team = team_service.create_team(user)
+        team = team_service.create(name='My team', status='created')
+        add_user_to_team(user.id, team.id)
         team_member_service.promote_to_team_lead(team_id=team.id, user_id=user.id)
 
         audit_service.log_audit_event(
@@ -56,7 +57,7 @@ def create_team():
 def get_team_overview():
     team_overview = {}
     user = users.get(current_user.id)
-    completed_teams = [team for team in user.teams if team.status == 'completed']
+    completed_teams = team_service.get_teams_for_user(user.id)
 
     if len(completed_teams) > 0:
         team = completed_teams[0]

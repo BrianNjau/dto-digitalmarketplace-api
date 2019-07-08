@@ -10,18 +10,6 @@ class TeamService(Service):
     def __init__(self, *args, **kwargs):
         super(TeamService, self).__init__(*args, **kwargs)
 
-    def create_team(self, user):
-        team = Team(
-            name='My team',
-            status='created'
-        )
-
-        user.teams.append(team)
-        db.session.add(team)
-        db.session.commit()
-
-        return team
-
     def get_teams_for_user(self, user_id, status='completed'):
         return (db.session
                   .query(Team)
