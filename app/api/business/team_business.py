@@ -13,6 +13,17 @@ from app.emails.teams import (send_team_lead_notification_emails,
 from app.models import TeamMemberPermission, permission_types
 
 
+def add_user_to_team(user_id, team_id):
+    user = users.get(user_id)
+    teams = teams.get_user_teams(user_id)
+
+    if len(teams) > 0:
+        team = teams.pop()
+        abort('Users can only be in one team. {} is already a member of team: {}'.format(user.name, team.name))
+
+    team_members.create(team_id=team_id, user_id=user_id)
+
+
 def create_team():
     user = users.get(current_user.id)
     completed_teams = [team for team in user.teams if team.status == 'completed']
@@ -125,7 +136,7 @@ def update_team_leads_and_members(data):
     team_leads_to_remove = set(current_team_lead_ids) - set(incoming_team_lead_ids) - set(team_leads_to_demote)
 
     for user_id in team_leads_to_add:
-        user = users.add_to_team(user_id, team)
+        add_user_to_team(user_id. team.id)
         team_members.promote_to_team_lead(team_id=team.id, user_id=user.id)
 
     for user_id in team_leads_to_demote:
@@ -138,7 +149,7 @@ def update_team_leads_and_members(data):
     team_members_to_remove = set(current_team_member_ids) - set(incoming_team_member_ids) - set(team_members_to_promote)
 
     for user_id in team_members_to_add:
-        user = users.add_to_team(user_id, team)
+        add_user_to_team(user_id. team.id)
 
     for user_id in team_members_to_promote:
         team_members.promote_to_team_lead(team_id=team.id, user_id=user_id)

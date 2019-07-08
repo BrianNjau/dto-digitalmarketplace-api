@@ -99,20 +99,6 @@ class UsersService(Service):
     def get_by_email(self, email):
         return self.find(email_address=email).one_or_none()
 
-    def add_to_team(self, user_id, team):
-        user = self.get(user_id)
-        completed_teams = [team for team in user.teams if team.status == 'completed']
-
-        if len(completed_teams) > 0:
-            current_team = completed_teams.pop()
-            abort('Users can only be in one team. {} is already a member of team: {}'
-                  .format(user.name, current_team.name))
-
-        user.teams.append(team)
-        db.session.commit()
-
-        return user
-
     def remove_from_team(self, user_id, team_id):
         if user_id == current_user.id:
             abort('You can\'t remove yourself from a team. Another team lead must do this.')
