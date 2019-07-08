@@ -19,7 +19,7 @@ def add_user_to_team(user_id, team_id):
 
     if len(user_teams) > 0:
         team = user_teams.pop()
-        abort('Users can only be in one team. {} is already a member of team: {}'.format(user.name, team.name))
+        abort('Users can only be in one team. {} is already a member of {}.'.format(user.name, team.name))
 
     team_members.create(team_id=team_id, user_id=user_id)
 
