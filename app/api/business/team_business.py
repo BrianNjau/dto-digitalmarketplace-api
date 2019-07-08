@@ -6,8 +6,8 @@ from flask_login import current_user
 from app.api.business.errors import TeamError
 from app.api.helpers import abort, get_email_domain
 from app.api.services import (audit_service, audit_types,
-                              team_member_permissions, team_member_service, team_service,
-                              users)
+                              team_member_permission_service,
+                              team_member_service, team_service, users)
 from app.emails.teams import (send_team_lead_notification_emails,
                               send_team_member_notification_emails)
 from app.models import TeamMemberPermission, permission_types
@@ -192,37 +192,37 @@ def update_permissions(data):
                                  if granted is False]
 
         team_member = team_member_service.find(team_id=team_id, user_id=user_id).one_or_none()
-        current_permissions = team_member_permissions.find(team_member_id=team_member.id).all()
+        current_permissions = team_member_permission_service.find(team_member_id=team_member.id).all()
 
         for permission in permissions_to_remove:
-            permission_to_remove = team_member_permissions.find(
+            permission_to_remove = team_member_permission_service.find(
                 team_member_id=team_member.id,
                 permission=permission
             ).one_or_none()
 
             if permission_to_remove is not None:
-                team_member_permissions.delete(permission_to_remove)
+                team_member_permission_service.delete(permission_to_remove)
 
         for permission in permissions_to_add:
-            permission_to_add = team_member_permissions.find(
+            permission_to_add = team_member_permission_service.find(
                 team_member_id=team_member.id,
                 permission=permission
             ).one_or_none()
 
             if permission_to_add is None:
-                team_member_permissions.save(TeamMemberPermission(
+                team_member_permission_service.save(TeamMemberPermission(
                     team_member_id=team_member.id,
                     permission=permission
                 ))
 
 
 def delete_team_member_permissions(team_member_id):
-    permissions_to_remove = team_member_permissions.find(team_member_id=team_member_id).all()
+    permissions_to_remove = team_member_permission_service.find(team_member_id=team_member_id).all()
     for permission in permissions_to_remove:
-        permission_to_remove = team_member_permissions.find(
+        permission_to_remove = team_member_permission_service.find(
             team_member_id=team_member_id,
             permission=permission.permission
         ).one_or_none()
 
         if permission_to_remove is not None:
-            team_member_permissions.delete(permission_to_remove)
+            team_member_permission_service.delete(permission_to_remove)

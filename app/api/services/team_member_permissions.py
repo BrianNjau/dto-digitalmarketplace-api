@@ -2,8 +2,8 @@ from app.api.helpers import Service
 from app.models import TeamMemberPermission
 
 
-class TeamMemberPermissionsService(Service):
+class TeamMemberPermissionService(Service):
     __model__ = TeamMemberPermission
 
     def __init__(self, *args, **kwargs):
-        super(TeamMemberPermissionsService, self).__init__(*args, **kwargs)
+        super(TeamMemberPermissionService, self).__init__(*args, **kwargs)

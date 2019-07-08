@@ -17,7 +17,7 @@ from .frameworks import FrameworksService
 from .user_claims import UserClaimService
 from .teams import TeamService
 from .team_members import TeamMemberService
-from .team_member_permissions import TeamMemberPermissionsService
+from .team_member_permissions import TeamMemberPermissionService
 from .work_order import WorkOrderService
 
 agency_service = AgencyService()
@@ -39,6 +39,6 @@ publish = Publish()
 frameworks_service = FrameworksService()
 team_service = TeamService()
 team_member_service = TeamMemberService()
-team_member_permissions = TeamMemberPermissionsService()
+team_member_permission_service = TeamMemberPermissionService()
 user_claims_service = UserClaimService()
 work_order_service = WorkOrderService()
