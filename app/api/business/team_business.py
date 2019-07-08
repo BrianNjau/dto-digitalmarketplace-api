@@ -24,6 +24,15 @@ def add_user_to_team(user_id, team_id):
     team_members.create(team_id=team_id, user_id=user_id)
 
 
+def remove_user_from_team(user_id, team_id):
+    if user_id == current_user.id:
+        abort('You can\'t remove yourself from a team. Another team lead must do this.')
+
+    team_member = team_members.find(team_id=team_id, user_id=user_id).one_or_none()
+    if team_member is not None:
+        team_members.delete(team_member)
+
+
 def create_team():
     user = users.get(current_user.id)
     completed_teams = [team for team in user.teams if team.status == 'completed']
@@ -143,7 +152,7 @@ def update_team_leads_and_members(data):
         team_members.demote_team_lead(team_id=team.id, user_id=user_id)
 
     for user_id in team_leads_to_remove:
-        user = users.remove_from_team(user_id, team.id)
+        remove_user_from_team(user_id, team.id)
 
     team_members_to_add = set(incoming_team_member_ids) - set(current_team_member_ids) - set(team_leads_to_demote)
     team_members_to_remove = set(current_team_member_ids) - set(incoming_team_member_ids) - set(team_members_to_promote)
@@ -159,7 +168,7 @@ def update_team_leads_and_members(data):
     for user_id in team_members_to_remove:
         team_member = team_members.find(user_id=user_id).one_or_none()
         delete_team_member_permissions(team_member.id)
-        user = users.remove_from_team(user_id, team.id)
+        remove_user_from_team(user_id, team.id)
 
     Team = namedtuple('Team', ['new_team_leads', 'new_team_members'])
     new_team_leads = team_leads_to_add | team_members_to_promote

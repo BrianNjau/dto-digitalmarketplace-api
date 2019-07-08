@@ -98,16 +98,3 @@ class UsersService(Service):
 
     def get_by_email(self, email):
         return self.find(email_address=email).one_or_none()
-
-    def remove_from_team(self, user_id, team_id):
-        if user_id == current_user.id:
-            abort('You can\'t remove yourself from a team. Another team lead must do this.')
-
-        user = self.get(user_id)
-
-        for index, team in enumerate(user.teams):
-            if team.id == team_id:
-                user.teams.pop(index)
-                db.session.commit()
-
-                return user
