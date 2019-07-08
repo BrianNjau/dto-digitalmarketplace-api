@@ -50,7 +50,13 @@ def send_team_lead_notification_emails(team_id, user_ids=None):
 
 def send_team_member_notification_emails(team_id, user_ids=None):
     team = teams.find(id=team_id).first()
-    members = team_members.find(team_id=team_id, is_team_lead=False).all()
+
+    if user_ids is None or len(user_ids) == 0:
+        # Team members added through the create flow
+        members = team_members.find(team_id=team_id, is_team_lead=False).all()
+    else:
+        # Team members added through the edit flow
+        members = team_members.get_team_members_by_user_id(user_ids)
 
     to_addresses = []
     for member in members:
