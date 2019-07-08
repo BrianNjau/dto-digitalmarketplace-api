@@ -13,6 +13,7 @@ def send_team_lead_notification_emails(team_id, user_ids=None):
     if user_ids is None or len(user_ids) == 0:
         # Team leads added through the create flow
         team_leads = team_member_service.find(team_id=team_id, is_team_lead=True).all()
+        team_leads = [team_lead for team_lead in team_leads if team_lead.user_id != current_user.id]
     else:
         # Team leads added through the edit flow
         team_leads = team_member_service.get_team_leads_by_user_id(user_ids)
