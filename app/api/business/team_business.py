@@ -15,10 +15,10 @@ from app.models import TeamMemberPermission, permission_types
 
 def add_user_to_team(user_id, team_id):
     user = users.get(user_id)
-    teams = teams.get_user_teams(user_id)
+    user_teams = teams.get_user_teams(user_id)
 
-    if len(teams) > 0:
-        team = teams.pop()
+    if len(user_teams) > 0:
+        team = user_teams.pop()
         abort('Users can only be in one team. {} is already a member of team: {}'.format(user.name, team.name))
 
     team_members.create(team_id=team_id, user_id=user_id)
