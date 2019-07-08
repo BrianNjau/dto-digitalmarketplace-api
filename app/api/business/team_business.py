@@ -162,3 +162,8 @@ def delete_team_member_permissions(team_member_id):
 
         if permission_to_remove is not None:
             team_member_permissions.delete(permission_to_remove)
+
+
+def get_user_teams(user_id):
+    permissions = teams.get_user_teams(user_id)
+    return permissions

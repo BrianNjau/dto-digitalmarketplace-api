@@ -28,6 +28,19 @@ def role_required(*roles):
     return role_decorator
 
 
+def permissions_required(*permissions):
+    def permissions_decorator(func):
+        @wraps(func)
+        def decorated_view(*args, **kwargs):
+            if not any(current_user.has_permission(p) for p in permissions):
+                return jsonify(message="One of [{}] permissions required".format(", ".join(permissions))), 403
+            return func(*args, **kwargs)
+
+        return decorated_view
+
+    return permissions_decorator
+
+
 def is_current_supplier(func):
     @wraps(func)
     def decorated_view(code, *args, **kwargs):
@@ -131,6 +144,11 @@ def user_info(user):
     except AttributeError:
         is_authenticated = False
 
+    try:
+        teams = current_user.teams
+    except AttributeError:
+        teams = []
+
     return {
         "isAuthenticated": is_authenticated,
         "userType": user_type,
@@ -138,7 +156,8 @@ def user_info(user):
         "emailAddress": email_address,
         "csrfToken": get_csrf_token(),
         "framework": framework,
-        "notificationCount": notification_count
+        "notificationCount": notification_count,
+        "teams": teams
     }
 
 

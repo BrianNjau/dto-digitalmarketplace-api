@@ -20,7 +20,14 @@ from app.api.business.validators import (
 from app.api.business.brief import BriefUserStatus
 from app.api.business import supplier_business, brief_overview_business
 from app.api.business.agreement_business import use_old_work_order_creator
-from app.api.helpers import abort, forbidden, not_found, role_required, is_current_user_in_brief
+from app.api.helpers import (
+    abort,
+    forbidden,
+    not_found,
+    role_required,
+    is_current_user_in_brief,
+    permissions_required
+)
 from app.api.services import (agency_service,
                               audit_service,
                               audit_types,
@@ -200,6 +207,7 @@ def _notify_team_brief_published(brief_title, brief_org, user_name, user_email, 
 @api.route('/brief/rfx', methods=['POST'])
 @login_required
 @role_required('buyer')
+@permissions_required('create_drafts')
 def create_rfx_brief():
     """Create RFX brief (role=buyer)
     ---
@@ -255,6 +263,7 @@ def create_rfx_brief():
 @api.route('/brief/atm', methods=['POST'])
 @login_required
 @role_required('buyer')
+@permissions_required('create_drafts')
 def create_atm_brief():
     """Create ATM brief (role=buyer)
     ---
@@ -310,6 +319,7 @@ def create_atm_brief():
 @api.route('/brief/specialist', methods=['POST'])
 @login_required
 @role_required('buyer')
+@permissions_required('create_drafts')
 def create_specialist_brief():
     """Create Specialist brief (role=buyer)
     ---
@@ -666,6 +676,8 @@ def update_brief(brief_id):
     if 'publish' in data and data['publish']:
         del data['publish']
         publish = True
+        if not current_user.has_permission('publish_opportunities'):
+            return forbidden('Unauthorised to publish opportunity')
 
     if brief.lot.slug == 'rfx':
         # validate the RFX JSON request data
@@ -1064,6 +1076,7 @@ def upload_brief_rfx_attachment_file(brief_id, slug):
 @api.route('/brief/<int:brief_id>/respond/documents')
 @login_required
 @role_required('buyer')
+@permissions_required('download_responses')
 def download_brief_responses(brief_id):
     brief = Brief.query.filter(
         Brief.id == brief_id
@@ -1331,6 +1344,7 @@ def get_notification_template(brief_id, template):
 @api.route('/brief/<int:brief_id>/award-seller', methods=['POST'])
 @login_required
 @role_required('buyer')
+@permissions_required('create_work_orders')
 def award_brief_to_seller(brief_id):
     """Award a brief to a seller (role=buyer)
     ---

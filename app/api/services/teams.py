@@ -1,4 +1,5 @@
-from sqlalchemy import and_, func
+from sqlalchemy import and_, func, cast
+from sqlalchemy.types import TEXT
 
 from app.api.helpers import Service
 from app.models import Team, TeamMember, TeamMemberPermission, User, db
@@ -105,3 +106,22 @@ class TeamsService(Service):
                   .one_or_none())
 
         return team._asdict() if team else None
+
+    def get_user_teams(self, user_id):
+        result = (
+            db
+            .session
+            .query(
+                Team.id,
+                Team.name,
+                TeamMember.is_team_lead,
+                func.array_agg(cast(TeamMemberPermission.permission, TEXT)).label('permissions')
+            )
+            .join(TeamMember)
+            .join(TeamMemberPermission, isouter=True)
+            .filter(TeamMember.user_id == user_id)
+            .filter(Team.status == 'completed')
+            .group_by(Team.id, Team.name, TeamMember.is_team_lead)
+            .all()
+        )
+        return [r._asdict() for r in result]
