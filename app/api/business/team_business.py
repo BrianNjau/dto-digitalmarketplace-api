@@ -35,20 +35,25 @@ def remove_user_from_team(user_id, team_id):
 
 def create_team():
     user = users.get(current_user.id)
+    created_teams = team_service.get_teams_for_user(user.id, 'created')
     completed_teams = team_service.get_teams_for_user(user.id)
 
     if len(completed_teams) == 0:
-        team = team_service.create(name='My team', status='created')
-        add_user_to_team(user.id, team.id)
-        team_member_service.promote_to_team_lead(team_id=team.id, user_id=user.id)
+        if len(created_teams) == 0:
+            team = team_service.create(name='My team', status='created')
+            add_user_to_team(user.id, team.id)
+            team_member_service.promote_to_team_lead(team_id=team.id, user_id=user.id)
 
-        audit_service.log_audit_event(
-            audit_type=audit_types.create_team,
-            db_object=team,
-            user=current_user.email_address
-        )
+            audit_service.log_audit_event(
+                audit_type=audit_types.create_team,
+                db_object=team,
+                user=current_user.email_address
+            )
 
-        return get_team(team.id)
+            return get_team(team.id)
+
+        created_team = created_teams.pop()
+        return get_team(created_team.id)
     else:
         team = completed_teams[0]
         raise TeamError('You can only be in one team. You\'re already a member of {}.'.format(team.name))
