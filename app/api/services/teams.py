@@ -1,31 +1,21 @@
-from sqlalchemy import and_, func
+from sqlalchemy import and_, desc, func
 
 from app.api.helpers import Service
 from app.models import Team, TeamMember, TeamMemberPermission, User, db
 
 
-class TeamsService(Service):
+class TeamService(Service):
     __model__ = Team
 
     def __init__(self, *args, **kwargs):
-        super(TeamsService, self).__init__(*args, **kwargs)
+        super(TeamService, self).__init__(*args, **kwargs)
 
-    def create_team(self, user):
-        team = Team(
-            name='My team',
-            status='created'
-        )
-
-        user.teams.append(team)
-        db.session.add(team)
-        db.session.commit()
-
-        return team
-
-    def save_team(self, data):
-        team = self.find(id=data['id']).one_or_none()
-        self.update(team, name=data['name'], email_address=data['email_address'])
-        return team
+    def get_teams_for_user(self, user_id, status='completed'):
+        return (db.session
+                  .query(Team)
+                  .filter(Team.status == status)
+                  .join(TeamMember, TeamMember.user_id == user_id)
+                  .all())
 
     def get_team(self, team_id):
         team_leads = (db.session
@@ -105,3 +95,46 @@ class TeamsService(Service):
                   .one_or_none())
 
         return team._asdict() if team else None
+
+    def get_team_overview(self, team_id, user_id):
+        team_members = (db.session
+                          .query(User.id, User.name, TeamMember.team_id)
+                          .join(TeamMember, TeamMember.user_id == User.id)
+                          .filter(TeamMember.team_id == team_id)
+                          .order_by(
+                              TeamMember.team_id,
+                              desc(TeamMember.is_team_lead),
+                              User.name)
+                          .subquery('team_members'))
+
+        aggregated_team_members = (db.session
+                                     .query(team_members.columns.team_id,
+                                            func.json_agg(
+                                                team_members.columns.name
+                                            ).label('members'))
+                                     .group_by(team_members.columns.team_id)
+                                     .subquery('aggregated_team_members'))
+
+        team = (db.session
+                  .query(aggregated_team_members.columns.members, Team.id, Team.name)
+                  .join(Team, Team.id == aggregated_team_members.columns.team_id)
+                  .filter(Team.status == 'completed')
+                  .subquery('team'))
+
+        result = (db.session
+                    .query(
+                        func.json_build_object(
+                            team.columns.id,
+                            func.json_build_object(
+                                'isTeamLead', TeamMember.is_team_lead,
+                                'members', team.columns.members,
+                                'name', team.columns.name
+                            )
+                        ).label('overview'))
+                    .join(team, TeamMember.team_id == team.columns.id)
+                    .filter(
+                        TeamMember.team_id == team_id,
+                        TeamMember.user_id == user_id)
+                    .one_or_none())
+
+        return result._asdict() if result else None
