@@ -27,10 +27,10 @@ class TeamsService(Service):
         self.update(team, name=data['name'], email_address=data['email_address'])
         return team
 
-    def get_user_teams(self, user_id):
+    def get_teams_for_user(self, user_id, status='completed'):
         return (db.session
                   .query(Team)
-                  .filter(Team.status == 'completed')
+                  .filter(Team.status == status)
                   .join(TeamMember, TeamMember.user_id == user_id)
                   .all())
 
