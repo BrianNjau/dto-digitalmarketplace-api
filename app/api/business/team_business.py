@@ -6,7 +6,7 @@ from flask_login import current_user
 from app.api.business.errors import TeamError
 from app.api.helpers import abort, get_email_domain
 from app.api.services import (audit_service, audit_types,
-                              team_member_permissions, team_members, team_service,
+                              team_member_permissions, team_member_service, team_service,
                               users)
 from app.emails.teams import (send_team_lead_notification_emails,
                               send_team_member_notification_emails)
@@ -21,16 +21,16 @@ def add_user_to_team(user_id, team_id):
         team = teams.pop()
         abort('Users can only be in one team. {} is already a member of {}.'.format(user.name, team.name))
 
-    team_members.create(team_id=team_id, user_id=user_id)
+    team_member_service.create(team_id=team_id, user_id=user_id)
 
 
 def remove_user_from_team(user_id, team_id):
     if user_id == current_user.id:
         abort('You can\'t remove yourself from a team. Another team lead must do this.')
 
-    team_member = team_members.find(team_id=team_id, user_id=user_id).one_or_none()
+    team_member = team_member_service.find(team_id=team_id, user_id=user_id).one_or_none()
     if team_member is not None:
-        team_members.delete(team_member)
+        team_member_service.delete(team_member)
 
 
 def create_team():
@@ -39,7 +39,7 @@ def create_team():
 
     if len(completed_teams) == 0:
         team = team_service.create_team(user)
-        team_members.promote_to_team_lead(team_id=team.id, user_id=user.id)
+        team_member_service.promote_to_team_lead(team_id=team.id, user_id=user.id)
 
         audit_service.log_audit_event(
             audit_type=audit_types.create_team,
@@ -133,8 +133,8 @@ def update_team_leads_and_members(data):
     incoming_team_member_ids = [int(team_member_id) for team_member_id in incoming_team_members]
 
     team = team_service.get(data.get('id'))
-    current_team_leads = team_members.find(team_id=team.id, is_team_lead=True)
-    current_team_members = team_members.find(team_id=team.id, is_team_lead=False)
+    current_team_leads = team_member_service.find(team_id=team.id, is_team_lead=True)
+    current_team_members = team_member_service.find(team_id=team.id, is_team_lead=False)
     current_team_lead_ids = [team_lead.user_id for team_lead in current_team_leads]
     current_team_member_ids = [team_member.user_id for team_member in current_team_members]
 
@@ -146,10 +146,10 @@ def update_team_leads_and_members(data):
 
     for user_id in team_leads_to_add:
         add_user_to_team(user_id, team.id)
-        team_members.promote_to_team_lead(team_id=team.id, user_id=user_id)
+        team_member_service.promote_to_team_lead(team_id=team.id, user_id=user_id)
 
     for user_id in team_leads_to_demote:
-        team_members.demote_team_lead(team_id=team.id, user_id=user_id)
+        team_member_service.demote_team_lead(team_id=team.id, user_id=user_id)
 
     for user_id in team_leads_to_remove:
         remove_user_from_team(user_id, team.id)
@@ -161,12 +161,12 @@ def update_team_leads_and_members(data):
         add_user_to_team(user_id, team.id)
 
     for user_id in team_members_to_promote:
-        team_members.promote_to_team_lead(team_id=team.id, user_id=user_id)
-        team_member = team_members.find(user_id=user_id).one_or_none()
+        team_member_service.promote_to_team_lead(team_id=team.id, user_id=user_id)
+        team_member = team_member_service.find(user_id=user_id).one_or_none()
         delete_team_member_permissions(team_member.id)
 
     for user_id in team_members_to_remove:
-        team_member = team_members.find(user_id=user_id).one_or_none()
+        team_member = team_member_service.find(user_id=user_id).one_or_none()
         delete_team_member_permissions(team_member.id)
         remove_user_from_team(user_id, team.id)
 
@@ -191,7 +191,7 @@ def update_permissions(data):
         permissions_to_remove = [permission for permission, granted in incoming_permissions.iteritems()
                                  if granted is False]
 
-        team_member = team_members.find(team_id=team_id, user_id=user_id).one_or_none()
+        team_member = team_member_service.find(team_id=team_id, user_id=user_id).one_or_none()
         current_permissions = team_member_permissions.find(team_member_id=team_member.id).all()
 
         for permission in permissions_to_remove:

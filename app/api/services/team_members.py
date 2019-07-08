@@ -2,11 +2,11 @@ from app.api.helpers import Service
 from app.models import TeamMember, db
 
 
-class TeamMembersService(Service):
+class TeamMemberService(Service):
     __model__ = TeamMember
 
     def __init__(self, *args, **kwargs):
-        super(TeamMembersService, self).__init__(*args, **kwargs)
+        super(TeamMemberService, self).__init__(*args, **kwargs)
 
     def get_team_leads_by_user_id(self, user_ids):
         return (db.session
