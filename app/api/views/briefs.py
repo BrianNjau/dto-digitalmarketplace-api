@@ -242,7 +242,7 @@ def create_rfx_brief():
         lot = lots_service.find(slug='rfx').one_or_none()
         framework = frameworks_service.find(slug='digital-marketplace').one_or_none()
         user = users.get(current_user.id)
-        brief = briefs.create_brief(user, framework, lot)
+        brief = briefs.create_brief(user, current_user.get_team(), framework, lot)
     except Exception as e:
         rollbar.report_exc_info()
         return jsonify(message=e.message), 400
@@ -298,7 +298,7 @@ def create_atm_brief():
         lot = lots_service.find(slug='atm').one_or_none()
         framework = frameworks_service.find(slug='digital-marketplace').one_or_none()
         user = users.get(current_user.id)
-        brief = briefs.create_brief(user, framework, lot)
+        brief = briefs.create_brief(user, current_user.get_team(), framework, lot)
     except Exception as e:
         rollbar.report_exc_info()
         return jsonify(message=e.message), 400
@@ -361,7 +361,7 @@ def create_specialist_brief():
             agency_name = agency.name
         except Exception as e:
             pass
-        brief = briefs.create_brief(user, framework, lot, data={
+        brief = briefs.create_brief(user, current_user.get_team(), framework, lot, data={
             'organisation': agency_name
         })
     except Exception as e:
@@ -461,10 +461,9 @@ def get_brief(brief_id):
 
     is_buyer = False
     is_brief_owner = False
-    brief_user_ids = [user.id for user in brief.users]
     if user_role == 'buyer':
         is_buyer = True
-        if current_user.id in brief_user_ids:
+        if briefs.has_permission_to_brief(current_user.id, brief.id):
             is_brief_owner = True
 
     if brief.status == 'draft' and not is_brief_owner:
@@ -526,7 +525,7 @@ def get_brief(brief_id):
             brief.data['timeframeConstraints'] = ''
             brief.data['attachments'] = []
     else:
-        brief.data['contactEmail'] = [user.email_address for user in brief.users][0]
+        brief.data['contactEmail'] = current_user.email_address
         if not is_brief_owner:
             if 'sellers' in brief.data:
                 brief.data['sellers'] = {}
@@ -675,8 +674,7 @@ def update_brief(brief_id):
         abort('Brief lot not supported for editing')
 
     if current_user.role == 'buyer':
-        brief_user_ids = [user.id for user in brief.users]
-        if current_user.id not in brief_user_ids:
+        if not briefs.has_permission_to_brief(current_user.id, brief.id):
             return forbidden('Unauthorised to update brief')
 
     data = get_json_from_request()
@@ -827,8 +825,7 @@ def delete_brief(brief_id):
         not_found("Invalid brief id '{}'".format(brief_id))
 
     if current_user.role == 'buyer':
-        brief_user_ids = [user.id for user in brief.users]
-        if current_user.id not in brief_user_ids:
+        if not briefs.has_permission_to_brief(current_user.id, brief.id):
             return forbidden('Unauthorised to delete brief')
 
     if brief.status != 'draft':
@@ -922,8 +919,7 @@ def get_brief_overview(brief_id):
         not_found("Invalid brief id '{}'".format(brief_id))
 
     if current_user.role == 'buyer':
-        brief_user_ids = [user.id for user in brief.users]
-        if current_user.id not in brief_user_ids:
+        if not briefs.has_permission_to_brief(current_user.id, brief.id):
             return forbidden('Unauthorised to view brief')
 
     if not (brief.lot.slug == 'digital-professionals' or
@@ -974,8 +970,7 @@ def get_brief_responses(brief_id):
         not_found("Invalid brief id '{}'".format(brief_id))
 
     if current_user.role == 'buyer':
-        brief_user_ids = [user.id for user in brief.users]
-        if current_user.id not in brief_user_ids:
+        if not briefs.has_permission_to_brief(current_user.id, brief.id):
             return forbidden("Unauthorised to view brief or brief does not exist")
 
     supplier_code = getattr(current_user, 'supplier_code', None)
@@ -1072,8 +1067,7 @@ def upload_brief_rfx_attachment_file(brief_id, slug):
     if not brief:
         not_found("Invalid brief id '{}'".format(brief_id))
 
-    brief_user_ids = [user.id for user in brief.users]
-    if current_user.id not in brief_user_ids:
+    if not briefs.has_permission_to_brief(current_user.id, brief.id):
         return forbidden('Unauthorised to update brief')
 
     return jsonify({"filename": s3_upload_file_from_request(request, slug,
@@ -1090,8 +1084,7 @@ def download_brief_responses(brief_id):
     brief = Brief.query.filter(
         Brief.id == brief_id
     ).first_or_404()
-    brief_user_ids = [user.id for user in brief.users]
-    if current_user.id not in brief_user_ids:
+    if not briefs.has_permission_to_brief(current_user.id, brief.id):
         return forbidden("Unauthorised to view brief or brief does not exist")
     if brief.status != 'closed':
         return forbidden("You can only download documents for closed briefs")
@@ -1151,11 +1144,16 @@ def download_brief_attachment(brief_id, slug):
             description: Unexpected error.
     """
     brief = briefs.get(brief_id)
-    brief_user_ids = [user.id for user in brief.users]
 
-    if (hasattr(current_user, 'role') and
-        (current_user.role == 'buyer' or
-            (current_user.role == 'supplier' and _can_do_brief_response(brief_id)))):
+    if (
+        hasattr(current_user, 'role') and
+        (
+            current_user.role == 'buyer' or (
+                current_user.role == 'supplier' and
+                _can_do_brief_response(brief_id)
+            )
+        )
+    ):
         file = s3_download_file(slug, os.path.join(brief.framework.slug, 'attachments',
                                                    'brief-' + str(brief_id)))
         mimetype = mimetypes.guess_type(slug)[0] or 'binary/octet-stream'
@@ -1170,9 +1168,15 @@ def download_brief_response_file(brief_id, supplier_code, slug):
     brief = Brief.query.filter(
         Brief.id == brief_id
     ).first_or_404()
-    brief_user_ids = [user.id for user in brief.users]
-    if hasattr(current_user, 'role') and (current_user.role == 'buyer' and current_user.id in brief_user_ids) \
-            or (current_user.role == 'supplier' and current_user.supplier_code == supplier_code):
+    if (
+        hasattr(current_user, 'role') and (
+            current_user.role == 'buyer' and
+            briefs.has_permission_to_brief(current_user.id, brief.id)
+        ) or (
+            current_user.role == 'supplier' and
+            current_user.supplier_code == supplier_code
+        )
+    ):
         file = s3_download_file(slug, os.path.join(brief.framework.slug, 'documents',
                                                    'brief-' + str(brief_id),
                                                    'supplier-' + str(supplier_code)))
@@ -1381,10 +1385,12 @@ def award_brief_to_seller(brief_id):
     if not brief:
         not_found('brief {} not found'.format(brief_id))
 
-    brief_user_ids = [user.id for user in brief.users]
     if not (
         hasattr(current_user, 'role') and
-        (current_user.role == 'buyer' and current_user.id in brief_user_ids)
+        (
+            current_user.role == 'buyer' and
+            not briefs.has_permission_to_brief(current_user.id, brief.id)
+        )
     ):
         forbidden('Unauthorised to award brief to seller')
 

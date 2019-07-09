@@ -1899,6 +1899,7 @@ class Brief(db.Model):
                       {})
 
     users = db.relationship('User', secondary='brief_user')
+    team_briefs = db.relationship('TeamBrief')
     framework = db.relationship('Framework', lazy='joined')
     lot = db.relationship('Lot', lazy='joined')
     clarification_questions = db.relationship(
