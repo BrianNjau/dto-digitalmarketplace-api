@@ -72,5 +72,7 @@ def publish_answer(brief_id):
         not_found(nfe.message)
     except ValidationError as ve:
         abort(ve.message)
+    except UnauthorisedError as ue:
+        abort(ue.message)
 
     return jsonify(success=True), 200

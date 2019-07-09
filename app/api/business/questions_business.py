@@ -7,7 +7,8 @@ from app.api.services import (
 )
 from app.api.business.errors import (
     NotFoundError,
-    ValidationError
+    ValidationError,
+    UnauthorisedError
 )
 from app.models import (
     BriefClarificationQuestion
@@ -95,6 +96,9 @@ def publish_answer(user_info, brief_id, data):
     brief = briefs.get(brief_id)
     if not brief:
         raise NotFoundError("Invalid brief id '{}'".format(brief_id))
+
+    if not briefs.has_permission_to_brief(user_info.get('user_id'), brief.id):
+        raise UnauthorisedError('Unauthorised to publish answer')
 
     publish_question = data.get('question')
     if not publish_question:
