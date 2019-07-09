@@ -232,5 +232,5 @@ def delete_team_member_permissions(team_member_id):
 
 
 def get_user_teams(user_id):
-    permissions = teams.get_user_teams(user_id)
+    permissions = team_service.get_user_teams(user_id)
     return permissions
