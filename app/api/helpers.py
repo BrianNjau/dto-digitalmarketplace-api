@@ -28,6 +28,19 @@ def role_required(*roles):
     return role_decorator
 
 
+def permissions_required(*permissions):
+    def permissions_decorator(func):
+        @wraps(func)
+        def decorated_view(*args, **kwargs):
+            if not any(current_user.has_permission(p) for p in permissions):
+                return jsonify(message="One of [{}] permissions required".format(", ".join(permissions))), 403
+            return func(*args, **kwargs)
+
+        return decorated_view
+
+    return permissions_decorator
+
+
 def is_current_supplier(func):
     @wraps(func)
     def decorated_view(code, *args, **kwargs):
@@ -131,6 +144,21 @@ def user_info(user):
     except AttributeError:
         is_authenticated = False
 
+    try:
+        teams = current_user.teams
+    except AttributeError:
+        teams = []
+
+    try:
+        is_part_of_team = current_user.is_part_of_team()
+    except AttributeError:
+        is_part_of_team = False
+
+    try:
+        is_team_lead = current_user.is_team_lead()
+    except AttributeError:
+        is_team_lead = False
+
     return {
         "isAuthenticated": is_authenticated,
         "userType": user_type,
@@ -138,7 +166,10 @@ def user_info(user):
         "emailAddress": email_address,
         "csrfToken": get_csrf_token(),
         "framework": framework,
-        "notificationCount": notification_count
+        "notificationCount": notification_count,
+        "teams": teams,
+        "isPartOfTeam": is_part_of_team,
+        "isTeamLead": is_team_lead
     }
 
 
@@ -263,10 +294,11 @@ class Service(object):
     def _preprocess_params(self, kwargs):
         return kwargs
 
-    def save(self, model):
+    def save(self, model, do_commit=True):
         self._isinstance(model)
         self.add_to_session(model)
-        self.commit_changes()
+        if do_commit:
+            self.commit_changes()
         return model
 
     def all(self):

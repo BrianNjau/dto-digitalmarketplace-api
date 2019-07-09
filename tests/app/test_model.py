@@ -1178,7 +1178,6 @@ class TestApplication(BaseApplicationTest):
             db.session.flush()
 
             assert len(app.supplier.contacts) == 1
-            assert app.supplier.unassessed_domains == ['Content and Publishing']
 
     @mock.patch('app.jiraapi.JIRA')
     def test_existing_seller_application(self, jira):
@@ -1218,9 +1217,6 @@ class TestApplication(BaseApplicationTest):
 
             # make sure this didn't change
             assert app.supplier.status == 'complete'
-
-            assert app.supplier.all_domains == \
-                ['Content and Publishing']
 
             # test application-from-existing-seller scenario
 

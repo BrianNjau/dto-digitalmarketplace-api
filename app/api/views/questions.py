@@ -2,7 +2,13 @@ from flask import request, jsonify
 from flask_login import login_required, current_user
 from app.api import api
 from app.api.business import questions_business
-from app.api.helpers import abort, forbidden, get_email_domain, role_required
+from app.api.helpers import (
+    abort,
+    forbidden,
+    get_email_domain,
+    role_required,
+    permissions_required
+)
 from app.api.business.errors import (
     NotFoundError,
     ValidationError
@@ -53,6 +59,7 @@ def get_answers(brief_id):
 @api.route('/brief/<int:brief_id>/publish-answer', methods=['POST'])
 @login_required
 @role_required('buyer')
+@permissions_required('answer_seller_questions')
 def publish_answer(brief_id):
     data = get_json_from_request()
     try:
