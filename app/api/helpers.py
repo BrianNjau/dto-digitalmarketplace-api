@@ -149,6 +149,16 @@ def user_info(user):
     except AttributeError:
         teams = []
 
+    try:
+        is_part_of_team = current_user.is_part_of_team()
+    except AttributeError:
+        is_part_of_team = False
+
+    try:
+        is_team_lead = current_user.is_team_lead()
+    except AttributeError:
+        is_team_lead = False
+
     return {
         "isAuthenticated": is_authenticated,
         "userType": user_type,
@@ -157,7 +167,9 @@ def user_info(user):
         "csrfToken": get_csrf_token(),
         "framework": framework,
         "notificationCount": notification_count,
-        "teams": teams
+        "teams": teams,
+        "isPartOfTeam": is_part_of_team,
+        "isTeamLead": is_team_lead
     }
 
 
