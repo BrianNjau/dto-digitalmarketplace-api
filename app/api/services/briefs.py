@@ -381,6 +381,17 @@ class BriefsService(Service):
         return brief
 
     def accessible_briefs(self, user_id):
+        team_member_subquery = (
+            db
+            .session
+            .query(
+                TeamMember.team_id
+            )
+            .join(Team)
+            .filter(TeamMember.user_id == user_id)
+            .filter(Team.status == 'completed')
+            .subquery()
+        )
         team_member_result = (
             db
             .session
@@ -388,9 +399,7 @@ class BriefsService(Service):
                 TeamMember.team_id,
                 TeamMember.user_id
             )
-            .join(Team)
-            .filter(TeamMember.user_id == user_id)
-            .filter(Team.status == 'completed')
+            .join(team_member_subquery, team_member_subquery.columns.team_id == TeamMember.team_id)
             .all()
         )
         team_ids = [tm.team_id for tm in team_member_result]
