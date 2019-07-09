@@ -5,8 +5,8 @@ from flask_login import current_user, login_required
 from app.api import api
 from app.api.business import team_business
 from app.api.business.errors import TeamError
-from app.api.helpers import abort, get_email_domain, role_required
-from app.api.services import users
+from app.api.helpers import abort, forbidden, get_email_domain, role_required
+from app.api.services import team_member_service, users
 
 from ...utils import get_json_from_request
 
@@ -47,6 +47,15 @@ def create_team():
 @login_required
 @role_required('buyer')
 def get_team(team_id):
+    team_member = team_member_service.find(
+        is_team_lead=True,
+        team_id=team_id,
+        user_id=current_user.id
+    ).one_or_none()
+
+    if team_member is None:
+        return forbidden('Only team leads can edit a team')
+
     team = team_business.get_team(team_id)
 
     return jsonify(team)
@@ -56,6 +65,15 @@ def get_team(team_id):
 @login_required
 @role_required('buyer')
 def update_team(team_id):
+    team_member = team_member_service.find(
+        is_team_lead=True,
+        team_id=team_id,
+        user_id=current_user.id
+    ).one_or_none()
+
+    if team_member is None:
+        return forbidden('Only team leads can edit a team')
+
     data = get_json_from_request()
     team = team_business.update_team(data)
 
