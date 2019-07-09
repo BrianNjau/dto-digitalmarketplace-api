@@ -365,7 +365,7 @@ class BriefsService(Service):
             )
         else:
             brief = Brief(
-                user=[user],
+                users=[user],
                 framework=framework,
                 lot=lot,
                 data=data
@@ -446,6 +446,7 @@ class BriefsService(Service):
                     BriefUser.brief_id.label('brief_id'),
                     BriefUser.user_id.label('user_id')
                 )
+                .filter(BriefUser.user_id == user_id)
                 .subquery()
             )
 
