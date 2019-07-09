@@ -1,3 +1,4 @@
+from flask_login import current_user
 from app.api.business.agreement_business import use_old_work_order_creator
 from app.validation import get_sections as get_validation_sections
 
@@ -73,7 +74,13 @@ def get_publish_links(brief):
         # Review and publish is complete if the buyer has completed all sections and published
         publish_completed = all([link['complete'] for link in links]) and not draft_brief
         publish_path = get_path_for_brief_link(brief, '{path}/publish') if draft_brief else None
-        links.append(build_brief_link(publish_completed, publish_path, 'Review and publish your requirements'))
+        links.append(
+            build_brief_link(
+                publish_completed,
+                publish_path,
+                'Review and publish your requirements'
+            )
+        )
 
     return links
 
@@ -86,7 +93,14 @@ def get_live_links(brief):
         get_path_for_brief_link(
             brief,
             '/2/brief/{brief_id}/questions') if brief.status == 'live' else None)
-    links.append(build_brief_link(brief.status == 'closed', answer_question_path, 'Answer a question'))
+    links.append(
+        build_brief_link(
+            brief.status == 'closed',
+            answer_question_path,
+            'Answer a question',
+            current_user.has_permission('answer_seller_questions')
+        )
+    )
     return links
 
 
@@ -97,7 +111,15 @@ def get_shortlist_links(brief):
         get_path_for_brief_link(brief, '{path}/responses')
         if brief.status == 'closed' else None
     )
-    links.append(build_brief_link(False, view_responses_path, 'View responses'))
+
+    links.append(
+        build_brief_link(
+            False,
+            view_responses_path,
+            'View responses',
+            current_user.has_permission('download_responses')
+        )
+    )
     return links
 
 
@@ -117,6 +139,7 @@ def get_evaluation_links(brief):
 def get_work_order_links(brief):
     links = []
     old_work_order_creator = use_old_work_order_creator(brief.published_at)
+    has_permission = current_user.has_permission('create_work_orders')
 
     # No need for green ticks to indicate completion
     if brief.work_order:
@@ -125,27 +148,52 @@ def get_work_order_links(brief):
                 build_brief_link(
                     False,
                     get_path_for_brief_link(brief, '/work-orders/{work_order_id}'),
-                    'Edit work order'))
+                    'Edit work order',
+                    has_permission
+                )
+            )
         else:
-            links.append(build_brief_link(True, '/2/buyer-award/{}'.format(brief.id), 'Download work order'))
+            links.append(
+                build_brief_link(
+                    True,
+                    '/2/buyer-award/{}'.format(brief.id),
+                    'Download work order',
+                    has_permission
+                )
+            )
     else:
         if old_work_order_creator:
             start_work_order_path = (
                 get_path_for_brief_link(brief, '{path}/work-orders/create')
                 if brief.status == 'closed' else None
             )
-            links.append(build_brief_link(False, start_work_order_path, 'Start a work order'))
+            links.append(
+                build_brief_link(
+                    False,
+                    start_work_order_path,
+                    'Start a work order',
+                    has_permission
+                )
+            )
         else:
-            links.append(build_brief_link(False, '/2/buyer-award/{}'.format(brief.id), 'Download work order'))
+            links.append(
+                build_brief_link(
+                    False,
+                    '/2/buyer-award/{}'.format(brief.id),
+                    'Download work order',
+                    has_permission
+                )
+            )
 
     return links
 
 
-def build_brief_link(complete, path, text):
+def build_brief_link(complete, path, text, has_permission=True):
     return {
         'complete': complete,
         'path': path,
-        'text': text
+        'text': text,
+        'hasPermission': has_permission
     }
 
 
