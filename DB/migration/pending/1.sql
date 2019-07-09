@@ -63,6 +63,7 @@ create table if not exists "public"."team_member" (
         ON DELETE NO ACTION
 );
 
+CREATE UNIQUE INDEX if not exists evidence_pkey ON evidence USING btree (id);
 
 create table if not exists "public"."team_member_permission" (
     "id" integer not null default nextval('team_member_permission_id_seq'::regclass),

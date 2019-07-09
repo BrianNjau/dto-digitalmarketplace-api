@@ -98,6 +98,8 @@ from app.api.views import (briefs,  # noqa
                            questions,
                            key_values,
                            teams,
+                           domains,
+                           evidence,
                            redirects)
 
 from app.api.views.reports import (  # noqa

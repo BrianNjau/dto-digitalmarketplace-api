@@ -18,6 +18,8 @@ from .user_claims import UserClaimService
 from .teams import TeamService
 from .team_members import TeamMemberService
 from .team_member_permissions import TeamMemberPermissionService
+from .evidence import EvidenceService
+from .evidence_assessment import EvidenceAssessmentService
 from .work_order import WorkOrderService
 from .brief_question import BriefQuestionService
 from .brief_clarification_question import BriefClarificationQuestionService
@@ -44,6 +46,8 @@ team_service = TeamService()
 team_member_service = TeamMemberService()
 team_member_permission_service = TeamMemberPermissionService()
 user_claims_service = UserClaimService()
+evidence_service = EvidenceService()
+evidence_assessment_service = EvidenceAssessmentService()
 work_order_service = WorkOrderService()
 brief_question_service = BriefQuestionService()
 brief_clarification_question_service = BriefClarificationQuestionService()
