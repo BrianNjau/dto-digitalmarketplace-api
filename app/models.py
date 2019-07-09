@@ -2893,6 +2893,15 @@ class Team(db.Model):
     team_members = relationship('User', back_populates='teams', secondary='team_member')
 
 
+class TeamBrief(db.Model):
+    __tablename__ = 'team_brief'
+
+    id = db.Column(db.Integer, primary_key=True)
+    brief_id = db.Column(db.Integer, db.ForeignKey('brief.id'), nullable=False)
+    team_id = db.Column(db.Integer, db.ForeignKey('team.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+
 class TeamMember(db.Model):
     __tablename__ = 'team_member'
 

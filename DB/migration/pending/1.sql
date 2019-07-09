@@ -15,6 +15,8 @@ create sequence if not exists "public"."brief_response_download_id_seq";
 
 create sequence if not exists "public"."team_id_seq";
 
+create sequence if not exists "public"."team_brief_id_seq";
+
 create sequence if not exists "public"."team_member_id_seq";
 
 create sequence if not exists "public"."team_member_permission_id_seq";
@@ -114,3 +116,24 @@ create table if not exists "public"."brief_response_download" (
 );
 
 CREATE INDEX if not exists ix_brief_response_download_created_at ON public.brief_response_download USING btree (created_at);
+
+
+create table if not exists "public"."team_brief" (
+    "id" integer not null default nextval('team_brief_id_seq'::regclass),
+    "team_id" integer not null,
+    "brief_id" integer not null,
+    "user_id" integer not null,
+    constraint "team_brief_pkey" PRIMARY KEY ("id"),
+    constraint "team_brief_brief_id_fkey" FOREIGN KEY (brief_id)
+        REFERENCES public.brief(id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION,
+    constraint "team_brief_user_id_fkey" FOREIGN KEY (user_id)
+        REFERENCES public."user"(id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION,
+    constraint "team_brief_team_id_fkey" FOREIGN KEY (team_id)
+        REFERENCES public."team"(id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+);
