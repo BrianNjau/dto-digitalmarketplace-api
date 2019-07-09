@@ -4,7 +4,7 @@ from sqlalchemy.sql.expression import case, select
 
 from app import db
 from app.api.helpers import Service, abort
-from app.models import Supplier, User
+from app.models import Supplier, Team, TeamMember, User
 
 
 class UsersService(Service):
@@ -98,3 +98,20 @@ class UsersService(Service):
 
     def get_by_email(self, email):
         return self.find(email_address=email).one_or_none()
+
+    def get_buyer_team_members(self, current_user_id, email_domain):
+        results = (db.session
+                     .query(User.id,
+                            User.name,
+                            User.email_address.label('emailAddress'),
+                            Team.name.label('teamName'))
+                     .join(TeamMember, TeamMember.user_id == User.id, isouter=True)
+                     .join(Team, Team.id == TeamMember.team_id, isouter=True)
+                     .filter(User.id != current_user_id,
+                             User.active.is_(True),
+                             User.email_address.like('%@{}'.format(email_domain)),
+                             User.role == 'buyer')
+                     .order_by(func.lower(User.name))
+                     .all())
+
+        return [r._asdict() for r in results]

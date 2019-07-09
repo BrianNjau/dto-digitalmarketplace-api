@@ -64,14 +64,36 @@ def get_team_overview():
     user = users.get(current_user.id)
     completed_teams = team_service.get_teams_for_user(user.id)
 
-    if len(completed_teams) > 0:
+    number_of_completed_teams = len(completed_teams)
+    if number_of_completed_teams > 0:
         team = completed_teams[0]
         team_overview = team_service.get_team_overview(team.id, user.id)
 
     organisation = users.get_user_organisation(get_email_domain(user.email_address))
     team_overview.update(organisation=organisation)
 
+    show_create_team_button = True if number_of_completed_teams == 0 else False
+    team_overview.update(showCreateTeamButton=show_create_team_button)
+
     return team_overview
+
+
+def get_people_overview():
+    people_overview = {}
+    user = users.get(current_user.id)
+    completed_teams = team_service.get_teams_for_user(user.id)
+    domain = get_email_domain(user.email_address)
+
+    people = users.get_buyer_team_members(user.id, domain)
+    people_overview.update(users=people)
+
+    organisation = users.get_user_organisation(domain)
+    people_overview.update(organisation=organisation)
+
+    show_create_team_button = True if len(completed_teams) == 0 else False
+    people_overview.update(showCreateTeamButton=show_create_team_button)
+
+    return people_overview
 
 
 def get_team(team_id):
