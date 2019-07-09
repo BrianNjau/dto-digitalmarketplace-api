@@ -457,7 +457,7 @@ class BriefsService(Service):
             .session
             .query(query)
             .filter(query.c.brief_id == brief_id)
-            .filter(query.c.user_id == user_id)
             .all()
         )
+
         return True if len(result) > 0 else False
