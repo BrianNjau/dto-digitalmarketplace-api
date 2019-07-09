@@ -20,6 +20,15 @@ def get_team_overview():
     return jsonify(team)
 
 
+@api.route('/people', methods=['GET'])
+@login_required
+@role_required('buyer')
+def get_people_overview():
+    team = team_business.get_people_overview()
+
+    return jsonify(team)
+
+
 @api.route('/team/create', methods=['POST'])
 @login_required
 @role_required('buyer')

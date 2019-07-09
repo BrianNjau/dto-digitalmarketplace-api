@@ -78,6 +78,24 @@ def get_team_overview():
     return team_overview
 
 
+def get_people_overview():
+    people_overview = {}
+    user = users.get(current_user.id)
+    completed_teams = team_service.get_teams_for_user(user.id)
+    domain = get_email_domain(user.email_address)
+
+    people = users.get_buyer_team_members(user.id, domain)
+    people_overview.update(users=people)
+
+    organisation = users.get_user_organisation(domain)
+    people_overview.update(organisation=organisation)
+
+    show_create_team_button = True if len(completed_teams) == 0 else False
+    people_overview.update(showCreateTeamButton=show_create_team_button)
+
+    return people_overview
+
+
 def get_team(team_id):
     team = team_service.find(id=team_id).one_or_none()
     if not team:
