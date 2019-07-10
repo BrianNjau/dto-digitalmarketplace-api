@@ -98,7 +98,7 @@ def get_live_links(brief):
             brief.status == 'closed',
             answer_question_path,
             'Answer a question',
-            current_user.has_permission('answer_seller_questions')
+            None if current_user.has_permission('answer_seller_questions') else 'answer_seller_questions'
         )
     )
     return links
@@ -117,7 +117,7 @@ def get_shortlist_links(brief):
             False,
             view_responses_path,
             'View responses',
-            current_user.has_permission('download_responses')
+            None if current_user.has_permission('download_responses') else 'download_responses'
         )
     )
     return links
@@ -140,6 +140,8 @@ def get_work_order_links(brief):
     links = []
     old_work_order_creator = use_old_work_order_creator(brief.published_at)
     has_permission = current_user.has_permission('create_work_orders')
+    permission_needed = None if has_permission else 'create_work_orders'
+
 
     # No need for green ticks to indicate completion
     if brief.work_order:
@@ -149,7 +151,7 @@ def get_work_order_links(brief):
                     False,
                     get_path_for_brief_link(brief, '/work-orders/{work_order_id}'),
                     'Edit work order',
-                    has_permission
+                    permission_needed
                 )
             )
         else:
@@ -158,7 +160,7 @@ def get_work_order_links(brief):
                     True,
                     '/2/buyer-award/{}'.format(brief.id),
                     'Download work order',
-                    has_permission
+                    permission_needed
                 )
             )
     else:
@@ -172,7 +174,7 @@ def get_work_order_links(brief):
                     False,
                     start_work_order_path,
                     'Start a work order',
-                    has_permission
+                    permission_needed
                 )
             )
         else:
@@ -181,19 +183,19 @@ def get_work_order_links(brief):
                     False,
                     '/2/buyer-award/{}'.format(brief.id),
                     'Download work order',
-                    has_permission
+                    permission_needed
                 )
             )
 
     return links
 
 
-def build_brief_link(complete, path, text, has_permission=True):
+def build_brief_link(complete, path, text, permission_needed=None):
     return {
         'complete': complete,
         'path': path,
         'text': text,
-        'hasPermission': has_permission
+        'permissionNeeded': permission_needed
     }
 
 
