@@ -4,10 +4,9 @@ from flask_login import current_user, login_required
 
 from app.api import api
 from app.api.business import team_business
-from app.api.business.errors import TeamError
+from app.api.business.errors import TeamError, ValidationError
 from app.api.helpers import abort, forbidden, get_email_domain, role_required
 from app.api.services import team_member_service, users
-
 from ...utils import get_json_from_request
 
 
@@ -95,3 +94,17 @@ def find_team_members():
         return jsonify(users=results), 200
     else:
         abort('You must provide a keywords param.')
+
+
+@api.route('/team/request-access', methods=['POST'])
+@login_required
+@role_required('buyer')
+def request_access():
+    data = get_json_from_request()
+
+    try:
+        team_business.request_access(data)
+    except ValidationError as e:
+        abort(e.message)
+
+    return jsonify(success=True)
