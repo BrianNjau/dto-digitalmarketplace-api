@@ -142,7 +142,6 @@ def get_work_order_links(brief):
     has_permission = current_user.has_permission('create_work_orders')
     permission_needed = None if has_permission else 'create_work_orders'
 
-
     # No need for green ticks to indicate completion
     if brief.work_order:
         if old_work_order_creator:
