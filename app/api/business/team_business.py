@@ -3,13 +3,14 @@ from collections import namedtuple
 from flask import jsonify
 from flask_login import current_user
 
-from app.api.business.errors import TeamError
+from app.api.business.errors import TeamError, ValidationError
 from app.api.helpers import abort, get_email_domain
 from app.api.services import (audit_service, audit_types,
                               team_member_permission_service,
                               team_member_service, team_service, users)
 from app.emails.teams import (send_team_lead_notification_emails,
-                              send_team_member_notification_emails)
+                              send_team_member_notification_emails,
+                              send_request_access_email)
 from app.models import TeamMemberPermission, permission_types
 
 
@@ -234,3 +235,11 @@ def delete_team_member_permissions(team_member_id):
 def get_user_teams(user_id):
     permissions = team_service.get_user_teams(user_id)
     return permissions
+
+
+def request_access(data):
+    if data.get('permission') not in permission_types:
+        raise ValidationError('Invalid permission')
+
+    permission = str(data.get('permission')).replace('_', ' ')
+    send_request_access_email(permission)

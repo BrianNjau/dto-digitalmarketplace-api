@@ -1,5 +1,5 @@
 from app.api.helpers import Service
-from app.models import TeamMember, db
+from app.models import TeamMember, User, db
 
 
 class TeamMemberService(Service):
@@ -31,3 +31,22 @@ class TeamMemberService(Service):
     def demote_team_lead(self, team_id, user_id):
         team_member = self.find(team_id=team_id, user_id=user_id).one_or_none()
         self.update(team_member, is_team_lead=False)
+
+    def get_team_leads(self, team_id):
+        result = (
+            db
+            .session
+            .query(
+                User.id,
+                User.name,
+                User.email_address
+            )
+            .join(TeamMember)
+            .filter(
+                TeamMember.team_id == team_id,
+                TeamMember.is_team_lead is True
+            )
+            .all()
+        )
+
+        return [r._asdict() for r in result]
