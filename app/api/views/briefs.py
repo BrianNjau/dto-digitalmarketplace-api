@@ -18,25 +18,40 @@ from app.api.business.validators import (
     SpecialistDataValidator
 )
 from app.api.business.brief import BriefUserStatus
-from app.api.business import supplier_business
-from app.api.helpers import abort, forbidden, not_found, role_required, is_current_user_in_brief
+from app.api.business import supplier_business, brief_overview_business
+from app.api.business.agreement_business import use_old_work_order_creator
+from app.api.helpers import (
+    abort,
+    forbidden,
+    not_found,
+    role_required,
+    is_current_user_in_brief,
+    permissions_required
+)
 from app.api.services import (agency_service,
                               audit_service,
-                              brief_overview_service,
+                              audit_types,
                               brief_responses_service,
+                              brief_response_download_service,
+                              brief_question_service,
                               briefs,
                               domain_service,
                               frameworks_service,
+                              key_values_service,
                               lots_service,
                               suppliers,
-                              users)
+                              users,
+                              evidence_service,
+                              work_order_service)
 from app.emails import (
     send_brief_response_received_email,
     render_email_template,
     send_seller_invited_to_rfx_email,
     send_specialist_brief_seller_invited_email,
     send_specialist_brief_published_email,
-    send_specialist_brief_response_received_email
+    send_specialist_brief_response_received_email,
+    send_brief_clarification_to_buyer,
+    send_brief_clarification_to_seller
 )
 from app.api.helpers import notify_team
 from app.tasks import publish_tasks
@@ -44,7 +59,8 @@ from dmapiclient.audit import AuditTypes
 from dmutils.file import s3_download_file, s3_upload_file_from_request
 
 from ...models import (AuditEvent, Brief, BriefResponse, Framework, Supplier,
-                       ValidationError, Lot, User, Domain, db)
+                       ValidationError, Lot, User, Domain, db, WorkOrder,
+                       BriefQuestion, BriefResponseDownload)
 from ...utils import get_json_from_request
 
 
@@ -192,6 +208,7 @@ def _notify_team_brief_published(brief_title, brief_org, user_name, user_email, 
 @api.route('/brief/rfx', methods=['POST'])
 @login_required
 @role_required('buyer')
+@permissions_required('create_drafts')
 def create_rfx_brief():
     """Create RFX brief (role=buyer)
     ---
@@ -225,7 +242,7 @@ def create_rfx_brief():
         lot = lots_service.find(slug='rfx').one_or_none()
         framework = frameworks_service.find(slug='digital-marketplace').one_or_none()
         user = users.get(current_user.id)
-        brief = briefs.create_brief(user, framework, lot)
+        brief = briefs.create_brief(user, current_user.get_team(), framework, lot)
     except Exception as e:
         rollbar.report_exc_info()
         return jsonify(message=e.message), 400
@@ -247,6 +264,7 @@ def create_rfx_brief():
 @api.route('/brief/atm', methods=['POST'])
 @login_required
 @role_required('buyer')
+@permissions_required('create_drafts')
 def create_atm_brief():
     """Create ATM brief (role=buyer)
     ---
@@ -280,7 +298,7 @@ def create_atm_brief():
         lot = lots_service.find(slug='atm').one_or_none()
         framework = frameworks_service.find(slug='digital-marketplace').one_or_none()
         user = users.get(current_user.id)
-        brief = briefs.create_brief(user, framework, lot)
+        brief = briefs.create_brief(user, current_user.get_team(), framework, lot)
     except Exception as e:
         rollbar.report_exc_info()
         return jsonify(message=e.message), 400
@@ -302,6 +320,7 @@ def create_atm_brief():
 @api.route('/brief/specialist', methods=['POST'])
 @login_required
 @role_required('buyer')
+@permissions_required('create_drafts')
 def create_specialist_brief():
     """Create Specialist brief (role=buyer)
     ---
@@ -342,7 +361,7 @@ def create_specialist_brief():
             agency_name = agency.name
         except Exception as e:
             pass
-        brief = briefs.create_brief(user, framework, lot, data={
+        brief = briefs.create_brief(user, current_user.get_team(), framework, lot, data={
             'organisation': agency_name
         })
     except Exception as e:
@@ -396,7 +415,7 @@ def get_brief(brief_id):
                         type: boolean
                     has_responded:
                         type: boolean
-                    has_chosen_brief_category:
+                    has_evidence_in_draft_for_category:
                         type: boolean
                     is_assessed_for_category:
                         type: boolean
@@ -420,6 +439,8 @@ def get_brief(brief_id):
                         type: boolean
                     has_supplier_errors:
                         type: boolean
+                    has_signed_current_agreement:
+                        type: boolean
                     domains:
                         type: array
                         items:
@@ -440,10 +461,9 @@ def get_brief(brief_id):
 
     is_buyer = False
     is_brief_owner = False
-    brief_user_ids = [user.id for user in brief.users]
     if user_role == 'buyer':
         is_buyer = True
-        if current_user.id in brief_user_ids:
+        if briefs.has_permission_to_brief(current_user.id, brief.id):
             is_brief_owner = True
 
     if brief.status == 'draft' and not is_brief_owner:
@@ -467,6 +487,8 @@ def get_brief(brief_id):
     # gather facts about the user's status against this brief
     user_status = BriefUserStatus(brief, current_user)
     has_chosen_brief_category = user_status.has_chosen_brief_category()
+    has_evidence_in_draft_for_category = user_status.has_evidence_in_draft_for_category()
+    has_latest_evidence_rejected_for_category = user_status.has_latest_evidence_rejected_for_category()
     is_assessed_for_category = user_status.is_assessed_for_category()
     is_assessed_in_any_category = user_status.is_assessed_in_any_category()
     is_awaiting_application_assessment = user_status.is_awaiting_application_assessment()
@@ -477,7 +499,10 @@ def get_brief(brief_id):
     is_invited = user_status.is_invited()
     can_respond = user_status.can_respond()
     has_responded = user_status.has_responded()
+    evidence_id = user_status.evidence_id_in_draft()
+    evidence_id_rejected = user_status.evidence_id_rejected()
     has_supplier_errors = user_status.has_supplier_errors()
+    has_signed_current_agreement = user_status.has_signed_current_agreement()
 
     # remove private data for non brief owners
     brief.data['contactEmail'] = ''
@@ -500,7 +525,11 @@ def get_brief(brief_id):
             brief.data['timeframeConstraints'] = ''
             brief.data['attachments'] = []
     else:
-        brief.data['contactEmail'] = [user.email_address for user in brief.users][0]
+        contacts = briefs.get_brief_contact_details(brief_id)
+        if contacts is None:
+            not_found('Contact details not found for opportunity {}'.format(brief_id))
+
+        brief.data['contactEmail'] = contacts
         if not is_brief_owner:
             if 'sellers' in brief.data:
                 brief.data['sellers'] = {}
@@ -517,9 +546,13 @@ def get_brief(brief_id):
     return jsonify(brief=brief.serialize(with_users=False, with_author=is_brief_owner),
                    brief_response_count=brief_response_count,
                    invited_seller_count=invited_seller_count,
+                   has_chosen_brief_category=has_chosen_brief_category,
+                   evidence_id=evidence_id,
+                   evidence_id_rejected=evidence_id_rejected,
                    supplier_brief_response_count=supplier_brief_response_count,
                    can_respond=can_respond,
-                   has_chosen_brief_category=has_chosen_brief_category,
+                   has_evidence_in_draft_for_category=has_evidence_in_draft_for_category,
+                   has_latest_evidence_rejected_for_category=has_latest_evidence_rejected_for_category,
                    is_assessed_for_category=is_assessed_for_category,
                    is_assessed_in_any_category=is_assessed_in_any_category,
                    is_approved_seller=is_approved_seller,
@@ -535,6 +568,7 @@ def get_brief(brief_id):
                    is_invited=is_invited,
                    has_responded=has_responded,
                    has_supplier_errors=has_supplier_errors,
+                   has_signed_current_agreement=has_signed_current_agreement,
                    domains=domains)
 
 
@@ -644,8 +678,7 @@ def update_brief(brief_id):
         abort('Brief lot not supported for editing')
 
     if current_user.role == 'buyer':
-        brief_user_ids = [user.id for user in brief.users]
-        if current_user.id not in brief_user_ids:
+        if not briefs.has_permission_to_brief(current_user.id, brief.id):
             return forbidden('Unauthorised to update brief')
 
     data = get_json_from_request()
@@ -654,6 +687,14 @@ def update_brief(brief_id):
     if 'publish' in data and data['publish']:
         del data['publish']
         publish = True
+        if not current_user.has_permission('publish_opportunities'):
+            return forbidden('Unauthorised to publish opportunity')
+    else:
+        if not (
+            current_user.has_permission('create_drafts') or
+            current_user.has_permission('publish_opportunities')
+        ):
+            return forbidden('Unauthorised to edit drafts')
 
     if brief.lot.slug == 'rfx':
         # validate the RFX JSON request data
@@ -690,15 +731,21 @@ def update_brief(brief_id):
                 data['sellerCategory'] = ''
         elif data['openTo'] in ['category', 'selected']:
             data['sellerSelector'] = 'someSellers'
-            brief_domain = (
-                domain_service.get_by_name_or_id(int(data['sellerCategory'])) if data['sellerCategory'] else None
-            )
+
+        if data['sellerCategory']:
+            brief_domain = domain_service.get_by_name_or_id(int(data['sellerCategory']))
             if brief_domain:
                 data['areaOfExpertise'] = brief_domain.name
+        else:
+            data['areaOfExpertise'] = ''
 
     previous_status = brief.status
+    brief.data = data
     if publish:
         brief.publish(closed_at=data['closedAt'])
+    briefs.save_brief(brief)
+
+    if publish:
         if 'sellers' in brief.data and data['sellerSelector'] != 'allSellers':
             for seller_code, seller in brief.data['sellers'].iteritems():
                 supplier = suppliers.get_supplier_by_code(seller_code)
@@ -706,7 +753,9 @@ def update_brief(brief_id):
                     send_seller_invited_to_rfx_email(brief, supplier)
 
                 send_specialist_brief_seller_invited_email(brief, supplier)
+
         send_specialist_brief_published_email(brief)
+
         try:
             brief_url_external = '{}/2/digital-marketplace/opportunities/{}'.format(
                 current_app.config['FRONTEND_ADDRESS'],
@@ -722,14 +771,11 @@ def update_brief(brief_id):
         except Exception as e:
             pass
 
-    brief.data = data
-    briefs.save_brief(brief)
-
-    if publish:
         brief_url_external = '{}/2/digital-marketplace/opportunities/{}'.format(
             current_app.config['FRONTEND_ADDRESS'],
             brief_id
         )
+
         publish_tasks.brief.delay(
             publish_tasks.compress_brief(brief),
             'published',
@@ -738,6 +784,7 @@ def update_brief(brief_id):
             email_address=current_user.email_address,
             url=brief_url_external
         )
+
     try:
         audit_service.log_audit_event(
             audit_type=AuditTypes.update_brief,
@@ -791,9 +838,14 @@ def delete_brief(brief_id):
     if not brief:
         not_found("Invalid brief id '{}'".format(brief_id))
 
+    if not (
+        current_user.has_permission('create_drafts') or
+        current_user.has_permission('publish_opportunities')
+    ):
+        return forbidden('Unauthorised to edit drafts')
+
     if current_user.role == 'buyer':
-        brief_user_ids = [user.id for user in brief.users]
-        if current_user.id not in brief_user_ids:
+        if not briefs.has_permission_to_brief(current_user.id, brief.id):
             return forbidden('Unauthorised to delete brief')
 
     if brief.status != 'draft':
@@ -887,15 +939,14 @@ def get_brief_overview(brief_id):
         not_found("Invalid brief id '{}'".format(brief_id))
 
     if current_user.role == 'buyer':
-        brief_user_ids = [user.id for user in brief.users]
-        if current_user.id not in brief_user_ids:
+        if not briefs.has_permission_to_brief(current_user.id, brief.id):
             return forbidden('Unauthorised to view brief')
 
     if not (brief.lot.slug == 'digital-professionals' or
             brief.lot.slug == 'training'):
         abort('Lot {} is not supported'.format(brief.lot.slug))
 
-    sections = brief_overview_service.get_sections(brief)
+    sections = brief_overview_business.get_sections(brief)
 
     return jsonify(
         sections=sections,
@@ -939,8 +990,7 @@ def get_brief_responses(brief_id):
         not_found("Invalid brief id '{}'".format(brief_id))
 
     if current_user.role == 'buyer':
-        brief_user_ids = [user.id for user in brief.users]
-        if current_user.id not in brief_user_ids:
+        if not briefs.has_permission_to_brief(current_user.id, brief.id):
             return forbidden("Unauthorised to view brief or brief does not exist")
 
     supplier_code = getattr(current_user, 'supplier_code', None)
@@ -970,13 +1020,25 @@ def get_brief_responses(brief_id):
         if 'contactNumber' in brief.data:
             brief.data['contactNumber'] = ''
 
-    if current_user.role == 'buyer' and brief.status != 'closed':
-        brief_responses = []
+    questions_asked = 0
+    brief_response_downloaded = []
+    brief_responses = []
+    if current_user.role == 'buyer':
+        if brief.status == 'closed':
+            brief_response_downloaded = brief_response_download_service.get_responses_downloaded(brief.id)
+            brief_responses = brief_responses_service.get_brief_responses(brief_id, supplier_code)
+        if brief.status in ['closed', 'live']:
+            questions_asked = len(brief_question_service.find(brief_id=brief.id).all())
     else:
         brief_responses = brief_responses_service.get_brief_responses(brief_id, supplier_code)
 
+    old_work_order_creator = use_old_work_order_creator(brief.published_at)
+
     return jsonify(brief=brief.serialize(with_users=False, with_author=False),
-                   briefResponses=brief_responses)
+                   briefResponses=brief_responses,
+                   oldWorkOrderCreator=old_work_order_creator,
+                   questionsAsked=questions_asked,
+                   briefResponseDownloaded=brief_response_downloaded)
 
 
 @api.route('/brief/<int:brief_id>/respond/documents/<string:supplier_code>/<slug>', methods=['POST'])
@@ -1025,8 +1087,7 @@ def upload_brief_rfx_attachment_file(brief_id, slug):
     if not brief:
         not_found("Invalid brief id '{}'".format(brief_id))
 
-    brief_user_ids = [user.id for user in brief.users]
-    if current_user.id not in brief_user_ids:
+    if not briefs.has_permission_to_brief(current_user.id, brief.id):
         return forbidden('Unauthorised to update brief')
 
     return jsonify({"filename": s3_upload_file_from_request(request, slug,
@@ -1038,17 +1099,21 @@ def upload_brief_rfx_attachment_file(brief_id, slug):
 @api.route('/brief/<int:brief_id>/respond/documents')
 @login_required
 @role_required('buyer')
+@permissions_required('download_responses')
 def download_brief_responses(brief_id):
     brief = Brief.query.filter(
         Brief.id == brief_id
     ).first_or_404()
-    brief_user_ids = [user.id for user in brief.users]
-    if current_user.id not in brief_user_ids:
+    if not briefs.has_permission_to_brief(current_user.id, brief.id):
         return forbidden("Unauthorised to view brief or brief does not exist")
     if brief.status != 'closed':
         return forbidden("You can only download documents for closed briefs")
 
     response = ('', 404)
+    brief_response_download_service.save(BriefResponseDownload(
+        brief_id=brief.id,
+        user_id=current_user.id
+    ))
     if brief.lot.slug in ['digital-professionals', 'training', 'rfx', 'atm', 'specialist']:
         try:
             file = s3_download_file(
@@ -1099,11 +1164,16 @@ def download_brief_attachment(brief_id, slug):
             description: Unexpected error.
     """
     brief = briefs.get(brief_id)
-    brief_user_ids = [user.id for user in brief.users]
 
-    if (hasattr(current_user, 'role') and
-        (current_user.role == 'buyer' or
-            (current_user.role == 'supplier' and _can_do_brief_response(brief_id)))):
+    if (
+        hasattr(current_user, 'role') and
+        (
+            current_user.role == 'buyer' or (
+                current_user.role == 'supplier' and
+                _can_do_brief_response(brief_id)
+            )
+        )
+    ):
         file = s3_download_file(slug, os.path.join(brief.framework.slug, 'attachments',
                                                    'brief-' + str(brief_id)))
         mimetype = mimetypes.guess_type(slug)[0] or 'binary/octet-stream'
@@ -1118,9 +1188,15 @@ def download_brief_response_file(brief_id, supplier_code, slug):
     brief = Brief.query.filter(
         Brief.id == brief_id
     ).first_or_404()
-    brief_user_ids = [user.id for user in brief.users]
-    if hasattr(current_user, 'role') and (current_user.role == 'buyer' and current_user.id in brief_user_ids) \
-            or (current_user.role == 'supplier' and current_user.supplier_code == supplier_code):
+    if (
+        hasattr(current_user, 'role') and (
+            current_user.role == 'buyer' and
+            briefs.has_permission_to_brief(current_user.id, brief.id)
+        ) or (
+            current_user.role == 'supplier' and
+            current_user.supplier_code == supplier_code
+        )
+    ):
         file = s3_download_file(slug, os.path.join(brief.framework.slug, 'documents',
                                                    'brief-' + str(brief_id),
                                                    'supplier-' + str(supplier_code)))
@@ -1211,8 +1287,10 @@ def post_brief_response(brief_id):
             brief_responses_service.unlock_brief_response(brief_id, current_user.supplier_code)
 
     try:
-        send_brief_response_received_email(supplier, brief, brief_response)
-        send_specialist_brief_response_received_email(supplier, brief, brief_response)
+        if brief.lot.slug == 'specialist':
+            send_specialist_brief_response_received_email(supplier, brief, brief_response)
+        else:
+            send_brief_response_received_email(supplier, brief, brief_response)
     except Exception as e:
         brief_response_json['brief_id'] = brief_id
         rollbar.report_exc_info(extra_data=brief_response_json)
@@ -1301,3 +1379,144 @@ def get_notification_template(brief_id, template):
         )
 
     return not_found('brief not found')
+
+
+@api.route('/brief/<int:brief_id>/award-seller', methods=['POST'])
+@login_required
+@role_required('buyer')
+@permissions_required('create_work_orders')
+def award_brief_to_seller(brief_id):
+    """Award a brief to a seller (role=buyer)
+    ---
+    tags:
+        - brief
+    definitions:
+        BriefAwarded:
+            type: object
+            properties:
+                awardedSupplier:
+                    type: string
+    responses:
+        200:
+            description: Brief awarded successfully.
+            schema:
+                $ref: '#/definitions/BriefAwarded'
+        400:
+            description: Bad request.
+        403:
+            description: Unauthorised to award brief to seller.
+        500:
+            description: Unexpected error.
+    """
+    brief = briefs.get(brief_id)
+    if not brief:
+        return not_found('brief {} not found'.format(brief_id))
+
+    if not briefs.has_permission_to_brief(current_user.id, brief.id):
+        return forbidden('Unauthorised to award brief to seller')
+
+    data = get_json_from_request()
+    supplier_code = data.get('awardedSupplierCode')
+    if not supplier_code:
+        return abort('Supplier is required.')
+
+    work_order = work_order_service.find(brief_id=brief_id).one_or_none()
+    if work_order:
+        return abort('Work order is already created.')
+
+    work_order_service.save(WorkOrder(
+        brief_id=brief_id,
+        supplier_code=supplier_code,
+        data={
+            "created_by": current_user.email_address
+        }
+    ))
+
+    audit_service.log_audit_event(
+        audit_type=audit_types.create_work_order,
+        user=current_user.email_address,
+        data={
+            'briefId': brief.id
+        },
+        db_object=brief)
+
+    return jsonify(work_order=work_order), 200
+
+
+@api.route('/brief/<int:brief_id>/ask-a-question', methods=['POST'])
+@login_required
+@role_required('supplier')
+def supplier_asks_a_question(brief_id):
+    """seller asks a question (role=supplier)
+    ---
+    tags:
+        - brief
+    definitions:
+        BriefAwarded:
+            type: object
+            properties:
+                awardedSupplier:
+                    type: string
+    responses:
+        200:
+            description: Brief awarded successfully.
+            schema:
+                $ref: '#/definitions/BriefAwarded'
+        400:
+            description: Bad request.
+        403:
+            description: Unauthorised to award brief to seller.
+        500:
+            description: Unexpected error.
+    """
+    brief = briefs.get(brief_id)
+    if not brief:
+        return not_found('opportunity {} not found'.format(brief_id))
+
+    if brief.withdrawn_at:
+        return abort('opportunity {} is withdrawn'.format(brief_id))
+
+    now = pendulum.now('Australia/Canberra')
+    if not brief.published_at:
+        return abort('opportunity is not published')
+
+    if not brief.questions_closed_at or brief.questions_closed_at <= now:
+        return abort('question deadline has passed')
+
+    user_status = BriefUserStatus(brief, current_user)
+    if not user_status.is_invited():
+        return forbidden('only invited sellers can ask questions')
+
+    data = get_json_from_request()
+    question = data.get('question')
+    if not question:
+        return abort('Question is required.')
+
+    brief_question = brief_question_service.save(BriefQuestion(
+        brief_id=brief_id,
+        supplier_code=current_user.supplier_code,
+        data={
+            "created_by": current_user.email_address,
+            "question": question
+        }
+    ))
+
+    audit_service.log_audit_event(
+        audit_type=audit_types.create_brief_question,
+        user=current_user.email_address,
+        data={
+            'briefId': brief.id
+        },
+        db_object=brief)
+
+    supplier = suppliers.find(code=current_user.supplier_code).one_or_none()
+
+    send_brief_clarification_to_buyer(brief, brief_question, supplier)
+    send_brief_clarification_to_seller(brief, brief_question, current_user.email_address)
+
+    publish_tasks.brief_question.delay(
+        publish_tasks.compress_brief_question(brief_question),
+        'created'
+    )
+
+    return jsonify(success=True), 200

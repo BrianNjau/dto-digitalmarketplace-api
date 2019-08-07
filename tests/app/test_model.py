@@ -567,33 +567,6 @@ class TestBriefs(BaseApplicationTest):
                       framework=self.framework,
                       lot_id=self.framework.get_lot('user-research-studios').id)
 
-    def test_add_brief_clarification_question(self):
-        with self.app.app_context():
-            brief = Brief(data={}, framework=self.framework, lot=self.lot, status="live")
-            db.session.add(brief)
-            db.session.commit()
-
-            brief.add_clarification_question(
-                "How do you expect to deliver this?",
-                "By the power of Grayskull")
-            db.session.commit()
-
-            assert len(brief.clarification_questions) == 1
-            assert len(BriefClarificationQuestion.query.filter(
-                BriefClarificationQuestion._brief_id == brief.id
-            ).all()) == 1
-
-    def test_new_clarification_questions_get_added_to_the_end(self):
-        with self.app.app_context():
-            brief = Brief(data={}, framework=self.framework, lot=self.lot, status="live")
-            db.session.add(brief)
-            brief.add_clarification_question("How?", "This")
-            brief.add_clarification_question("When", "Then")
-            db.session.commit()
-
-            assert brief.clarification_questions[0].question == "How?"
-            assert brief.clarification_questions[1].question == "When"
-
     def test_copy_brief(self):
         with self.app.app_context():
             self.framework.status = 'live'
@@ -749,8 +722,22 @@ class TestBriefClarificationQuestion(BaseApplicationTest):
 
     def test_published_at_is_set_on_creation(self):
         with self.app.app_context():
+            user = User(
+                email_address='email@digital.gov.au',
+                name='name',
+                role='buyer',
+                password='password',
+                active=True,
+                failed_login_count=0,
+                created_at=utcnow(),
+                updated_at=utcnow(),
+                password_changed_at=utcnow()
+            )
+            db.session.add(user)
+            db.session.commit()
+
             question = BriefClarificationQuestion(
-                brief=self.brief, question="Why?", answer="Because")
+                brief=self.brief, question="Why?", answer="Because", user_id=user.id)
 
             db.session.add(question)
             db.session.commit()
@@ -1191,7 +1178,6 @@ class TestApplication(BaseApplicationTest):
             db.session.flush()
 
             assert len(app.supplier.contacts) == 1
-            assert app.supplier.unassessed_domains == ['Content and Publishing']
 
     @mock.patch('app.jiraapi.JIRA')
     def test_existing_seller_application(self, jira):
@@ -1232,9 +1218,6 @@ class TestApplication(BaseApplicationTest):
             # make sure this didn't change
             assert app.supplier.status == 'complete'
 
-            assert app.supplier.all_domains == \
-                ['Content and Publishing']
-
             # test application-from-existing-seller scenario
 
             supplier = app.supplier
@@ -1258,8 +1241,6 @@ class TestApplication(BaseApplicationTest):
             supp = self.supplier
             db.session.add(supp)
 
-            assert supp.legacy_domains == []
-
             supp.update_from_json(
                 {"prices": [{
                     "serviceRole": {"category": "Business Analysis", "role": "Junior Business Analyst"},
@@ -1269,21 +1250,17 @@ class TestApplication(BaseApplicationTest):
 
             db.session.commit()
 
-            assert supp.legacy_domains == ['Agile delivery and Governance']
-            assert supp.assessed_domains == ['Agile delivery and Governance']
+            assert supp.assessed_domains == []
             assert supp.unassessed_domains == []
 
             supp.add_unassessed_domain('Change, Training and Transformation')
 
-            assert supp.legacy_domains == ['Agile delivery and Governance']
-            assert supp.assessed_domains == ['Agile delivery and Governance']
+            assert supp.assessed_domains == []
             assert supp.unassessed_domains == ['Change, Training and Transformation']
 
             supp.update_domain_assessment_status('Change, Training and Transformation', 'assessed')
 
-            assert supp.legacy_domains == ['Agile delivery and Governance']
             assert supp.assessed_domains == [
-                'Agile delivery and Governance',
                 'Change, Training and Transformation'
             ]
 
@@ -1332,12 +1309,15 @@ class TestApplication(BaseApplicationTest):
             db.session.add(signed_agreement)
             db.session.flush()
 
-            assert app.serializable['signed_agreements'][0] == \
-                {'email_address': 'email@digital.gov.au',
-                 'name': 'name',
-                 'signed_at': now,
-                 'url': 'http://url',
-                 'version': 'Marketplace Agreement 2.0'}
+            assert app.serializable['signed_agreements'][0] == {
+                'agreement': {
+                    'email_address': 'email@digital.gov.au',
+                    'name': 'name',
+                    'signed_at': now,
+                    'url': 'http://url',
+                    'version': 'Marketplace Agreement 2.0'
+                }
+            }
 
 
 class TestSuppliers(BaseApplicationTest):

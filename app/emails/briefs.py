@@ -4,28 +4,13 @@ from __future__ import unicode_literals
 
 from flask import current_app
 
-from .util import render_email_template, send_or_handle_error
+from .util import render_email_template, send_or_handle_error, escape_markdown
 
 import rollbar
 
 
 def send_brief_response_received_email(supplier, brief, brief_response):
-    if brief.lot.slug in ['specialist']:
-        return
-
-    if brief.lot.slug == 'digital-outcome':
-        TEMPLATE_FILENAME = 'brief_response_submitted_outcome.md'
-    elif brief.lot.slug == 'training':
-        TEMPLATE_FILENAME = 'brief_response_submitted_training.md'
-    elif brief.lot.slug == 'rfx':
-        TEMPLATE_FILENAME = 'brief_response_submitted_rfx.md'
-    elif brief.lot.slug == 'atm':
-        TEMPLATE_FILENAME = 'brief_response_submitted_atm.md'
-    else:
-        TEMPLATE_FILENAME = 'brief_response_submitted.md'
-
     to_address = brief_response.data['respondToEmailAddress']
-    specialist_name = brief_response.data.get('specialistName', None)
 
     if brief.lot.slug == 'rfx' or brief.lot.slug == 'atm':
         brief_url = current_app.config['FRONTEND_ADDRESS'] + '/2/' + brief.framework.slug + '/opportunities/' \
@@ -33,62 +18,24 @@ def send_brief_response_received_email(supplier, brief, brief_response):
     else:
         brief_url = current_app.config['FRONTEND_ADDRESS'] + '/' + brief.framework.slug + '/opportunities/' \
             + str(brief.id)
-    attachment_url = current_app.config['FRONTEND_ADDRESS'] +\
-        '/api/2/brief/' + str(brief.id) + '/respond/documents/' + str(supplier.code) + '/'
+    ask_question_url = '{}/login?next=%2Fsellers%2Fopportunities%2F{}%2Fask-a-question'.format(
+        current_app.config['FRONTEND_ADDRESS'], brief.id
+    )
 
-    ess = ""
-    if brief_response.data.get('essentialRequirements', None):
-        i = 0
-        for req in brief.data['essentialRequirements']:
-            ess += "####• {}\n{}\n\n".format(req, brief_response.data['essentialRequirements'][i])
-            i += 1
-    nth = ""
-    if brief_response.data.get('niceToHaveRequirements', None):
-        i = 0
-        for req in brief.data['niceToHaveRequirements']:
-            nth += "####• {}\n{}\n\n".format(
-                req,
-                brief_response.data.get('niceToHaveRequirements', [])[i]
-                if i < len(brief_response.data.get('niceToHaveRequirements', [])) else ''
-            )
-            i += 1
-    criteriaResponses = ""
-    evaluationCriteriaResponses = brief_response.data.get('criteria', {})
-    if evaluationCriteriaResponses:
-        for evaluationCriteria in brief.data['evaluationCriteria']:
-            if 'criteria' in evaluationCriteria and\
-               evaluationCriteria['criteria'] in evaluationCriteriaResponses.keys():
-                criteriaResponses += "####• {}\n{}\n\n".format(
-                    evaluationCriteria['criteria'],
-                    evaluationCriteriaResponses[evaluationCriteria['criteria']]
-                )
-
-    attachments = ""
-    for attch in brief_response.data.get('attachedDocumentURL', []):
-        attachments += "####• [{}]({}{})\n\n".format(attch, attachment_url, attch)
-
-    subject = "We've received your application"
-    response_title = "How you responded"
-    if specialist_name:
-        subject = "{}'s application for opportunity ID {} has been received".format(specialist_name, brief.id)
-        response_title = "{}'s responses".format(specialist_name)
+    subject = "You've applied for {} successfully!"
+    brief_title = brief.data['title']
+    if len(brief_title) > 30:
+        brief_title = '{}...'.format(brief_title[:30])
+    subject = subject.format(brief_title)
 
     # prepare copy
     email_body = render_email_template(
-        TEMPLATE_FILENAME,
+        'brief_response_submitted.md',
         brief_url=brief_url,
-        brief_name=brief.data['title'],
-        essential_requirements=ess,
-        nice_to_have_requirements=nth,
-        criteria_responses=criteriaResponses,
-        attachments=attachments,
-        closing_at=brief.closed_at.to_formatted_date_string(),
-        specialist_name=specialist_name,
-        response_title=response_title,
-        brief_response=brief_response.data,
-        header='<div style="font-size: 1.8rem">'
-               '<span style="color: #007554;padding-right: 1rem;">✔</span>'
-               '<span>{}</span></div>'.format(subject)
+        ask_question_url=ask_question_url,
+        brief_title=brief_title,
+        supplier_name=supplier.name,
+        organisation=brief.data['organisation']
     )
 
     send_or_handle_error(
@@ -132,7 +79,7 @@ def send_specialist_brief_response_received_email(supplier, brief, brief_respons
             ess += "**{}. {}**\n\n{}\n\n".format(
                 i + 1,
                 req['criteria'],
-                brief_response.data['essentialRequirements'][req['criteria']]
+                escape_markdown(brief_response.data['essentialRequirements'][req['criteria']])
             )
             i += 1
 
@@ -143,7 +90,7 @@ def send_specialist_brief_response_received_email(supplier, brief, brief_respons
             nth += "**{}. {}**\n\n{}\n\n".format(
                 i + 1,
                 req['criteria'],
-                brief_response.data.get('niceToHaveRequirements', [])[req['criteria']]
+                escape_markdown(brief_response.data.get('niceToHaveRequirements', [])[req['criteria']])
                 if i < len(brief_response.data.get('niceToHaveRequirements', [])) else ''
             )
             i += 1
@@ -160,7 +107,7 @@ def send_specialist_brief_response_received_email(supplier, brief, brief_respons
             ):
                 criteriaResponses += "####• {}\n\n{}\n\n".format(
                     evaluationCriteria['criteria'],
-                    evaluationCriteriaResponses[evaluationCriteria['criteria']]
+                    escape_markdown(evaluationCriteriaResponses[evaluationCriteria['criteria']])
                 )
 
     attachments = ''
@@ -193,24 +140,24 @@ def send_specialist_brief_response_received_email(supplier, brief, brief_respons
 
         response_security_clearance = '\n**Holds a {} security clearance:** {}  '.format(
             must_have_clearance,
-            brief_response.data.get('securityClearance')
+            escape_markdown(brief_response.data.get('securityClearance'))
         )
 
     response_rates = ''
     response_rates_excluding_gst = ''
     if brief.data.get('preferredFormatForRates') == 'hourlyRate':
         response_rates = '**Hourly rate, including GST:** ${}'.format(
-            brief_response.data.get('hourRate')
+            escape_markdown(brief_response.data.get('hourRate'))
         )
         response_rates_excluding_gst = '**Hourly rate, excluding GST:** ${}'.format(
-            brief_response.data.get('hourRateExcludingGST')
+            escape_markdown(brief_response.data.get('hourRateExcludingGST'))
         )
     elif brief.data.get('preferredFormatForRates') == 'dailyRate':
         response_rates = '**Daily rate, including GST:** ${}'.format(
-            brief_response.data.get('dayRate')
+            escape_markdown(brief_response.data.get('dayRate'))
         )
         response_rates_excluding_gst = '**Daily rate, excluding GST:** ${}'.format(
-            brief_response.data.get('dayRateExcludingGST')
+            escape_markdown(brief_response.data.get('dayRateExcludingGST'))
         )
 
     response_visa_status = ''
@@ -233,12 +180,12 @@ def send_specialist_brief_response_received_email(supplier, brief, brief_respons
         resume=resume,
         attachments=attachments,
         closing_at=brief.closed_at.to_formatted_date_string(),
-        specialist_name=specialist_name,
+        specialist_name=escape_markdown(specialist_name),
         response_rates=response_rates,
         response_rates_excluding_gst=response_rates_excluding_gst,
-        response_previously_worked=brief_response.data.get('previouslyWorked'),
+        response_previously_worked=escape_markdown(brief_response.data.get('previouslyWorked')),
         response_security_clearance=response_security_clearance,
-        response_start_date=brief_response.data.get('availability'),
+        response_start_date=escape_markdown(brief_response.data.get('availability')),
         response_visa_status=response_visa_status
     )
 
@@ -275,7 +222,7 @@ def send_brief_closed_email(brief):
     if (brief_email_sent_audit_event > 0):
         return
 
-    to_addresses = [user.email_address for user in brief.users if user.active]
+    to_addresses = get_brief_emails(brief)
 
     # prepare copy
     email_body = render_email_template(
@@ -310,7 +257,7 @@ def send_brief_closed_email(brief):
 def send_seller_requested_feedback_from_buyer_email(brief):
     from app.api.services import audit_service, audit_types  # to circumvent circular dependency
 
-    to_addresses = [user.email_address for user in brief.users if user.active]
+    to_addresses = get_brief_emails(brief)
 
     # prepare copy
     email_body = render_email_template(
@@ -403,7 +350,7 @@ def send_specialist_brief_published_email(brief):
     if (brief_email_sent_audit_event > 0):
         return
 
-    to_addresses = [user.email_address for user in brief.users if user.active]
+    to_addresses = get_brief_emails(brief)
 
     invited_sellers = ''
     sellers_text = ''
@@ -520,7 +467,7 @@ def send_specialist_brief_closed_email(brief):
         return
 
     responses = brief_responses_service.find(brief_id=brief.id).all()
-    to_addresses = [user.email_address for user in brief.users if user.active]
+    to_addresses = get_brief_emails(brief)
 
     # prepare copy
     email_body = render_email_template(
@@ -552,3 +499,99 @@ def send_specialist_brief_closed_email(brief):
             "subject": subject
         },
         db_object=brief)
+
+
+def send_brief_clarification_to_buyer(brief, brief_question, supplier):
+    from app.api.services import (
+        audit_service,
+        audit_types
+    )  # to circumvent circular dependency
+
+    to_addresses = get_brief_emails(brief)
+
+    # prepare copy
+    email_body = render_email_template(
+        'brief_question_to_buyer.md',
+        frontend_url=current_app.config['FRONTEND_ADDRESS'],
+        brief_id=brief.id,
+        brief_name=escape_markdown(brief.data.get('title')),
+        publish_by_date=brief.closed_at.strftime('%d/%m/%Y'),
+        message=escape_markdown(brief_question.data.get('question')),
+        supplier_name=escape_markdown(supplier.name)
+    )
+
+    subject = "You received a new question for ‘{}’".format(brief.data.get('title'))
+
+    send_or_handle_error(
+        to_addresses,
+        email_body,
+        subject,
+        current_app.config['DM_GENERIC_NOREPLY_EMAIL'],
+        current_app.config['DM_GENERIC_SUPPORT_NAME'],
+        event_description_for_errors='brief question email sent to buyer'
+    )
+
+    audit_service.log_audit_event(
+        audit_type=audit_types.sent_brief_question_to_buyer,
+        user='',
+        data={
+            "to_addresses": ', '.join(to_addresses),
+            "email_body": email_body,
+            "subject": subject
+        },
+        db_object=brief)
+
+
+def send_brief_clarification_to_seller(brief, brief_question, to_address):
+    from app.api.services import (
+        audit_service,
+        audit_types
+    )  # to circumvent circular dependency
+
+    # prepare copy
+    email_body = render_email_template(
+        'brief_question_to_seller.md',
+        frontend_url=current_app.config['FRONTEND_ADDRESS'],
+        brief_id=brief.id,
+        brief_name=escape_markdown(brief.data.get('title')),
+        brief_organisation=brief.data.get('organisation'),
+        publish_by_date=brief.questions_closed_at.strftime('%d/%m/%Y'),
+        message=escape_markdown(brief_question.data.get('question'))
+    )
+
+    subject = u"You submitted a question for {} ({}) successfully".format(brief.data.get('title'), brief.id)
+
+    send_or_handle_error(
+        to_address,
+        email_body,
+        subject,
+        current_app.config['DM_GENERIC_NOREPLY_EMAIL'],
+        current_app.config['DM_GENERIC_SUPPORT_NAME'],
+        event_description_for_errors='brief question email sent to seller'
+    )
+
+    audit_service.log_audit_event(
+        audit_type=audit_types.sent_brief_question_to_seller,
+        user='',
+        data={
+            "to_addresses": to_address,
+            "email_body": email_body,
+            "subject": subject
+        },
+        db_object=brief)
+
+
+def get_brief_emails(brief):
+    to_addresses = [user.email_address for user in brief.users if user.active]
+    to_addresses = to_addresses + [
+        tb.user.email_address
+        for tb in brief.team_briefs
+        if tb.user.active and tb.team.status == 'completed']
+
+    to_addresses = to_addresses + [
+        tb.team.email_address
+        for tb in brief.team_briefs
+        if tb.team.status == 'completed' and tb.team.email_address
+    ]
+
+    return to_addresses
