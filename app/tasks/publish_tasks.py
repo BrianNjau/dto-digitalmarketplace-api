@@ -114,9 +114,11 @@ def compress_user_claim(user_claim):
         'claimed': user_claim.claimed
     }
 
+
 @celery.task
 def email(email, event_type, **kwargs):
     publish.email(email, event_type, **kwargs)
+
 
 def compress_email(email):
     
