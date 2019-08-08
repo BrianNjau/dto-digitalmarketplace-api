@@ -121,7 +121,6 @@ def email(email, event_type, **kwargs):
 
 
 def compress_email(email):
-    
     return {
         'notificationType': "Email_Body_Log",
         'MessageId': email.get('MessageId'),
