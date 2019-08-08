@@ -113,3 +113,18 @@ def compress_user_claim(user_claim):
         'email_address': user_claim.email_address,
         'claimed': user_claim.claimed
     }
+
+@celery.task
+def email(email, event_type, **kwargs):
+    publish.email(email, event_type, **kwargs)
+
+def compress_email(email):
+    
+    return {
+        'notificationType': "Email_Body_Log",
+        'MessageId': email.get('MessageId'),
+        'Destination': email.get('destination_addresses'),
+        'Subject': email.get('subject'),
+        'Body': email.get('email_body'),
+        'EmailResponseMetaData': email.get('result')
+    }

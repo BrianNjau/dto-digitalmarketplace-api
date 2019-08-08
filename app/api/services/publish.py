@@ -15,6 +15,9 @@ class Publish(object):
 
     def brief_response(self, brief_response, event_type, **kwargs):
         return self.__generic('brief_response', event_type, brief_response=brief_response, **kwargs)
+    
+    def email(self, email, event_type, **kwargs):
+        return self.__generic('email', 'send' , email=email, **kwargs)
 
     def supplier(self, supplier, event_type, **kwargs):
         return self.__generic('supplier', event_type, supplier=supplier, **kwargs)

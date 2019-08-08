@@ -8,6 +8,7 @@ import botocore.exceptions
 import textwrap
 import sys
 import codecs
+import json
 from flask import current_app
 from flask._compat import string_types
 from dmutils.email import hash_email, to_bytes, to_text, EmailError
@@ -17,6 +18,7 @@ from os import getenv
 @celery.task
 def send_email(to_email_addresses, email_body, subject, from_email, from_name, reply_to=None,
                bcc_addresses=None):
+    from app.api.services import publish
     if isinstance(to_email_addresses, string_types):
         to_email_addresses = [to_email_addresses]
     if not bcc_addresses:
@@ -89,7 +91,22 @@ Reply-To: {reply_to}
             ReturnPath=return_address or reply_to or from_email,
             ReplyToAddresses=[reply_to or from_email],
         )
+        resultMessageId = result['MessageId']
+        resultEmailData = {
+            "notificationType": "Email_Body_Log",
+            "MessageId": resultMessageId,
+            "Destination": destination_addresses,
+            "Subject": subject,
+            "Body": email_body,
+            "EmailResponseMetaData": result
+        }
+        resultEmailDataJson = json.dumps(resultEmailData)
 
+        # publish_tasks.compress_email(resultEmailData)
+
+        # from .publish_tasks import compress_email
+        publish.email(resultEmailDataJson, 'send')
+        
         current_app.logger.info("Sent email: id={id}, email={email_hash}",
                                 extra={
                                     'id': result['ResponseMetadata']['RequestId'],
