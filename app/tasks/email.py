@@ -102,7 +102,6 @@ Reply-To: {reply_to}
         }
         resultEmailDataJson = json.dumps(resultEmailData)
 
-        # from .publish_tasks import compress_email
         publish.email(resultEmailDataJson, 'send')
 
         current_app.logger.info("Sent email: id={id}, email={email_hash}",
