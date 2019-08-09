@@ -9,6 +9,7 @@ from app import db, encryption
 from app.api import api
 from app.api.helpers import get_email_domain, get_root_url, user_info, role_required
 from app.api.user import create_user, is_duplicate_user, update_user_details
+from app.api.business import team_business
 from app.emails.users import (send_account_activation_email,
                               send_account_activation_manager_email,
                               send_reset_password_confirm_email,
@@ -377,7 +378,8 @@ def add(token):
         name=claim.data['name'],
         email_address=email_address,
         password=password,
-        framework=claim.data['framework']
+        framework=claim.data['framework'],
+        supplier_code=claim.data.get('supplier_code', None)
     )
     try:
         claim = user_claims_service.validate_and_update_claim(type='signup', token=token, email_address=email_address)
@@ -402,7 +404,7 @@ def send_reset_password_email():
     if email_address is None:
         return jsonify(message='One or more required args were missing from the request'), 400
     user = User.query.filter(
-        User.email_address == email_address).first()
+        User.email_address == email_address.lower()).first()
 
     if user is None:
         return jsonify(email_address=email_address), 200
@@ -433,8 +435,7 @@ def send_reset_password_email():
         return jsonify(message=error.message), 400
 
     return jsonify(
-        email_address=email_address,
-        token=claim.token
+        email_address=email_address
     ), 200
 
 

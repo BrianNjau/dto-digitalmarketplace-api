@@ -19,11 +19,20 @@ class Publish(object):
     def email(self, email, event_type, **kwargs):
         return self.__generic('email', 'send', email=email, **kwargs)
 
+    def brief_question(self, brief_question, event_type, **kwargs):
+        return self.__generic('brief_question', event_type, brief_question=brief_question, **kwargs)
+
+    def evidence(self, evidence, event_type, **kwargs):
+        return self.__generic('evidence', event_type, evidence=evidence, **kwargs)
+
     def supplier(self, supplier, event_type, **kwargs):
         return self.__generic('supplier', event_type, supplier=supplier, **kwargs)
 
     def supplier_domain(self, supplier_domain, event_type, **kwargs):
         return self.__generic('supplier_domain', event_type, supplier_domain=supplier_domain, **kwargs)
+
+    def team(self, team, event_type, **kwargs):
+        return self.__generic('team', event_type, team=team, **kwargs)
 
     def user(self, user, event_type, **kwargs):
         return self.__generic('user', event_type, user=user, **kwargs)

@@ -1,6 +1,7 @@
 from app.api.helpers import Service
 from app.models import Domain
 from app import db
+from sqlalchemy.orm import joinedload, raiseload, Load
 from six import string_types
 from sqlalchemy import func
 
@@ -13,14 +14,29 @@ class DomainService(Service):
         super(DomainService, self).__init__(*args, **kwargs)
 
     def get_active_domains(self):
-        return self.filter(Domain.name.notin_(self.legacy_domains)).all()
+        query = (
+            self.filter(Domain.name.notin_(self.legacy_domains))
+            .options(
+                Load(Domain).raiseload('*')
+            )
+            .order_by(Domain.name.asc())
+        )
+        return query.all()
 
-    def get_by_name_or_id(self, name_or_id):
+    def get_by_name_or_id(self, name_or_id, show_legacy=True):
         if isinstance(name_or_id, string_types):
-            domain = self.filter(
+            query = self.filter(
                 func.lower(Domain.name) == func.lower(name_or_id)
-            ).one_or_none()
+            )
+            if not show_legacy:
+                query = query.filter(Domain.name.notin_(self.legacy_domains))
         else:
-            domain = self.get(name_or_id)
+            query = self.filter(Domain.id == name_or_id)
+            if not show_legacy:
+                query = query.filter(Domain.name.notin_(self.legacy_domains))
+        query.options(
+            Load(Domain).raiseload('*')
+        )
+        domain = query.one_or_none()
 
         return domain

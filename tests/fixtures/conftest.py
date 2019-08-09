@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from __future__ import absolute_import
 
 import pendulum
@@ -7,9 +9,10 @@ from sqlbag import temporary_database
 
 from app import create_app, encryption
 from app.models import (Agency, Application, Assessment, Brief, BriefResponse,
-                        BriefUser, Contact, Domain, Framework, FrameworkLot,
-                        Lot, Supplier, SupplierDomain, SupplierFramework, User,
-                        UserFramework, CaseStudy, db, utcnow)
+                        BriefUser, CaseStudy, Contact, Domain, Evidence,
+                        Framework, FrameworkLot, Lot, Supplier, SupplierDomain,
+                        SupplierFramework, Team, TeamMember,
+                        TeamMemberPermission, User, UserFramework, db, utcnow)
 from migrations import load_from_app_model, load_test_fixtures
 from tests.app.helpers import (COMPLETE_DIGITAL_SPECIALISTS_BRIEF,
                                WSGIApplicationWithEnvironment)
@@ -112,12 +115,17 @@ def suppliers(app, request):
 
 @pytest.fixture()
 def supplier_domains(app, request, suppliers):
+    params = request.param if hasattr(request, 'param') else {}
+    status = params['status'] if 'status' in params else 'unassessed'
+    price_status = params['price_status'] if 'price_status' in params else 'unassessed'
     with app.app_context():
         for s in suppliers:
             for i in range(1, 6):
                 db.session.add(SupplierDomain(
                     supplier_id=s.id,
-                    domain_id=i
+                    domain_id=i,
+                    status=status,
+                    price_status=price_status
                 ))
 
                 db.session.flush()
@@ -170,7 +178,7 @@ def users(app, request):
         for i in range(1, 6):
             new_user = User(
                 id=i,
-                email_address='{}{}@{}'.format(fake.first_name(), i, email_domain),
+                email_address='{}{}@{}'.format(fake.first_name(), i, email_domain).lower(),
                 name=fake.name(),
                 password=fake.password(),
                 active=True,
@@ -365,6 +373,24 @@ def assessments(app, request, supplier_domains, briefs):
 
 
 @pytest.fixture()
+def evidence(app, request, domains, suppliers, buyer_user):
+    params = request.param if hasattr(request, 'param') else {}
+    data = params['data'] if 'data' in params else {}
+    with app.app_context():
+        for domain in domains:
+            db.session.add(Evidence(
+                supplier_code=suppliers[0].code,
+                domain_id=domain.id,
+                user_id=buyer_user.id,
+                submitted_at=pendulum.now(),
+                data=data
+            ))
+            db.session.flush()
+        db.session.commit()
+        yield Evidence.query.all()
+
+
+@pytest.fixture()
 def rfx_brief(client, app, request, buyer_user):
     params = request.param if hasattr(request, 'param') else {}
     data = params['data'] if 'data' in params else {'title': 'RFX TEST'}
@@ -402,3 +428,190 @@ def atm_brief(client, app, request, buyer_user):
         ))
         db.session.commit()
         yield Brief.query.get(1)
+
+
+@pytest.fixture()
+def specialist_brief(client, app, request, buyer_user):
+    params = request.param if hasattr(request, 'param') else {}
+    data = params['data'] if 'data' in params else {'title': 'SPECIALIST TEST'}
+    with app.app_context():
+        framework = Framework.query.filter(Framework.slug == 'digital-marketplace').first()
+        framework.status = 'live'
+        db.session.add(framework)
+        db.session.commit()
+
+        db.session.add(
+            Brief(
+                id=1,
+                data=data,
+                framework=Framework.query.filter(Framework.slug == 'digital-marketplace').first(),
+                lot=Lot.query.filter(Lot.slug == 'specialist').first(),
+                users=[buyer_user]
+            )
+        )
+
+        db.session.commit()
+        yield Brief.query.get(1)
+
+
+@pytest.fixture()
+def specialist_data():
+    yield {
+        'areaOfExpertise': 'Software engineering and Development',
+        'attachments': [],
+        'budgetRange': '',
+        'closedAt': '2019-07-03',
+        'contactNumber': '0123456789',
+        'contractExtensions': '',
+        'contractLength': '1 year',
+        'comprehensiveTerms': True,
+        'essentialRequirements': [
+            {
+                'criteria': 'Code',
+                'weighting': '100'
+            }
+        ],
+        'evaluationType': [
+            'Responses to selection criteria',
+            'Résumés'
+        ],
+        'includeWeightingsEssential': False,
+        'includeWeightingsNiceToHave': False,
+        'internalReference': '',
+        'location': [
+            'Australian Capital Territory'
+        ],
+        'maxRate': '123',
+        'niceToHaveRequirements': [
+            {
+                'criteria': 'Code review',
+                'weighting': '0'
+            }
+        ],
+        'numberOfSuppliers': '3',
+        'openTo': 'all',
+        'organisation': 'Digital Transformation Agency',
+        'preferredFormatForRates': 'dailyRate',
+        'securityClearance': 'noneRequired',
+        'securityClearanceCurrent': '',
+        'securityClearanceObtain': '',
+        'securityClearanceOther': '',
+        'sellers': {},
+        'sellerCategory': '6',
+        'startDate': pendulum.today(tz='Australia/Sydney').add(days=14).format('%Y-%m-%d'),
+        'summary': 'asdf',
+        'title': 'Developer'
+    }
+
+
+@pytest.fixture()
+def teams(client, app):
+    with app.app_context():
+        db.session.add(
+            Team(
+                id=1,
+                name='Marketplace',
+                email_address='marketplace@digital.gov.au',
+                status='completed'
+            )
+        )
+
+        db.session.commit()
+
+        yield db.session.query(Team).all()
+
+
+@pytest.fixture()
+def team_members(client, app, buyer_user, teams):
+    with app.app_context():
+        db.session.add(
+            TeamMember(
+                id=1,
+                team_id=1,
+                user_id=buyer_user.id
+            )
+        )
+
+        db.session.commit()
+
+        yield db.session.query(TeamMember).all()
+
+
+@pytest.fixture()
+def create_drafts_permission(client, app, team_members):
+    with app.app_context():
+        db.session.add(
+            TeamMemberPermission(
+                id=1,
+                team_member_id=1,
+                permission='create_drafts'
+            )
+        )
+
+        db.session.commit()
+
+        yield db.session.query(TeamMemberPermission).filter(TeamMemberPermission.id == 1).all()
+
+
+@pytest.fixture()
+def publish_opportunities_permission(client, app, team_members):
+    with app.app_context():
+        db.session.add(
+            TeamMemberPermission(
+                id=2,
+                team_member_id=1,
+                permission='publish_opportunities'
+            )
+        )
+
+        db.session.commit()
+
+        yield db.session.query(TeamMemberPermission).filter(TeamMemberPermission.id == 2).all()
+
+
+@pytest.fixture()
+def answer_questions_permission(client, app, team_members):
+    with app.app_context():
+        db.session.add(
+            TeamMemberPermission(
+                id=3,
+                team_member_id=1,
+                permission='answer_seller_questions'
+            )
+        )
+
+        db.session.commit()
+
+        yield db.session.query(TeamMemberPermission).filter(TeamMemberPermission.id == 3).all()
+
+
+@pytest.fixture()
+def download_responses_permission(client, app, team_members):
+    with app.app_context():
+        db.session.add(
+            TeamMemberPermission(
+                id=4,
+                team_member_id=1,
+                permission='download_responses'
+            )
+        )
+
+        db.session.commit()
+
+        yield db.session.query(TeamMemberPermission).filter(TeamMemberPermission.id == 4).all()
+
+
+@pytest.fixture()
+def create_work_orders_permission(client, app, team_members):
+    with app.app_context():
+        db.session.add(
+            TeamMemberPermission(
+                id=5,
+                team_member_id=1,
+                permission='create_work_orders'
+            )
+        )
+
+        db.session.commit()
+
+        yield db.session.query(TeamMemberPermission).filter(TeamMemberPermission.id == 5).all()
