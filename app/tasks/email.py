@@ -8,7 +8,6 @@ import botocore.exceptions
 import textwrap
 import sys
 import codecs
-import json
 from flask import current_app
 from flask._compat import string_types
 from dmutils.email import hash_email, to_bytes, to_text, EmailError
