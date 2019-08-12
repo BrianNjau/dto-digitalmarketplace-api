@@ -14,7 +14,13 @@ from .briefs import (
     send_brief_response_received_email,
     send_brief_closed_email,
     send_seller_requested_feedback_from_buyer_email,
-    send_seller_invited_to_rfx_email
+    send_seller_invited_to_rfx_email,
+    send_specialist_brief_published_email,
+    send_specialist_brief_seller_invited_email,
+    send_specialist_brief_closed_email,
+    send_specialist_brief_response_received_email,
+    send_brief_clarification_to_buyer,
+    send_brief_clarification_to_seller
 )  # noqa
 from .dreamail import (
     send_dreamail

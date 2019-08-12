@@ -14,13 +14,18 @@ from sqlalchemy import or_
 from sqlalchemy.orm import joinedload, noload
 # from dmapiclient.audit import AuditTypes
 from app.api.services import (
-    AuditTypes
+    AuditTypes,
+    key_values_service,
+    agreement_service
 )
 from app.tasks import publish_tasks
 from app.emails import send_approval_notification, send_rejection_notification, \
     send_submitted_existing_seller_notification, send_submitted_new_seller_notification, \
     send_revert_notification
 from app.api.business.validators import ApplicationValidator
+from app.api.business.agreement_business import (
+    get_current_agreement
+)
 
 
 def get_application_json():
@@ -94,10 +99,12 @@ def update_application(application_id):
     application.update_from_json(application_json)
     save_application(application)
     errors = ApplicationValidator(application).validate_all()
+    agreement = get_current_agreement()
 
     return (
         jsonify(
             application=application.serializable,
+            agreement=agreement,
             application_errors=errors),
         200)
 
@@ -263,6 +270,8 @@ def get_application_by_id(application_id):
     if application.status == 'deleted':
         abort(404)
 
+    agreement = get_current_agreement()
+
     # Maximum prices are used on the pricing page to encourage value for money
     result = Domain.query.all()
     domains = {'prices': {'maximum': {}}}
@@ -273,6 +282,7 @@ def get_application_by_id(application_id):
     return jsonify(
         application=application.serializable,
         domains=domains,
+        agreement=agreement,
         application_errors=errors)
 
 
@@ -421,9 +431,15 @@ def submit_application(application_id):
         if user.supplier_code != application.supplier_code:
             abort(400, 'User supplier code does not match application supplier code')
 
-    current_agreement = Agreement.query.filter(
-        Agreement.is_current == true()
-    ).first_or_404()
+    agreement = get_current_agreement()
+    if agreement:
+        current_agreement = Agreement.query.filter(
+            Agreement.id == agreement.get('agreementId')
+        ).first_or_404()
+    else:
+        current_agreement = Agreement.query.filter(
+            Agreement.is_current == true()
+        ).first_or_404()
 
     db.session.add(AuditEvent(
         audit_type=AuditTypes.submit_application,

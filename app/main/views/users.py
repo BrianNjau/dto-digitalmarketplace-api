@@ -21,8 +21,10 @@ from app.emails.users import (
     send_existing_seller_notification, send_existing_application_notification,
 )
 from app.api.business import (
-    supplier_business
+    supplier_business,
+    team_business
 )
+from app.api.services import user_claims_service, users as user_service
 from app.tasks import publish_tasks
 
 from dmutils.logging import notify_team
@@ -102,10 +104,22 @@ def get_user_by_id(user_id):
     result = user._asdict()
     login_attempt_limit = current_app.config['DM_FAILED_LOGIN_LIMIT']
     result['locked'] = user.failed_login_count >= login_attempt_limit
+    notification_count = 0
+    teams = []
+    if user.role == 'supplier':
+        messages = supplier_business.get_supplier_messages(user.supplier_code, False)
+        notification_count = len(messages.errors + messages.warnings)
+    elif user.role == 'buyer':
+        teams = team_business.get_user_teams(user.id)
+
+    result.update({
+        'teams': teams
+    })
     result.update({
         'supplier': {
             'name': user.supplier_name,
-            'supplierCode': user.supplier_code
+            'supplierCode': user.supplier_code,
+            'notificationCount': notification_count
         }
     })
     result.update({
@@ -225,6 +239,42 @@ def list_users():
             request.args
         )
     )
+
+
+@main.route('/users/resetpassword', methods=['POST'])
+def reset_password():
+    json_payload = get_json_from_request()
+    email_address = json_payload.get('email_address', None)
+    if not email_address:
+        abort(400, "Must supply the email address of the account to reset")
+    user = user_service.get_by_email(email_address.lower())
+    if not user:
+        abort(404, "User not found")
+    user_data = {
+        'user_id': user.id
+    }
+    claim = user_claims_service.make_claim(type='password_reset', email_address=email_address, data=user_data)
+    if not claim:
+        abort(500, "There was an issue completing the password reset process.")
+    result = {
+        'token': claim.token,
+        'email_address': email_address
+    }
+
+    try:
+        audit = AuditEvent(
+            audit_type=AuditTypes.update_user,
+            user=email_address.lower(),
+            data={},
+            db_object=user
+        )
+
+        db.session.add(audit)
+        db.session.commit()
+    except Exception:
+        pass
+
+    return jsonify(result)
 
 
 @main.route('/users', methods=['POST'])

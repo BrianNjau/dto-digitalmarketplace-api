@@ -665,7 +665,7 @@ class Supplier(db.Model):
                                  default=localnow)
 
     domains = relationship("SupplierDomain", back_populates="supplier")
-    signed_agreements = db.relationship('SignedAgreement', single_parent=True)
+    signed_agreements = db.relationship('SignedAgreement', single_parent=True, order_by="SignedAgreement.agreement_id")
     frameworks = relationship("SupplierFramework")
     text_vector = column_property(func.setweight(func.to_tsvector(func.coalesce(name, '')), 'A').op('||')(
         func.setweight(func.to_tsvector(func.coalesce(summary, '')), 'B')).op('||')(
@@ -680,6 +680,18 @@ class Supplier(db.Model):
         db.session.add(sd)
         db.session.add(AuditEvent(
             audit_type=AuditTypes.unassessed_domain,
+            user='',
+            data={},
+            db_object=sd
+        ))
+        db.session.flush()
+
+    def add_assessed_domain(self, name_or_id):
+        d = Domain.get_by_name_or_id(name_or_id)
+        sd = SupplierDomain(supplier=self, domain=d, status='assessed', price_status='approved')
+        db.session.add(sd)
+        db.session.add(AuditEvent(
+            audit_type=AuditTypes.assessed_domain,
             user='',
             data={},
             db_object=sd
@@ -715,18 +727,20 @@ class Supplier(db.Model):
                 data=audit_data if audit_data else {},
                 db_object=sd
             ))
+        elif status == 'unassessed':
+            sd.price_status = 'unassessed'
         db.session.flush()
 
     @property
     def all_domains(self):
         new_domains = [sd.domain.name for sd in self.domains]
-        result = new_domains + self.legacy_domains
+        result = new_domains
         return sorted_uniques(result)
 
     @property
     def assessed_domains(self):
         approved_new_domains = [sd.domain.name for sd in self.domains if sd.status == 'assessed']
-        result = approved_new_domains + self.legacy_domains
+        result = approved_new_domains
         return sorted_uniques(result)
 
     @property
@@ -806,7 +820,7 @@ class Supplier(db.Model):
             'all': sorted([self.serialize_supplier_domain(d) for d in self.domains], key=itemgetter('domain_name')),
             'assessed': self.assessed_domains,
             'unassessed': self.unassessed_domains,
-            'legacy': self.legacy_domains
+            'legacy': []
         }
 
         j['services'] = {
@@ -855,6 +869,10 @@ class Supplier(db.Model):
         if 'recruiter' in data:
             self.is_recruiter = data['recruiter'].lower() in ('both', 'yes', 'true', 't')
             data['is_recruiter'] = self.is_recruiter
+            # un-assess domains when going from a recruiter to a consultancy
+            if self.data.get('recruiter', '') == 'yes' and data.get('recruiter', '') in ['both', 'no']:
+                for domain in self.all_domains:
+                    self.update_domain_assessment_status(domain, 'unassessed')
 
         if 'representative' in data:
             self.contacts = [
@@ -889,6 +907,9 @@ class Supplier(db.Model):
         if 'regions' in data:
             del data['regions']
 
+        if 'pricing' in data:
+            del data['pricing']
+
         overridden = [
             'longName',
             'extraLinks',
@@ -904,12 +925,19 @@ class Supplier(db.Model):
         self.last_update_time = utcnow()
 
         if 'services' in self.data:
-            for name, checked in self.data['services'].items():
-                if name not in self.all_domains and checked:
-                    self.add_unassessed_domain(name)
-            for domain in self.all_domains:
-                if not any(domain in service for service in self.data['services']):
-                    self.remove_domain(domain)
+            if self.data.get('recruiter', '') in ['yes', 'both']:
+                for name, checked in self.data['services'].items():
+                    if name not in self.all_domains and checked:
+                        if self.data.get('recruiter', '') == 'yes':
+                            self.add_assessed_domain(name)
+                        else:
+                            self.add_unassessed_domain(name)
+                    if name in self.all_domains and checked and self.data.get('recruiter', '') == 'yes':
+                        self.update_domain_assessment_status(name, 'assessed')
+                if self.data.get('recruiter', '') == 'yes':
+                    for domain in self.all_domains:
+                        if not any(domain in service for service in self.data['services']):
+                            self.remove_domain(domain)
 
             del self.data['services']
 
@@ -953,8 +981,10 @@ class Domain(db.Model):
     ordering = db.Column(db.Integer, nullable=False)
     price_minimum = db.Column(db.Numeric, nullable=False)
     price_maximum = db.Column(db.Numeric, nullable=False)
+    criteria_needed = db.Column(db.Numeric, nullable=False)
 
     suppliers = relationship("SupplierDomain", back_populates="domain", lazy='joined')
+    criteria = relationship("DomainCriteria", back_populates="domain")
     assoc_suppliers = association_proxy('suppliers', 'supplier')
 
     @staticmethod
@@ -971,6 +1001,139 @@ class Domain(db.Model):
         if not d:
             raise ValidationError('cannot find domain: {}'.format(name_or_id))
         return d
+
+    def serialize(self):
+        serialized = {
+            "id": self.id,
+            "name": self.name,
+            "price_minimum": self.price_minimum,
+            "price_maximum": self.price_maximum,
+            "criteria": [criteria.serialize() for criteria in self.criteria],
+            "criteria_needed": self.criteria_needed
+        }
+        return serialized
+
+
+class DomainCriteria(db.Model):
+    __tablename__ = 'domain_criteria'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String, nullable=False)
+    domain_id = db.Column(db.Integer,
+                          db.ForeignKey('domain.id'),
+                          nullable=False)
+    domain = relationship("Domain", back_populates="criteria")
+
+    def serialize(self):
+        serialized = {
+            "id": self.id,
+            "name": self.name
+        }
+        return serialized
+
+
+class Evidence(db.Model):
+    __tablename__ = 'evidence'
+    id = db.Column(db.Integer, primary_key=True)
+    domain_id = db.Column(db.Integer, db.ForeignKey('domain.id'), index=True, nullable=False)
+    brief_id = db.Column(db.Integer, db.ForeignKey('brief.id'), index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), index=True, nullable=False)
+    supplier_code = db.Column(db.BigInteger, db.ForeignKey('supplier.code'), index=True, nullable=False)
+    data = db.Column(MutableDict.as_mutable(JSON))
+    created_at = db.Column(DateTime, index=True, nullable=False, default=utcnow)
+    updated_at = db.Column(DateTime, index=True, nullable=False, default=utcnow, onupdate=utcnow)
+    submitted_at = db.Column(DateTime, index=True, nullable=True)
+    approved_at = db.Column(DateTime, index=True, nullable=True)
+    rejected_at = db.Column(DateTime, index=True, nullable=True)
+
+    domain = db.relationship('Domain', lazy='joined', innerjoin=True)
+    supplier = db.relationship('Supplier', lazy='joined', innerjoin=True)
+    user = db.relationship('User', lazy='joined', innerjoin=True)
+    brief = db.relationship('Brief')
+
+    def serialize(self, with_domain=False):
+        data = self.data.copy()
+        data.update({
+            "id": self.id,
+            "domainId": self.domain_id,
+            "briefId": self.brief_id,
+            "status": self.status,
+            "supplierCode": self.supplier_code,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+            "submitted_at": self.submitted_at
+        })
+        if with_domain:
+            data.update({
+                "domain": self.domain.serialize()
+            })
+        return data
+
+    def submit(self):
+        if not self.submitted_at:
+            self.submitted_at = pendulum.now('UTC')
+            self.rejected_at = None
+            self.approved_at = None
+
+    def approve(self):
+        if not self.approved_at:
+            self.rejected_at = None
+            self.approved_at = pendulum.now('UTC')
+
+    def reject(self):
+        if not self.rejected_at:
+            self.approved_at = None
+            self.rejected_at = pendulum.now('UTC')
+
+    def get_criteria_responses(self):
+        responses = {}
+        if 'evidence' in self.data and len(self.data['evidence'].keys()) > 0:
+            for criteria_id in self.data['evidence']:
+                if 'response' in self.data['evidence'][criteria_id]:
+                    responses[criteria_id] = self.data['evidence'][criteria_id]['response']
+        return responses
+
+    @hybrid_property
+    def status(self):
+        if not self.submitted_at:
+            return 'draft'
+        if self.rejected_at:
+            return 'rejected'
+        if self.approved_at:
+            return 'assessed'
+        return 'submitted'
+
+
+class EvidenceAssessment(db.Model):
+    __tablename__ = 'evidence_assessment'
+    id = db.Column(db.Integer, primary_key=True)
+    evidence_id = db.Column(db.Integer, db.ForeignKey('evidence.id'), index=True, nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    created_at = db.Column(DateTime, index=True, nullable=False, default=utcnow)
+    status = db.Column(
+        db.Enum(
+            *[
+                'approved',
+                'rejected'
+            ],
+            name='evidence_assessment_status_enum'
+        ),
+        default='rejected',
+        index=False,
+        unique=False,
+        nullable=False
+    )
+    data = db.Column(MutableDict.as_mutable(JSON))
+
+    def serialize(self):
+        data = self.data.copy()
+        data.update({
+            "id": self.id,
+            "evidenceId": self.evidence_id,
+            "userId": self.user_id,
+            "status": self.status,
+            "created_at": self.created_at
+        })
+        return data
 
 
 class RecruiterInfo(db.Model):
@@ -1736,6 +1899,7 @@ class Brief(db.Model):
                       {})
 
     users = db.relationship('User', secondary='brief_user')
+    team_briefs = db.relationship('TeamBrief', cascade="save-update, merge, delete")
     framework = db.relationship('Framework', lazy='joined')
     lot = db.relationship('Lot', lazy='joined')
     clarification_questions = db.relationship(
@@ -2025,18 +2189,6 @@ class Brief(db.Model):
         def has_statuses(self, *statuses):
             return self.filter(Brief.status.in_(statuses))
 
-    def add_clarification_question(self, question, answer):
-        clarification_question = BriefClarificationQuestion(
-            brief=self,
-            question=question,
-            answer=answer,
-        )
-        clarification_question.validate()
-
-        Session.object_session(self).add(clarification_question)
-
-        return clarification_question
-
     def update_from_json(self, data):
         current_data = dict(self.data.items())
         current_data.update(data)
@@ -2121,6 +2273,15 @@ class Brief(db.Model):
                 filter_fields(user.serialize(), ('id', 'emailAddress', 'phoneNumber', 'name', 'role', 'active'))
                 for user in self.users
             ]
+            team_briefs = []
+            for tb in self.team_briefs:
+                for tm in tb.team.team_members:
+                    team_briefs.append({
+                        'userId': tm.user_id,
+                        'teamId': tm.team_id
+                    })
+
+            data['teamBriefs'] = team_briefs
 
         data['dates'] = self.dates_for_serialization
         return data
@@ -2135,6 +2296,16 @@ class BriefUser(db.Model):
 
     brief_id = db.Column(db.Integer, db.ForeignKey('brief.id'), primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), primary_key=True)
+
+
+class BriefResponseDownload(db.Model):
+    __tablename__ = 'brief_response_download'
+
+    id = db.Column(db.Integer, primary_key=True)
+    brief_id = db.Column(db.Integer, db.ForeignKey('brief.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    created_at = db.Column(DateTime, index=True, nullable=False, default=utcnow)
+    brief = db.relationship('Brief')
 
 
 class BriefResponse(db.Model):
@@ -2198,23 +2369,24 @@ class BriefResponse(db.Model):
                             result.append('')
                     return result
 
-            try:
-                self.data['essentialRequirements'] = \
-                    clean(self.data['essentialRequirements'])
-            except KeyError:
-                pass
+            if self.brief.lot.slug not in ['specialist']:
+                try:
+                    self.data['essentialRequirements'] = \
+                        clean(self.data['essentialRequirements'])
+                except KeyError:
+                    pass
 
-            try:
-                self.data['niceToHaveRequirements'] = \
-                    clean(self.data['niceToHaveRequirements'])
-            except KeyError:
-                pass
+                try:
+                    self.data['niceToHaveRequirements'] = \
+                        clean(self.data['niceToHaveRequirements'])
+                except KeyError:
+                    pass
 
-            try:
-                self.data['attachedDocumentURL'] = \
-                    filter(None, clean(self.data['attachedDocumentURL']))
-            except KeyError:
-                pass
+                try:
+                    self.data['attachedDocumentURL'] = \
+                        filter(None, clean(self.data['attachedDocumentURL']))
+                except KeyError:
+                    pass
 
         def atm_must_upload_doc():
             must_upload = False
@@ -2278,7 +2450,7 @@ class BriefResponse(db.Model):
                         errs['criteria'] = 'answer_required'
 
         # only perform schema validation on non RFX or ATM responses
-        if self.brief.lot.slug != 'rfx' and self.brief.lot.slug != 'atm':
+        if (self.brief.lot.slug not in ['rfx', 'atm', 'specialist']):
             errs = get_validation_errors(
                 'brief-responses-{}-{}'.format(self.brief.framework.slug, self.brief.lot.slug),
                 self.data,
@@ -2296,14 +2468,39 @@ class BriefResponse(db.Model):
                 errs['attachedDocumentURL'] = 'answer_required'
 
         if (
-            self.brief.lot.slug != 'training' and
-            self.brief.lot.slug != 'rfx' and
-            self.brief.lot.slug != 'atm' and
+            self.brief.lot.slug not in ['training', 'rfx', 'atm'] and
             'essentialRequirements' not in errs and
             len(filter(None, self.data.get('essentialRequirements', []))) !=
             len(self.brief.data['essentialRequirements'])
         ):
             errs['essentialRequirements'] = 'answer_required'
+
+        if self.brief.lot.slug in ['specialist']:
+            if not self.data.get('specialistGivenNames'):
+                errs['specialistGivenNames'] = 'answer_required'
+            if not self.data.get('specialistSurname'):
+                errs['specialistSurname'] = 'answer_required'
+
+            if self.brief.data.get('preferredFormatForRates') == 'dailyRate':
+                if not self.data.get('dayRateExcludingGST'):
+                    errs['dayRateExcludingGST'] = 'answer_required'
+                if not self.data.get('dayRate'):
+                    errs['dayRate'] = 'answer_required'
+            elif self.brief.data.get('preferredFormatForRates') == 'hourlyRate':
+                if not self.data.get('hourRateExcludingGST'):
+                    errs['hourRateExcludingGST'] = 'answer_required'
+                if not self.data.get('hourRate'):
+                    errs['hourRate'] = 'answer_required'
+
+            if not self.data.get('visaStatus'):
+                errs['visaStatus'] = 'answer_required'
+
+            if self.brief.data.get('securityClearance') == 'mustHave':
+                if not self.data.get('securityClearance'):
+                    errs['securityClearance'] = 'answer_required'
+
+            if not self.data.get('previouslyWorked'):
+                errs['previouslyWorked'] = 'answer_required'
 
         if max_day_rate and 'dayRate' not in errs:
             if float(self.data['dayRate']) > float(max_day_rate):
@@ -2330,6 +2527,21 @@ class BriefResponse(db.Model):
         return data
 
 
+class BriefQuestion(db.Model):
+    __tablename__ = 'brief_question'
+
+    id = db.Column(db.Integer, primary_key=True)
+    brief_id = db.Column("brief_id", db.Integer, db.ForeignKey("brief.id"), nullable=False)
+    supplier_code = db.Column(db.BigInteger, db.ForeignKey('supplier.code'), nullable=False)
+
+    data = db.Column(JSON, nullable=False)
+    answered = db.Column(db.Boolean, nullable=False, default=False)
+    created_at = db.Column(DateTime, index=True, nullable=False, default=utcnow)
+
+    brief = db.relationship("Brief")
+    supplier = db.relationship('Supplier', lazy='joined')
+
+
 class BriefClarificationQuestion(db.Model):
     __tablename__ = 'brief_clarification_question'
 
@@ -2338,9 +2550,8 @@ class BriefClarificationQuestion(db.Model):
 
     question = db.Column(db.String, nullable=False)
     answer = db.Column(db.String, nullable=False)
-
-    published_at = db.Column(DateTime, index=True, nullable=False,
-                             default=utcnow)
+    published_at = db.Column(DateTime, index=True, nullable=False, default=utcnow)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
     brief = db.relationship("Brief")
 
@@ -2578,6 +2789,10 @@ class Application(db.Model):
                     if self.is_case_study_different(case_study, current_case_study.data):
                         case_study['status'] = 'unassessed'
 
+                # remove auth rep data from edit
+                self.data.pop('representative', None)
+                self.data.pop('phone', None)
+                self.data.pop('email', None)
             else:
                 supplier = Supplier()
             supplier.update_from_json(self.data)
@@ -2630,15 +2845,21 @@ class Application(db.Model):
             mj.create_application_approval_task(self, domains, closing_date)
 
     def signed_agreements(self):
-        agreements = db.session.query(
+        query = db.session.query(
             Agreement.version, Agreement.url, User.name, User.email_address, SignedAgreement.signed_at
         ).join(
             SignedAgreement, User
-        ).filter(
-            SignedAgreement.application_id == self.id
-        ).all()
+        ).order_by(
+            SignedAgreement.agreement_id
+        )
+        if self.supplier_code:
+            query = query.filter(SignedAgreement.supplier_code == self.supplier_code)
+        else:
+            query = query.filter(SignedAgreement.application_id == self.id)
 
-        return [a._asdict() for a in agreements]
+        agreements = query.all()
+
+        return [{'agreement': a._asdict()} for a in agreements]
 
 
 def check_for_uuid(data):
@@ -2825,6 +3046,79 @@ class BriefAssessor(db.Model):
     brief_id = db.Column(db.Integer, db.ForeignKey('brief.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     email_address = db.Column(db.String)
+
+
+class Team(db.Model):
+    __tablename__ = 'team'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String, nullable=False)
+    email_address = db.Column(db.String)
+    status = db.Column(
+        db.Enum(
+            *[
+                'created',
+                'completed',
+                'deleted'
+            ],
+            name='team_status_enum'
+        ),
+        nullable=False
+    )
+
+    created_at = db.Column(DateTime, index=False, nullable=False, default=utcnow)
+    updated_at = db.Column(DateTime, index=False, nullable=False, default=utcnow, onupdate=utcnow)
+
+    team_members = relationship('TeamMember', cascade="all, delete-orphan")
+
+
+class TeamBrief(db.Model):
+    __tablename__ = 'team_brief'
+
+    id = db.Column(db.Integer, primary_key=True)
+    brief_id = db.Column(db.Integer, db.ForeignKey('brief.id'), nullable=False)
+    team_id = db.Column(db.Integer, db.ForeignKey('team.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+    user = relationship('User')
+    team = relationship('Team')
+
+
+class TeamMember(db.Model):
+    __tablename__ = 'team_member'
+
+    id = db.Column(db.Integer, primary_key=True)
+    is_team_lead = db.Column(db.Boolean, default=False, nullable=False)
+    team_id = db.Column(db.Integer, db.ForeignKey('team.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    updated_at = db.Column(DateTime, index=False, nullable=False, default=utcnow, onupdate=utcnow)
+
+    permissions = relationship('TeamMemberPermission', cascade="all, delete-orphan")
+    user = relationship('User')
+
+
+permission_types = [
+    'create_drafts',
+    'publish_opportunities',
+    'answer_seller_questions',
+    'download_responses',
+    'create_work_orders'
+]
+
+
+class TeamMemberPermission(db.Model):
+    __tablename__ = 'team_member_permission'
+
+    id = db.Column(db.Integer, primary_key=True)
+    team_member_id = db.Column(db.Integer, db.ForeignKey('team_member.id'), nullable=False)
+    permission = db.Column(
+        db.Enum(
+            *permission_types,
+            name='permission_type_enum'
+        ),
+        index=True,
+        nullable=False
+    )
 
 
 # Index for .last_for_object queries. Without a composite index the

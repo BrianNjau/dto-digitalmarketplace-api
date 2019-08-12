@@ -1,13 +1,15 @@
-from sqlalchemy import func, desc
-from sqlalchemy.sql.functions import concat
-from app.api.helpers import Service
+from sqlalchemy import and_, desc, func, literal
+from sqlalchemy.sql.expression import case, select
+from sqlalchemy.orm import joinedload, raiseload
 from app import db
 from app.models import (
     Domain,
     Supplier,
     SupplierDomain,
+    Team, TeamMember,
     User
 )
+from app.api.helpers import Service, abort
 
 
 class UsersService(Service):
@@ -29,15 +31,58 @@ class UsersService(Service):
 
         return name
 
-    def get_team_members(self, current_user_id, email_domain):
-        """Returns a list of the user's team members."""
-        team_ids = db.session.query(User.id).filter(User.id != current_user_id,
-                                                    User.email_address.endswith(concat('@', email_domain)))
+    def get_team_members(self, current_user_id, email_domain, keywords=None, exclude=None):
+        exclude = exclude if exclude else []
+        user = (
+            db
+            .session
+            .query(
+                User.id,
+                User.supplier_code,
+                User.role
+            )
+            .filter(User.id == current_user_id)
+            .one_or_none()
+        )
 
-        results = (db.session.query(User.name, User.email_address.label('email'))
-                   .filter(User.id != current_user_id, User.id.in_(team_ids), User.active.is_(True))
-                   .order_by(func.lower(User.name)))
+        user_type = (
+            case(
+                whens=[(Supplier.data['email'].isnot(None), literal('ar'))]
+            ).label('type')
+        )
+        results = (
+            db
+            .session
+            .query(
+                User.name,
+                User.email_address.label('email'),
+                User.id,
+                user_type
+            )
+            .outerjoin(
+                Supplier,
+                and_(
+                    Supplier.data['email'].astext == User.email_address,
+                    Supplier.code == User.supplier_code
+                )
+            )
+            .filter(
+                User.id != user.id,
+                User.active.is_(True),
+                User.email_address.like('%@{}'.format(email_domain))
+            )
+            .filter(User.id.notin_(exclude))
+        )
 
+        if keywords:
+            results = results.filter(User.name.ilike('%{}%'.format(keywords.encode('utf-8'))))
+
+        results = results.filter(
+            User.supplier_code == user.supplier_code,
+            User.role == user.role
+        )
+
+        results = results.order_by(user_type, func.lower(User.name))
         return [r._asdict() for r in results]
 
     def get_supplier_last_login(self, application_id):
@@ -75,3 +120,33 @@ class UsersService(Service):
 
     def get_by_email(self, email):
         return self.find(email_address=email).one_or_none()
+
+    def get_buyer_team_members(self, email_domain):
+        completed_teams = (db.session
+                             .query(TeamMember.user_id, Team.name)
+                             .join(Team)
+                             .filter(Team.status == 'completed')
+                             .subquery('completed_teams'))
+
+        results = (db.session
+                     .query(User.id,
+                            User.name,
+                            User.email_address.label('emailAddress'),
+                            completed_teams.columns.name.label('teamName'))
+                     .join(completed_teams, completed_teams.columns.user_id == User.id, isouter=True)
+                     .filter(User.active.is_(True),
+                             User.email_address.like('%@{}'.format(email_domain)),
+                             User.role == 'buyer')
+                     .order_by(func.lower(User.name))
+                     .all())
+
+        return [r._asdict() for r in results]
+
+    def get_by_id(self, user_id):
+        query = (
+            self.find(id=user_id)
+            .options(
+                raiseload('*')
+            )
+        )
+        return query.one_or_none()
