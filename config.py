@@ -241,6 +241,8 @@ class Test(Config):
     DEADLINES_TZ_NAME = 'Australia/Sydney'
     SEND_EMAILS = False
 
+    REDIS_SESSIONS = False
+
 
 class Development(Config):
     DEBUG = True
