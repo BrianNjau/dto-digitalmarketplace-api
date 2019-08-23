@@ -1,7 +1,7 @@
 from datetime import datetime
 from urllib import quote
 
-from flask import current_app, jsonify, request
+from flask import current_app, jsonify, request, session
 from flask_login import current_user, login_required, login_user, logout_user
 from urllib import unquote_plus
 
@@ -110,6 +110,8 @@ def login():
         db.session.add(user)
         db.session.commit()
 
+        if current_app.config['REDIS_SESSIONS']:
+            session.regenerate()
         login_user(user)
 
         return jsonify(user_info(user))
@@ -138,6 +140,8 @@ def logout():
           message:
             type: string
     """
+    if current_app.config['REDIS_SESSIONS']:
+        session.destroy()
     logout_user()
     return jsonify(message='The user was logged out successfully'), 200
 
