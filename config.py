@@ -201,6 +201,12 @@ class Config:
     CELERYBEAT_SCHEDULE = {}
 
 
+    # redis
+    REDIS_SESSIONS = True
+    REDIS_SERVER_HOST = '127.0.0.1'
+    REDIS_SERVER_PORT = 6379
+
+
 class Test(Config):
     URL_PREFIX = ''
     URL_PREFIX_V2 = '/2'

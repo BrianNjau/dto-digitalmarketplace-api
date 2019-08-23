@@ -15,6 +15,10 @@ from app.swagger import swag
 from nplusone.ext.flask_sqlalchemy import NPlusOne
 from sqltap.wsgi import SQLTapMiddleware
 
+import redis
+from flask_kvsession import KVSessionExtension
+from simplekv.memory.redisstore import RedisStore
+
 
 db = SQLAlchemy()
 
@@ -31,6 +35,13 @@ def create_app(config_name):
         db=db,
         search_api_client=search_api_client
     )
+
+    if application.config['REDIS_SESSIONS']:
+        session_store = RedisStore(redis.StrictRedis(
+            host=application.config['REDIS_SERVER_HOST'],
+            port=application.config['REDIS_SERVER_PORT']
+        ))
+        KVSessionExtension(session_store, application)
 
     if not application.config['DM_API_AUTH_TOKENS']:
         raise Exception("No DM_API_AUTH_TOKENS provided")
