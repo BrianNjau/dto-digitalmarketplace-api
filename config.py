@@ -205,6 +205,10 @@ class Config:
     REDIS_SESSIONS = True
     REDIS_SERVER_HOST = '127.0.0.1'
     REDIS_SERVER_PORT = 6379
+    REDIS_SERVER_PASSWORD = None
+    REDIS_SSL = False
+    REDIS_SSL_HOST_REQ = None
+    REDIS_SSL_CA_CERTS = None
 
 
 class Test(Config):
@@ -300,10 +304,16 @@ class Staging(Development):
     BASIC_AUTH = True
     DM_SEND_EMAIL_TO_STDERR = False
     CELERYBEAT_SCHEDULE = {}
+    REDIS_SSL = True
+    REDIS_SSL_CA_CERTS = '/etc/ssl/certs/ca-certificates.crt'
+    REDIS_SSL_HOST_REQ = True
 
 
 class Production(Live):
     CELERYBEAT_SCHEDULE = CELERYBEAT_SCHEDULE
+    REDIS_SSL = True
+    REDIS_SSL_CA_CERTS = '/etc/ssl/certs/ca-certificates.crt'
+    REDIS_SSL_HOST_REQ = True
 
 
 configs = {

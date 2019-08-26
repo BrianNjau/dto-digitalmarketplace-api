@@ -37,10 +37,22 @@ def create_app(config_name):
     )
 
     if application.config['REDIS_SESSIONS']:
-        session_store = RedisStore(redis.StrictRedis(
-            host=application.config['REDIS_SERVER_HOST'],
-            port=application.config['REDIS_SERVER_PORT']
-        ))
+        vcap_services = parse_vcap_services()
+        redis_opts = {
+            'ssl': application.config['REDIS_SSL'],
+            'ssl_ca_certs': application.config['REDIS_SSL_CA_CERTS'],
+            'ssl_cert_reqs': application.config['REDIS_SSL_HOST_REQ']
+        }
+        if vcap_services and 'redis' in vcap_services:
+            redis_opts['host'] = vcap_services['redis'][0]['credentials']['hostname']
+            redis_opts['port'] = vcap_services['redis'][0]['credentials']['port']
+            redis_opts['password'] = vcap_services['redis'][0]['credentials']['password']
+        else:
+            redis_opts['host'] = application.config['REDIS_SERVER_HOST']
+            redis_opts['port'] = application.config['REDIS_SERVER_PORT']
+            redis_opts['password'] = application.config['REDIS_SERVER_PASSWORD']
+
+        session_store = RedisStore(redis.StrictRedis(**redis_opts))
         KVSessionExtension(session_store, application)
 
     if not application.config['DM_API_AUTH_TOKENS']:
@@ -99,3 +111,14 @@ def isolation_level(level):
             return view(*args, **kwargs)
         return view_wrapper
     return decorator
+
+
+def parse_vcap_services():
+    import os
+    vcap = None
+    if 'VCAP_SERVICES' in os.environ:
+        try:
+            vcap = json.loads(os.eviron['VCAP_SERVICES']).decode('utf-8')
+        except ValueError:
+            pass
+    return vcap
