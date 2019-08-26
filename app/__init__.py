@@ -115,6 +115,7 @@ def isolation_level(level):
 
 def parse_vcap_services():
     import os
+    import json
     vcap = None
     if 'VCAP_SERVICES' in os.environ:
         try:
