@@ -306,14 +306,14 @@ class Staging(Development):
     CELERYBEAT_SCHEDULE = {}
     REDIS_SSL = True
     REDIS_SSL_CA_CERTS = '/etc/ssl/certs/ca-certificates.crt'
-    REDIS_SSL_HOST_REQ = True
+    REDIS_SSL_HOST_REQ = 'required'
 
 
 class Production(Live):
     CELERYBEAT_SCHEDULE = CELERYBEAT_SCHEDULE
     REDIS_SSL = True
     REDIS_SSL_CA_CERTS = '/etc/ssl/certs/ca-certificates.crt'
-    REDIS_SSL_HOST_REQ = True
+    REDIS_SSL_HOST_REQ = 'required'
 
 
 configs = {
