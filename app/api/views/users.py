@@ -110,6 +110,11 @@ def login():
         db.session.add(user)
         db.session.commit()
 
+        if '_csrf_token' in session:
+            session.pop('_csrf_token')
+        if 'csrf' in session:
+            session.pop('csrf')
+
         if current_app.config['REDIS_SESSIONS']:
             session.regenerate()
         login_user(user)
