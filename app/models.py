@@ -27,7 +27,7 @@ from sqlalchemy.sql.expression import case as sql_case
 from sqlalchemy.sql.expression import cast as sql_cast
 from sqlalchemy.types import String, Date, Integer, Interval
 from sqlalchemy_utils import generic_relationship
-from sqlalchemy.schema import Sequence
+from sqlalchemy.schema import Sequence, CheckConstraint
 from dmutils.data_tools import ValidationError, normalise_acn, parse_money
 from dmapiclient.audit import AuditTypes
 
@@ -62,7 +62,17 @@ def has_whitelisted_email_domain(email_domain):
     if email_domain.endswith('.gov.au'):
         return True
     else:
-        agency = Agency.query.filter(Agency.domain == email_domain).first()
+        agency = (
+            db
+            .session
+            .query(Agency)
+            .join(AgencyDomain)
+            .filter(
+                AgencyDomain.domain == email_domain,
+                AgencyDomain.active.is_(True)
+            )
+            .one_or_none()
+        )
         return agency.whitelisted if agency else False
 
 
@@ -87,6 +97,40 @@ class Agency(db.Model):
         name='state_enum'
     ))
     whitelisted = db.Column(db.Boolean, nullable=False, default=True)
+    domains = db.relationship('AgencyDomain')
+
+
+class AgencyDomain(db.Model):
+    __tablename__ = 'agency_domain'
+
+    id = db.Column(db.Integer, primary_key=True)
+    agency_id = db.Column(db.Integer, db.ForeignKey('agency.id'), nullable=False)
+    domain = db.Column(db.String, nullable=False, unique=True, index=True)
+    active = db.Column(db.Boolean, index=False, unique=False, nullable=False)
+
+
+class ApiKey(db.Model):
+    __tablename__ = 'api_key'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), index=True, nullable=False)
+    key = db.Column(db.String(64), index=True, nullable=False, unique=True)
+    created_at = db.Column(DateTime, index=True, nullable=False, default=utcnow)
+    revoked_at = db.Column(DateTime, index=True, nullable=True)
+
+    user = db.relationship('User', lazy='joined', innerjoin=True)
+
+    __table_args__ = (
+        CheckConstraint('char_length(key) > 63', name='key_min_length'),
+    )
+
+    def revoke(self):
+        self.revoked_at = pendulum.now('UTC')
+
+    @validates('key')
+    def validate_key(self, key, value):
+        if len(value) <= 63:
+            raise ValueError('key is too short')
+        return value
 
 
 class Council(db.Model):
@@ -1102,6 +1146,14 @@ class Evidence(db.Model):
             return 'assessed'
         return 'submitted'
 
+    @status.expression
+    def status(cls):
+        return sql_case([
+            (cls.submitted_at.is_(None), 'draft'),
+            (cls.rejected_at.isnot(None), 'rejected'),
+            (cls.approved_at.isnot(None), 'assessed')
+        ], else_='submitted')
+
 
 class EvidenceAssessment(db.Model):
     __tablename__ = 'evidence_assessment'
@@ -1345,16 +1397,29 @@ class User(db.Model):
     application = db.relationship('Application', lazy='joined', innerjoin=False)
     frameworks = relationship("UserFramework")
 
+    agency_id = db.Column(db.BigInteger,
+                          db.ForeignKey('agency.id'),
+                          index=True, unique=False, nullable=True)
+
     @validates('email_address')
     def validate_email_address(self, key, value):
-        if value and self.role == 'buyer' and not has_whitelisted_email_domain(value.split('@')[-1]):
+        from app.api.helpers import get_email_domain
+        if (
+            value and
+            self.role == 'buyer' and
+            not has_whitelisted_email_domain(get_email_domain(value))
+        ):
             raise ValidationError("invalid_buyer_domain")
         return value
 
     @validates('role')
     def validate_role(self, key, value):
-        if self.email_address and value == 'buyer'\
-                and not has_whitelisted_email_domain(self.email_address.split('@')[-1]):
+        from app.api.helpers import get_email_domain
+        if (
+            self.email_address and
+            value == 'buyer' and
+            not has_whitelisted_email_domain(get_email_domain(self.email_address))
+        ):
             raise ValidationError("invalid_buyer_domain")
         return value
 
@@ -2411,13 +2476,13 @@ class BriefResponse(db.Model):
             pass
 
         # if the UI is sending back the dayRate. remove it from data for some lots
-        if self.brief.lot.slug in ['digital-outcome', 'training', 'rfx', 'atm']:
+        if self.brief.lot.slug in ['digital-outcome', 'training', 'rfx', 'training2', 'atm']:
             self.data = drop_foreign_fields(self.data, [
                 'dayRate'
             ])
 
         # only keep the contact number for some lots
-        if self.brief.lot.slug not in ['training', 'rfx', 'atm']:
+        if self.brief.lot.slug not in ['training', 'rfx', 'training2', 'atm']:
             self.data = drop_foreign_fields(self.data, [
                 'respondToPhone'
             ])
@@ -2429,7 +2494,7 @@ class BriefResponse(db.Model):
             ])
 
         # remove availability for RFX
-        if self.brief.lot.slug == 'rfx':
+        if self.brief.lot.slug in ['rfx', 'training2']:
             self.data = drop_foreign_fields(self.data, [
                 'availability'
             ])
@@ -2450,7 +2515,7 @@ class BriefResponse(db.Model):
                         errs['criteria'] = 'answer_required'
 
         # only perform schema validation on non RFX or ATM responses
-        if (self.brief.lot.slug not in ['rfx', 'atm', 'specialist']):
+        if (self.brief.lot.slug not in ['rfx', 'training2', 'atm', 'specialist']):
             errs = get_validation_errors(
                 'brief-responses-{}-{}'.format(self.brief.framework.slug, self.brief.lot.slug),
                 self.data,
@@ -2468,7 +2533,7 @@ class BriefResponse(db.Model):
                 errs['attachedDocumentURL'] = 'answer_required'
 
         if (
-            self.brief.lot.slug not in ['training', 'rfx', 'atm'] and
+            self.brief.lot.slug not in ['training', 'rfx', 'training2', 'atm'] and
             'essentialRequirements' not in errs and
             len(filter(None, self.data.get('essentialRequirements', []))) !=
             len(self.brief.data['essentialRequirements'])

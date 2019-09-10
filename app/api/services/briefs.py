@@ -131,9 +131,10 @@ class BriefsService(Service):
                 brief_response_subquery.columns.responses,
                 brief_question_subquery.columns.questionsAsked,
                 brief_clarification_question_subquery.columns.questionsAnswered,
-                Lot.slug.label('lot')
+                Lot.slug.label('lot'),
+                Framework.slug.label('framework')
             )
-            .join(Lot)
+            .join(Lot, Framework)
             .join(
                 accessible_briefs_subquery,
                 accessible_briefs_subquery.columns.brief_id == Brief.id
@@ -157,46 +158,6 @@ class BriefsService(Service):
                 Brief.id.desc())
             .all()
         )
-
-        return [r._asdict() for r in results]
-
-    def get_user_briefs(self, current_user_id):
-        """Returns summary of a user's briefs with the total number of sellers that applied."""
-        results = (db.session.query(Brief.id, Brief.data['title'].astext.label('name'),
-                                    Brief.closed_at, Brief.status, func.count(BriefResponse.id).label('applications'),
-                                    Framework.slug.label('framework'), Lot.slug.label('lot'),
-                                    WorkOrder.id.label('work_order'))
-                   .join(BriefUser, Framework, Lot)
-                   .filter(current_user_id == BriefUser.user_id)
-                   .outerjoin(BriefResponse, Brief.id == BriefResponse.brief_id)
-                   .outerjoin(WorkOrder)
-                   .group_by(Brief.id, Framework.slug, Lot.slug, WorkOrder.id)
-                   .order_by(sql_case([
-                       (Brief.status == 'draft', 1),
-                       (Brief.status == 'live', 2),
-                       (Brief.status == 'closed', 3)]), Brief.closed_at.desc().nullslast(), Brief.id.desc())
-                   .all())
-
-        return [r._asdict() for r in results]
-
-    def get_team_briefs(self, current_user_id, domain):
-        """Returns summary of live and closed briefs submitted by the user's team."""
-        team_ids = db.session.query(User.id).filter(User.id != current_user_id,
-                                                    User.email_address.endswith(concat('@', domain)))
-
-        team_brief_ids = db.session.query(BriefUser.brief_id).filter(BriefUser.user_id.in_(team_ids))
-
-        results = (db.session.query(Brief.id, Brief.data['title'].astext.label('name'), Brief.closed_at, Brief.status,
-                                    Framework.slug.label('framework'), Lot.slug.label('lot'), User.name.label('author'),
-                                    func.count(BriefResponse.id).label('applications'))
-                   .join(BriefUser, Framework, Lot, User)
-                   .filter(Brief.id.in_(team_brief_ids), or_(Brief.status == 'live', Brief.status == 'closed'))
-                   .outerjoin(BriefResponse, Brief.id == BriefResponse.brief_id)
-                   .group_by(Brief.id, Framework.slug, Lot.slug, User.name)
-                   .order_by(sql_case([
-                       (Brief.status == 'live', 1),
-                       (Brief.status == 'closed', 2)]), Brief.closed_at.desc().nullslast(), Brief.id.desc())
-                   .all())
 
         return [r._asdict() for r in results]
 
@@ -267,7 +228,7 @@ class BriefsService(Service):
             switcher = {
                 'atm': [x.id for x in lots if x.slug == 'atm'],
                 'outcomes': [x.id for x in lots if x.slug in ['digital-outcome', 'rfx']],
-                'training': [x.id for x in lots if x.slug == 'training'],
+                'training': [x.id for x in lots if x.slug in ['training', 'training2']],
                 'specialists': [x.id for x in lots if x.slug in ['digital-professionals', 'specialist']]
             }
             lot_cond = or_(*[Brief._lot_id.in_(switcher.get(x)) for x in brief_type_filters])

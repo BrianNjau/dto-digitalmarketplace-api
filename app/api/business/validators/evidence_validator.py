@@ -1,4 +1,10 @@
-from app.api.services import domain_service, evidence_service, domain_criteria_service
+import pendulum
+from app.api.services import (
+    domain_service,
+    evidence_service,
+    domain_criteria_service,
+    key_values_service
+)
 from app.api.business.domain_criteria import DomainCriteria
 
 
@@ -6,9 +12,17 @@ class EvidenceDataValidator(object):
     def __init__(self, data, evidence=None):
         self.data = data
         self.evidence = evidence
+        self.max_criteria = 2
         if self.evidence:
             self.domain = domain_service.get_by_name_or_id(evidence.domain.id)
             self.domain_criteria = domain_criteria_service.get_criteria_by_domain_id(evidence.domain.id)
+
+        self.criteria_enforcement_cutoff_date = None
+        key_value = key_values_service.get_by_key('criteria_enforcement_cutoff_date')
+        if key_value:
+            self.criteria_enforcement_cutoff_date = (
+                pendulum.parse(key_value['data']['value'], tz='Australia/Canberra').date()
+            )
 
     def get_criteria_needed(self):
         criteria_needed = self.domain.criteria_needed
@@ -37,6 +51,9 @@ class EvidenceDataValidator(object):
             return False
         if len(self.data['criteria']) < self.get_criteria_needed():
             return False
+        if len(self.data['criteria']) > self.get_criteria_needed() + self.max_criteria:
+            if self.evidence.created_at.date() > self.criteria_enforcement_cutoff_date:
+                return False
         valid_criteria_ids = [x.id for x in self.domain_criteria]
         for criteria_id in self.data['criteria']:
             if criteria_id not in valid_criteria_ids:
@@ -94,6 +111,9 @@ class EvidenceDataValidator(object):
                 return False
         if len(self.data['evidence'].keys()) < self.get_criteria_needed():
             return False
+        if len(self.data['evidence'].keys()) > self.get_criteria_needed() + self.max_criteria:
+            if self.evidence.created_at.date() > self.criteria_enforcement_cutoff_date:
+                return False
         return True
 
     def validate_evidence_responses_have_changed_since_previous(self):

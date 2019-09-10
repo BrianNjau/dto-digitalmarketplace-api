@@ -15,10 +15,15 @@ from app.api.business.validators import (
     SupplierValidator,
     RFXDataValidator,
     ATMDataValidator,
+    TrainingDataValidator,
     SpecialistDataValidator
 )
 from app.api.business.brief import BriefUserStatus
-from app.api.business import supplier_business, brief_overview_business
+from app.api.business import (
+    supplier_business,
+    brief_overview_business,
+    brief_training_business
+)
 from app.api.business.agreement_business import use_old_work_order_creator
 from app.api.helpers import (
     abort,
@@ -26,7 +31,9 @@ from app.api.helpers import (
     not_found,
     role_required,
     is_current_user_in_brief,
-    permissions_required
+    permissions_required,
+    get_email_domain,
+    exception_logger
 )
 from app.api.services import (agency_service,
                               audit_service,
@@ -47,6 +54,7 @@ from app.emails import (
     send_brief_response_received_email,
     render_email_template,
     send_seller_invited_to_rfx_email,
+    send_seller_invited_to_training_email,
     send_specialist_brief_seller_invited_email,
     send_specialist_brief_published_email,
     send_specialist_brief_response_received_email,
@@ -96,21 +104,20 @@ def _can_do_brief_response(brief_id):
     if len(validation_result.errors) > 0:
         abort(validation_result.errors)
 
-    def domain(email):
-        return email.split('@')[-1]
-
-    current_user_domain = domain(current_user.email_address) \
-        if domain(current_user.email_address) not in current_app.config.get('GENERIC_EMAIL_DOMAINS') \
+    current_user_domain = get_email_domain(current_user.email_address) \
+        if get_email_domain(current_user.email_address) not in current_app.config.get('GENERIC_EMAIL_DOMAINS') \
         else None
 
     lots = lots_service.all()
     rfx_lot = next(iter([l for l in lots if l.slug == 'rfx']), None)
+    training2_lot = next(iter([l for l in lots if l.slug == 'training2']), None)
     atm_lot = next(iter([l for l in lots if l.slug == 'atm']), None)
     training_lot = next(iter([l for l in lots if l.slug == 'training']), None)
     digital_professional_lot = next(iter([l for l in lots if l.slug == 'digital-professionals']), None)
     specialist_lot = next(iter([l for l in lots if l.slug == 'specialist']), None)
 
     rfx_lot_id = rfx_lot.id if rfx_lot else None
+    training2_lot_id = training2_lot.id if training2_lot else None
     atm_lot_id = atm_lot.id if atm_lot else None
     training_lot_id = training_lot.id if training_lot else None
     digital_professional_lot_id = digital_professional_lot.id if digital_professional_lot else None
@@ -122,7 +129,7 @@ def _can_do_brief_response(brief_id):
     brief_category = brief.data.get('sellerCategory', '')
     brief_domain = domain_service.get_by_name_or_id(int(brief_category)) if brief_category else None
 
-    if brief.lot_id == rfx_lot_id:
+    if brief.lot_id in [rfx_lot_id, training2_lot_id]:
         if str(current_user.supplier_code) in brief.data['sellers'].keys():
             is_selected = True
 
@@ -142,13 +149,18 @@ def _can_do_brief_response(brief_id):
         if not seller_selector or seller_selector == 'allSellers':
             is_selected = True
         elif seller_selector == 'someSellers':
-            seller_domain_list = [domain(x).lower() for x in brief.data['sellerEmailList']]
+            seller_domain_list = [get_email_domain(x).lower() for x in brief.data['sellerEmailList']]
             if current_user.email_address in brief.data['sellerEmailList'] \
                or (current_user_domain and current_user_domain.lower() in seller_domain_list):
                 is_selected = True
         elif seller_selector == 'oneSeller':
-            if current_user.email_address.lower() == brief.data['sellerEmail'].lower() \
-               or (current_user_domain and current_user_domain.lower() == domain(brief.data['sellerEmail'].lower())):
+            if (
+                current_user.email_address.lower() == brief.data['sellerEmail'].lower() or
+                (
+                    current_user_domain and
+                    current_user_domain.lower() == get_email_domain(brief.data['sellerEmail'].lower())
+                )
+            ):
                 is_selected = True
     if not is_selected:
         forbidden("Supplier not selected for this brief")
@@ -261,6 +273,16 @@ def create_rfx_brief():
     return jsonify(brief.serialize(with_users=False))
 
 
+@api.route('/brief/training', methods=['POST'])
+@exception_logger
+@login_required
+@role_required('buyer')
+@permissions_required('create_drafts')
+def create_training_brief():
+    brief = brief_training_business.create(current_user)
+    return jsonify(brief.serialize(with_users=False))
+
+
 @api.route('/brief/atm', methods=['POST'])
 @login_required
 @role_required('buyer')
@@ -356,9 +378,7 @@ def create_specialist_brief():
         user = users.get(current_user.id)
         agency_name = ''
         try:
-            domain = user.email_address.split('@')[1]
-            agency = agency_service.find(domain=domain).one_or_none()
-            agency_name = agency.name
+            agency_name = agency_service.get_agency_name(current_user.agency_id)
         except Exception as e:
             pass
         brief = briefs.create_brief(user, current_user.get_team(), framework, lot, data={
@@ -674,7 +694,7 @@ def update_brief(brief_id):
     if brief.status != 'draft':
         abort('Cannot edit a {} brief'.format(brief.status))
 
-    if brief.lot.slug not in ['rfx', 'atm', 'specialist']:
+    if brief.lot.slug not in ['rfx', 'atm', 'specialist', 'training2']:
         abort('Brief lot not supported for editing')
 
     if current_user.role == 'buyer':
@@ -702,6 +722,12 @@ def update_brief(brief_id):
         if len(errors) > 0:
             abort(', '.join(errors))
 
+    if brief.lot.slug == 'training2':
+        # validate the training JSON request data
+        errors = TrainingDataValidator(data).validate(publish=publish)
+        if len(errors) > 0:
+            abort(', '.join(errors))
+
     if brief.lot.slug == 'atm':
         # validate the ATM JSON request data
         errors = ATMDataValidator(data).validate(publish=publish)
@@ -714,13 +740,13 @@ def update_brief(brief_id):
         if len(errors) > 0:
             abort(', '.join(errors))
 
-    if brief.lot.slug == 'rfx' and 'evaluationType' in data:
+    if brief.lot.slug in ['rfx', 'training2'] and 'evaluationType' in data:
         if 'Written proposal' not in data['evaluationType']:
             data['proposalType'] = []
         if 'Response template' not in data['evaluationType']:
             data['responseTemplate'] = []
 
-    if brief.lot.slug == 'rfx' and 'sellers' in data and len(data['sellers']) > 0:
+    if brief.lot.slug in ['rfx', 'training2'] and 'sellers' in data and len(data['sellers']) > 0:
         data['sellerSelector'] = 'someSellers' if len(data['sellers']) > 1 else 'oneSeller'
 
     data['areaOfExpertise'] = ''
@@ -752,6 +778,7 @@ def update_brief(brief_id):
                 if brief.lot.slug == 'rfx':
                     send_seller_invited_to_rfx_email(brief, supplier)
 
+                send_seller_invited_to_training_email(brief, supplier)
                 send_specialist_brief_seller_invited_email(brief, supplier)
 
         send_specialist_brief_published_email(brief)
@@ -1114,7 +1141,7 @@ def download_brief_responses(brief_id):
         brief_id=brief.id,
         user_id=current_user.id
     ))
-    if brief.lot.slug in ['digital-professionals', 'training', 'rfx', 'atm', 'specialist']:
+    if brief.lot.slug in ['digital-professionals', 'training', 'rfx', 'training2', 'atm', 'specialist']:
         try:
             file = s3_download_file(
                 'brief-{}-resumes.zip'.format(brief_id),

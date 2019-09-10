@@ -1,57 +1,36 @@
 from datetime import datetime
-from urllib import quote
+from urllib import quote, unquote_plus
 
 from flask import current_app, jsonify, request
 from flask_login import current_user, login_required, login_user, logout_user
-from urllib import unquote_plus
 
 from app import db, encryption
 from app.api import api
-from app.api.helpers import get_email_domain, get_root_url, user_info, role_required
-from app.api.user import create_user, is_duplicate_user, update_user_details
 from app.api.business import team_business
+from app.api.helpers import (allow_api_key_auth, get_email_domain,
+                             get_root_url, role_required, user_info)
+from app.api.services import (agency_service, api_key_service,
+                              key_values_service, user_claims_service)
+from app.api.user import create_user, is_duplicate_user, update_user_details
 from app.emails.users import (send_account_activation_email,
                               send_account_activation_manager_email,
                               send_reset_password_confirm_email,
                               send_user_existing_password_reset_email)
-from app.api.services import user_claims_service, key_values_service
 from app.models import User, has_whitelisted_email_domain
 from app.swagger import swag
-from app.utils import get_json_from_request
 from app.tasks import publish_tasks
+from app.utils import get_json_from_request
 from dmutils.email import EmailError, InvalidToken
 
 
 @api.route('/users/me', methods=["GET"], endpoint='ping')
 def me():
-    """Current user
-    ---
-    tags:
-      - users
-    definitions:
-      UserInfo:
-        type: object
-        properties:
-          isAuthenticated:
-            type: boolean
-          userType:
-            type: string
-          supplierCode:
-            type: integer
-          csrfToken:
-            type: string
-    responses:
-      200:
-        description: User
-        schema:
-          $ref: '#/definitions/UserInfo'
-
-    """
     return jsonify(user_info(current_user))
 
 
 # deprecated
 @api.route('/ping', methods=["GET"])
+@allow_api_key_auth
 def me_deprecated():
     return jsonify(user_info(current_user))
 
@@ -487,3 +466,25 @@ def reset_password(token):
 
     except Exception as error:
         return jsonify(message=error.message), 400
+
+
+@api.route('/generate-api-key/<int:user_id>', methods=['POST'])
+@login_required
+@role_required('admin')
+def generate_api_key_for_user(user_id):
+    api_key = api_key_service.generate(user_id)
+    if not api_key:
+        abort(500, 'Error generating API key')
+    return jsonify(key=api_key)
+
+
+@api.route('/revoke-api-key/<string:key>', methods=['POST'])
+@login_required
+@role_required('buyer', 'admin')
+def revoke_api_key(key):
+    api_key = api_key_service.get_key(key)
+    is_admin = True if current_user.role == 'admin' else False
+    if is_admin or api_key.user.id == current_user.id:
+        api_key_service.revoke(key)
+        return jsonify(message='API key revoked')
+    return jsonify(message='Invalid key'), 400
