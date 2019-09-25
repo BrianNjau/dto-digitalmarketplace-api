@@ -25,6 +25,8 @@ from .work_order import WorkOrderService
 from .brief_question import BriefQuestionService
 from .brief_clarification_question import BriefClarificationQuestionService
 from .brief_response_download import BriefResponseDownloadService
+from .seller_dashboard import SellerDashboardService
+from .api_key import ApiKeyService
 
 agency_service = AgencyService()
 agreement_service = AgreementService()
@@ -54,3 +56,5 @@ work_order_service = WorkOrderService()
 brief_question_service = BriefQuestionService()
 brief_clarification_question_service = BriefClarificationQuestionService()
 brief_response_download_service = BriefResponseDownloadService()
+seller_dashboard_service = SellerDashboardService()
+api_key_service = ApiKeyService()

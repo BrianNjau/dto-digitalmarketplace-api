@@ -68,6 +68,8 @@ class Config:
     DM_DOWNSTREAM_REQUEST_ID_HEADER = 'X-Vcap-Request-Id'
     DM_API_ADMIN_USERNAME = 'admin'
     DM_API_ADMIN_PASSWORD = None
+    # API key auth
+    DM_API_KEY_HEADER = 'X-Api-Key'
 
     # Feature Flags
     RAISE_ERROR_ON_MISSING_FEATURES = True
@@ -144,6 +146,7 @@ class Config:
 
     GENERIC_CONTACT_EMAIL = 'marketplace@digital.gov.au'
     DM_GENERIC_NOREPLY_EMAIL = 'no-reply@marketplace.digital.gov.au'
+    DM_MAILCHIMP_NOREPLY_EMAIL = 'no-reply@digital.gov.au'
     DM_GENERIC_ADMIN_NAME = 'Digital Marketplace Admin'
     DM_GENERIC_SUPPORT_NAME = 'Digital Marketplace'
 
@@ -175,7 +178,7 @@ class Config:
     GENERIC_EMAIL_DOMAINS = ['bigpond.com', 'digital.gov.au', 'gmail.com', 'hotmail.com', 'icloud.com',
                              'iinet.net.au', 'internode.on.net', 'live.com.au', 'me.com', 'msn.com',
                              'optusnet.com.au', 'outlook.com', 'outlook.com.au', 'ozemail.com.au',
-                             'tpg.com.au', 'yahoo.com', 'yahoo.com.au']
+                             'tpg.com.au', 'y7mail.com', 'yahoo.com', 'yahoo.com.au']
 
     FRONTEND_ADDRESS = 'https://dm-dev.apps.y.cld.gov.au'
     ADMIN_ADDRESS = 'https://dm-dev-admin.apps.y.cld.gov.au'
