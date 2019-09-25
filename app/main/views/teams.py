@@ -36,34 +36,5 @@ from ...datetime_utils import parse_time_of_day, combine_date_and_time
 @main.route('/admin/team/<int:team_id>', methods=['GET'])
 def get_team(team_id):
     team = team_business.get_team(team_id, True)
-    # team = (
-    #     Team
-    #     .query
-    #     .filter(
-    #         Team.id == team_id
-    #     )
-    #     .first_or_404()
-    # )
-    # team_leads = (db.session
-    #                     .query(TeamMember.team_id, User.id, User.name, User.email_address)
-    #                     .join(User)
-    #                     .filter(TeamMember.is_team_lead.is_(True))
-    #                     .order_by(User.name)
-    #                     .all())
-
-    # aggregated_team_leads = (db.session
-    #                                .query(team_leads.columns.team_id,
-    #                                       func.json_object_agg(
-    #                                           team_leads.columns.id,
-    #                                           func.json_build_object(
-    #                                               'emailAddress', team_leads.columns.email_address,
-    #                                               'name', team_leads.columns.name
-    #                                           )
-    #                                       ).label('teamLeads'))
-    #                                .group_by(team_leads.columns.team_id)
-    #                                .subquery())
-    # print(aggregated_team_leads)
-    return jsonify(
-        team
-        # teamsLeads=team.leads
-        )
+    
+    return jsonify(team)
