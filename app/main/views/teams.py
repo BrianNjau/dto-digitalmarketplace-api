@@ -7,9 +7,14 @@ from sqlalchemy.exc import IntegrityError
 import pendulum
 from pendulum.parsing.exceptions import ParserError
 
-from app.api.services import (
-    team_service
-)
+from sqlalchemy import and_, func, cast, desc, case, or_
+from sqlalchemy.types import TEXT
+from sqlalchemy.orm import joinedload, raiseload
+from sqlalchemy.dialects.postgresql import aggregate_order_by
+from app.api.helpers import Service
+from app.models import Team, TeamMember, TeamMemberPermission, User, db
+
+from app.api.business import (team_business)
 from app.tasks import publish_tasks
 from .. import main
 from ... import db
@@ -28,15 +33,37 @@ from ...service_utils import validate_and_return_lot, filter_services
 
 from ...datetime_utils import parse_time_of_day, combine_date_and_time
 
-@main.route('/team/<int:team_id>', methods=['GET'])
+@main.route('/admin/team/<int:team_id>', methods=['GET'])
 def get_team(team_id):
-    print(team_id)
-    team = (
-        Team
-        .query
-        .filter(
-            Team.id == team_id
+    team = team_business.get_team(team_id, True)
+    # team = (
+    #     Team
+    #     .query
+    #     .filter(
+    #         Team.id == team_id
+    #     )
+    #     .first_or_404()
+    # )
+    # team_leads = (db.session
+    #                     .query(TeamMember.team_id, User.id, User.name, User.email_address)
+    #                     .join(User)
+    #                     .filter(TeamMember.is_team_lead.is_(True))
+    #                     .order_by(User.name)
+    #                     .all())
+
+    # aggregated_team_leads = (db.session
+    #                                .query(team_leads.columns.team_id,
+    #                                       func.json_object_agg(
+    #                                           team_leads.columns.id,
+    #                                           func.json_build_object(
+    #                                               'emailAddress', team_leads.columns.email_address,
+    #                                               'name', team_leads.columns.name
+    #                                           )
+    #                                       ).label('teamLeads'))
+    #                                .group_by(team_leads.columns.team_id)
+    #                                .subquery())
+    # print(aggregated_team_leads)
+    return jsonify(
+        team
+        # teamsLeads=team.leads
         )
-        .first_or_404()
-    )
-    return jsonify(teamsId=team.id)
