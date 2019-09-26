@@ -263,21 +263,4 @@ class TeamService(Service):
             )
         )
 
-        return [r._asdict() for r in result]
-
-    def get_teams_by_brief_id(self, brief_id):
-        result = (
-            db
-            .session
-            .query(
-                TeamBrief.team_id,
-                TeamBrief.user_id,
-                User.name,
-                User.email_address
-            )
-            .join(User)
-            .filter(TeamBrief.brief_id == brief_id)
-            .all()
-        )
-
-        return [r._asdict() for r in result]
+        return [r._asdict() for r in result];
