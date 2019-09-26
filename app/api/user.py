@@ -25,8 +25,6 @@ def add_user(data):
     role = data.get('user_type')
     email_address = data.get('email_address', None)
     framework_slug = data.get('framework', 'digital-marketplace')
-    agency = data.get()
-    contactnumber = data.get()
 
     if email_address is None:
         email_address = data.get('emailAddress', None)
