@@ -21,7 +21,7 @@ from ... import db
 from ...models import (
     User,
     Brief,
-    TeamBrief, 
+    TeamBrief,
     Team
 )
 from ...utils import (
@@ -33,8 +33,8 @@ from ...service_utils import validate_and_return_lot, filter_services
 
 from ...datetime_utils import parse_time_of_day, combine_date_and_time
 
+
 @main.route('/admin/team/<int:team_id>', methods=['GET'])
 def get_team(team_id):
     team = team_business.get_team(team_id, True)
-    
     return jsonify(team)
