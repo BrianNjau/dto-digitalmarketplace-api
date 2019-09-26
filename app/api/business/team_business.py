@@ -301,3 +301,7 @@ def request_access(data):
 
 def search_team_members(current_user, agency_id, keywords=None, exclude=None):
     return team_service.search_team_members(current_user, agency_id, keywords, exclude)
+
+def get_team_briefs(team_id):
+  return team_service.get_team_briefs(team_id)
+
