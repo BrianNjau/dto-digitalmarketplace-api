@@ -21,3 +21,12 @@ def get_team(team_id):
     briefs = team_business.get_team_briefs(team_id)
     return jsonify(team=team, briefs=briefs)
 
+
+@main.route('/admin/buyers/<int:brief_id>', methods=['GET'])
+def brief_exists_in_teams(brief_id):
+    list_brief_ids = team_business.is_brief_id_in_teams(brief_id)
+    # checks if list is empty
+    if not list_brief_ids:
+        return jsonify( b = "hello there are no briefs that exist and the team doesn't exist")
+    else:
+        return jsonify(list_brief_ids = list_brief_ids)

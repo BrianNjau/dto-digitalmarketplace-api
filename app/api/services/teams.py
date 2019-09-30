@@ -266,7 +266,6 @@ class TeamService(Service):
         return [r._asdict() for r in result];
 
     def is_brief_id_in_teams(self, brief_id):
-
         teams = (
             db
             .session
