@@ -267,12 +267,18 @@ class TeamService(Service):
         return [r._asdict() for r in result];
 
     def is_brief_id_in_teams(self, brief_id):
-        teams = (
+        result = (
             db
             .session
-            .query(TeamBrief.team_id)
+            .query(
+                TeamBrief.team_id,
+                TeamBrief.user_id,
+                User.name,
+                User.email_address
+            )
+            .join(User)
             .filter(TeamBrief.brief_id == brief_id)
             .all()
         )
 
-        return teams;
+        return [r._asdict() for r in result];
