@@ -307,5 +307,3 @@ def get_team_briefs(team_id):
 
 def is_brief_id_in_teams(brief_id):
    return team_service.is_brief_id_in_teams(brief_id)
-    
-
