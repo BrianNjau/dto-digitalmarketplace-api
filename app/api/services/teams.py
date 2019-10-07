@@ -280,4 +280,4 @@ class TeamService(Service):
             .all()
         )
 
-        return [r._asdict() for r in result];
+        return [r._asdict() for r in result]
