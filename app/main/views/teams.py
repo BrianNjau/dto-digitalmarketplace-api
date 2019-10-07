@@ -21,6 +21,7 @@ def get_team(team_id):
     briefs = team_business.get_team_briefs(team_id)
     return jsonify(team=team, briefs=briefs)
 
+
 @main.route('/admin/buyers/<int:brief_id>/teams', methods=['GET'])
 def brief_exists_in_teams(brief_id):
     return jsonify(team_business.is_brief_id_in_teams(brief_id))
