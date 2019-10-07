@@ -97,9 +97,6 @@ def get_team(team_id, allow_anyone=None):
         raise NotFoundError('Team {} does not exist'.format(team_id))
 
     if allow_anyone is None:
-        allow_anyone = False
-
-    if allow_anyone is False:
         team_member = team_member_service.find(
             is_team_lead=True,
             team_id=team_id,
