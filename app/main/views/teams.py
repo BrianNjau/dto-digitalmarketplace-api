@@ -1,8 +1,5 @@
 from flask import jsonify, abort, current_app, request
 from sqlalchemy import desc
-
-from sqlalchemy import and_, func, cast, desc, case, or_
-from sqlalchemy.types import TEXT
 from sqlalchemy.dialects.postgresql import aggregate_order_by
 from app.api.helpers import Service
 from app.models import Team, TeamMember, TeamMemberPermission, User, db
