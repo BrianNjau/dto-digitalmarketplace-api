@@ -248,7 +248,6 @@ class TeamService(Service):
         results = results.order_by(func.lower(User.name))
         return [r._asdict() for r in results]
 
-
     def get_team_briefs(self, team_id):
         result = (
             db
@@ -264,7 +263,7 @@ class TeamService(Service):
             )
         )
 
-        return [r._asdict() for r in result];
+        return [r._asdict() for r in result]
 
     def is_brief_id_in_teams(self, brief_id):
         result = (
