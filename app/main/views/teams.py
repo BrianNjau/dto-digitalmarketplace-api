@@ -15,6 +15,7 @@ from ...models import (
     Team
 )
 
+
 @main.route('/admin/team/<int:team_id>', methods=['GET'])
 def get_team(team_id):
     team = team_business.get_team(team_id, True)
