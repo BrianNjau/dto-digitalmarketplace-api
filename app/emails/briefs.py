@@ -514,6 +514,76 @@ def send_atm_brief_published_email(brief):
         db_object=brief)
 
 
+def send_rfx_brief_published_email(brief):
+    from app.api.services import (
+        audit_service,
+        audit_types,
+        domain_service,
+        suppliers
+    )  # to circumvent circular dependency
+    from app.models import Supplier
+
+    if brief.lot.slug != 'rfx':
+        return
+
+    brief_email_sent_audit_event = audit_service.find(type=audit_types.rfx_brief_published.value,
+                                                      object_type="Brief",
+                                                      object_id=brief.id).count()
+
+    if (brief_email_sent_audit_event > 0):
+        return
+
+    to_addresses = get_brief_emails(brief)
+
+    invited_sellers = ''
+    sellers_text = ''
+    if brief.data.get('sellerSelector', '') == 'someSellers':
+        sellers_text = ''
+        seller_codes = []
+        for key, value in brief.data.get('sellers', {}).iteritems():
+            seller_codes.append(key)
+        sellers = suppliers.filter(Supplier.code.in_(seller_codes)).all()
+        for seller in sellers:
+            invited_sellers += '* {}\n'.format(seller.name)
+    else:
+        panel_category = domain_service.get(id=brief.data.get('sellerCategory'))
+        sellers_text = 'All sellers approved under {}'.format(panel_category.name)
+
+    # prepare copy
+    email_body = render_email_template(
+        'rfx_brief_published.md',
+        frontend_url=current_app.config['FRONTEND_ADDRESS'],
+        brief_name=brief.data['title'],
+        brief_id=brief.id,
+        brief_close_date=brief.closed_at.strftime('%d/%m/%Y'),
+        sellers_text=sellers_text,
+        invited_sellers=invited_sellers,
+        number_of_suppliers=brief.data.get('numberOfSuppliers', ''),
+        question_close_date=brief.questions_closed_at.strftime('%d/%m/%Y')
+    )
+
+    subject = "Your opportunity for {} has been published".format(brief.data['title'])
+
+    send_or_handle_error(
+        to_addresses,
+        email_body,
+        subject,
+        current_app.config['DM_GENERIC_NOREPLY_EMAIL'],
+        current_app.config['DM_GENERIC_SUPPORT_NAME'],
+        event_description_for_errors='brief published'
+    )
+
+    audit_service.log_audit_event(
+        audit_type=audit_types.rfx_brief_published,
+        user='',
+        data={
+            "to_addresses": ', '.join(to_addresses),
+            "email_body": email_body,
+            "subject": subject
+        },
+        db_object=brief)
+
+
 def send_specialist_brief_seller_invited_email(brief, invited_supplier):
     from app.api.services import audit_service, audit_types  # to circumvent circular dependency
 
