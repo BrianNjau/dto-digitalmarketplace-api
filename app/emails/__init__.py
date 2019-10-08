@@ -17,6 +17,7 @@ from .briefs import (
     send_seller_invited_to_rfx_email,
     send_seller_invited_to_training_email,
     send_specialist_brief_published_email,
+    send_atm_brief_published_email,
     send_specialist_brief_seller_invited_email,
     send_specialist_brief_closed_email,
     send_specialist_brief_response_received_email,

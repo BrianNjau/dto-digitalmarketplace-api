@@ -57,6 +57,7 @@ from app.emails import (
     send_seller_invited_to_training_email,
     send_specialist_brief_seller_invited_email,
     send_specialist_brief_published_email,
+    send_atm_brief_published_email,
     send_specialist_brief_response_received_email,
     send_brief_clarification_to_buyer,
     send_brief_clarification_to_seller
@@ -782,6 +783,7 @@ def update_brief(brief_id):
                 send_specialist_brief_seller_invited_email(brief, supplier)
 
         send_specialist_brief_published_email(brief)
+        send_atm_brief_published_email(brief)
 
         try:
             brief_url_external = '{}/2/digital-marketplace/opportunities/{}'.format(
