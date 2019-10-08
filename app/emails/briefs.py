@@ -453,7 +453,7 @@ def send_atm_brief_published_email(brief):
     )  # to circumvent circular dependency
     from app.models import Supplier
 
-    if brief.lot.slug != 'specialist':
+    if brief.lot.slug != 'atm':
         return
 
     brief_email_sent_audit_event = audit_service.find(type=audit_types.specialist_brief_published.value,
