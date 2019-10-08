@@ -456,7 +456,7 @@ def send_atm_brief_published_email(brief):
     if brief.lot.slug != 'atm':
         return
 
-    brief_email_sent_audit_event = audit_service.find(type=audit_types.specialist_brief_published.value,
+    brief_email_sent_audit_event = audit_service.find(type=audit_types.atm_brief_published.value,
                                                       object_type="Brief",
                                                       object_id=brief.id).count()
 
@@ -504,7 +504,7 @@ def send_atm_brief_published_email(brief):
     )
 
     audit_service.log_audit_event(
-        audit_type=audit_types.specialist_brief_published,
+        audit_type=audit_types.atm_brief_published,
         user='',
         data={
             "to_addresses": ', '.join(to_addresses),
