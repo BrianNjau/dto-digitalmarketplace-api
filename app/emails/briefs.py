@@ -481,7 +481,7 @@ def send_atm_brief_published_email(brief):
 
     # prepare copy
     email_body = render_email_template(
-        'specialist_brief_published.md',
+        'atm_brief_published.md',
         frontend_url=current_app.config['FRONTEND_ADDRESS'],
         brief_name=brief.data['title'],
         brief_id=brief.id,
