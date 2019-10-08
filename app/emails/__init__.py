@@ -19,6 +19,7 @@ from .briefs import (
     send_specialist_brief_published_email,
     send_atm_brief_published_email,
     send_rfx_brief_published_email,
+    send_training2_brief_published_email,
     send_specialist_brief_seller_invited_email,
     send_specialist_brief_closed_email,
     send_specialist_brief_response_received_email,
