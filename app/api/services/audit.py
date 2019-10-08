@@ -61,6 +61,7 @@ class AuditTypes(Enum):
     sent_expiring_documents_email = 'sent_expiring_documents_email'
     create_team = 'create_team'
     specialist_brief_published = 'specialist_brief_published'
+    atm_brief_published = 'atm_brief_published'
     specialist_brief_closed_email = 'specialist_brief_closed_email'
     seller_invited_to_specialist_opportunity = 'seller_invited_to_specialist_opportunity'
     specialist_brief_response_received_email = 'specialist_brief_response_received_email'
