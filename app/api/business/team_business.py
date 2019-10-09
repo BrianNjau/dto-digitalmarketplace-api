@@ -305,4 +305,4 @@ def get_team_briefs(team_id):
 
 
 def get_teams_by_brief_id(brief_id):
-    return team_service.is_brief_id_in_teams(brief_id)
+    return team_service.get_teams_by_brief_id(brief_id)
