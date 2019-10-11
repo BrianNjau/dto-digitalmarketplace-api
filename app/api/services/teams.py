@@ -218,6 +218,7 @@ class TeamService(Service):
             .filter(User.agency_id == agency_id)
             .subquery()
         )
+        
         results = (
             db
             .session
