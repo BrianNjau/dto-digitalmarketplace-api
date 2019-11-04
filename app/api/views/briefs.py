@@ -1003,6 +1003,7 @@ def get_brief_responses(brief_id):
                 brief.data['sellers'][seller_code]['has_responded'] = (
                     True if len(brief_responses_by_seller) > 0 else False
                 )
+                brief.data['sellers'][seller_code]['response_count'] = len(brief_responses_by_seller)
     else:
         brief_responses = brief_responses_service.get_brief_responses(brief_id, supplier_code)
 
