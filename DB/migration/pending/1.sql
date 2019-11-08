@@ -1,24 +1,7 @@
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'body_type_enum') THEN
+alter table "public"."brief_response" add column "submitted_at" timestamp without time zone;
 
-        create type "public"."body_type_enum" as enum ('ncce', 'cce', 'cc', 'local', 'state', 'other');
+alter table "public"."brief_response" add column "updated_at" timestamp without time zone;
 
-    END IF;
-END$$;
+CREATE INDEX ix_brief_response_submitted_at ON brief_response USING btree (submitted_at);
 
-alter table "public"."agency" add column if not exists "body_type" body_type_enum null;
-
-update agency
-set body_type = 'other'
-where body_type is null;
-
-alter table "public"."agency" alter column "body_type" set not null;
-
-alter table "public"."agency" add column if not exists "reports" boolean null;
-
-update agency
-set reports = true
-where reports is null;
-
-alter table "public"."agency" alter column "reports" set not null;
+CREATE INDEX ix_brief_response_updated_at ON brief_response USING btree (updated_at);
