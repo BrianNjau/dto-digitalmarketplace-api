@@ -2402,6 +2402,21 @@ class BriefResponse(db.Model):
     brief = db.relationship('Brief')
     supplier = db.relationship('Supplier', lazy='joined')
 
+    @hybrid_property
+    def status(self):
+        if not self.submitted_at:
+            return 'draft'
+        if self.withdrawn_at:
+            return 'withdrawn'
+        return 'submitted'
+
+    @status.expression
+    def status(cls):
+        return sql_case([
+            (cls.submitted_at.is_(None), 'draft'),
+            (cls.withdrawn_at.isnot(None), 'withdrawn'),
+        ], else_='submitted')
+
     @validates('data')
     def validates_data(self, key, data):
         data = drop_foreign_fields(data, [
