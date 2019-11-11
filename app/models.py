@@ -2417,6 +2417,9 @@ class BriefResponse(db.Model):
             (cls.withdrawn_at.isnot(None), 'withdrawn'),
         ], else_='submitted')
 
+    def submit(self):
+        self.submitted_at = pendulum.now('UTC')
+
     @validates('data')
     def validates_data(self, key, data):
         data = drop_foreign_fields(data, [
@@ -2611,6 +2614,8 @@ class BriefResponse(db.Model):
             'supplierCode': self.supplier_code,
             'supplierName': self.supplier.name,
             'createdAt': self.created_at.to_iso8601_string(extended=True),
+            'updatedAt': self.updated_at.to_iso8601_string(extended=True),
+            'submittedAt': self.submitted_at.to_iso8601_string(extended=True) if self.submitted_at else None,
             'links': {
                 'self': url_for('.get_brief_response', brief_response_id=self.id),
                 'brief': url_for('.get_brief', brief_id=self.brief_id),

@@ -990,11 +990,11 @@ def get_brief_responses(brief_id):
     if current_user.role == 'buyer':
         if brief.status == 'closed':
             brief_response_downloaded = brief_response_download_service.get_responses_downloaded(brief.id)
-            brief_responses = brief_responses_service.get_brief_responses(brief_id, supplier_code)
+            brief_responses = brief_responses_service.get_brief_responses(brief_id, supplier_code, submitted_only=True)
         if brief.status in ['closed', 'live']:
             questions_asked = len(brief_question_service.find(brief_id=brief.id).all())
     else:
-        brief_responses = brief_responses_service.get_brief_responses(brief_id, supplier_code)
+        brief_responses = brief_responses_service.get_brief_responses(brief_id, supplier_code, submitted_only=True)
 
     old_work_order_creator = use_old_work_order_creator(brief.published_at)
 
@@ -1171,6 +1171,159 @@ def download_brief_response_file(brief_id, supplier_code, slug):
         return forbidden("Unauthorised to view brief or brief does not exist")
 
 
+@api.route('/brief/<int:brief_id>/respond', methods=['POST'])
+@login_required
+@role_required('supplier')
+def create_brief_response(brief_id):
+    supplier, brief = _can_do_brief_response(brief_id)
+    try:
+        brief_response = brief_responses_service.create_brief_response(
+            supplier,
+            brief
+        )
+    except Exception as e:
+        rollbar.report_exc_info()
+        return jsonify(message=e.message), 400
+
+    try:
+        audit_service.log_audit_event(
+            audit_type=AuditTypes.create_brief_response,
+            user=current_user.email_address,
+            data={
+                'briefResponseId': brief_response.id
+            },
+            db_object=brief_response
+        )
+        publish_tasks.brief_response.delay(
+            publish_tasks.compress_brief_response(brief_response),
+            'created',
+            user=current_user.email_address
+        )
+    except Exception as e:
+        rollbar.report_exc_info()
+
+    return jsonify(brief_response.serialize())
+
+
+@api.route('/brief/<int:brief_id>/respond/<int:brief_response_id>', methods=['PATCH'])
+@login_required
+@role_required('supplier')
+def update_brief_response(brief_id, brief_response_id):
+    brief_response_json = get_json_from_request()
+    supplier, brief = _can_do_brief_response(brief_id)
+    brief_response = brief_responses_service.find(
+        id=brief_response_id,
+        brief_id=brief.id,
+        supplier_code=supplier.code,
+        withdrawn_at=None
+    ).one_or_none()
+    if not brief_response:
+        not_found('Brief response not found')
+
+    submit = False
+    if 'submit' in brief_response_json:
+        if brief_response_json['submit']:
+            submit = True
+        del brief_response_json['submit']
+
+    brief_response.data = brief_response_json
+    try:
+        brief_response.validate()
+    except ValidationError as e:
+        brief_response_json['brief_id'] = brief_id
+        rollbar.report_exc_info(extra_data=brief_response_json)
+        message = ""
+        if 'essentialRequirements' in e.message and e.message['essentialRequirements'] == 'answer_required':
+            message = "Essential requirements must be completed"
+            del e.message['essentialRequirements']
+        if 'attachedDocumentURL' in e.message:
+            if e.message['attachedDocumentURL'] == 'answer_required':
+                message = "Documents must be uploaded"
+            if e.message['attachedDocumentURL'] == 'file_incorrect_format':
+                message = "Uploaded documents are in the wrong format"
+            del e.message['attachedDocumentURL']
+        if 'criteria' in e.message and e.message['criteria'] == 'answer_required':
+            message = "Criteria must be completed"
+
+        for field in [{
+            'name': 'specialistGivenNames',
+            'label': 'Given names'
+        }, {
+            'name': 'specialistSurname',
+            'label': 'Surname'
+        }, {
+            'name': 'dayRateExcludingGST',
+            'label': 'Daily rate (excluding GST)'
+        }, {
+            'name': 'dayRate',
+            'label': 'Daily rate'
+        }, {
+            'name': 'hourRateExcludingGST',
+            'label': 'Hourly rate (excluding GST)'
+        }, {
+            'name': 'hourRate',
+            'label': 'Hourly rate'
+        }, {
+            'name': 'visaStatus',
+            'label': 'Eligibility to work'
+        }, {
+            'name': 'securityClearance',
+            'label': 'Security clearance'
+        }, {
+            'name': 'previouslyWorked',
+            'label': 'Previously worked'
+        }]:
+            if field['name'] in e.message and e.message[field['name']] == 'answer_required':
+                message += '{} is required\n'.format(field['label'])
+                del e.message[field['name']]
+
+        if len(e.message) > 0:
+            message += json.dumps(e.message)
+        return jsonify(message=message), 400
+    except Exception as e:
+        brief_response_json['brief_id'] = brief_id
+        rollbar.report_exc_info(extra_data=brief_response_json)
+        return jsonify(message=e.message), 400
+
+    if submit:
+        brief_response.submit()
+        try:
+            if brief.lot.slug == 'specialist':
+                send_specialist_brief_response_received_email(supplier, brief, brief_response)
+            else:
+                send_brief_response_received_email(supplier, brief, brief_response)
+        except Exception as e:
+            brief_response_json['brief_id'] = brief_id
+            rollbar.report_exc_info(extra_data=brief_response_json)
+
+        '''audit_service.log_audit_event(
+            audit_type=AuditTypes.create_brief_response,
+            user=current_user.email_address,
+            data={
+                'briefResponseId': brief_response.id,
+                'briefResponseJson': brief_response_json,
+            },
+            db_object=brief_response)'''
+
+        publish_tasks.brief_response.delay(
+            publish_tasks.compress_brief_response(brief_response),
+            'submitted',
+            user=current_user.email_address
+        )
+    brief_responses_service.save_brief_response(brief_response)
+    try:
+        publish_tasks.brief_response.delay(
+            publish_tasks.compress_brief_response(brief_response),
+            'saved',
+            user=current_user.email_address
+        )
+    except Exception as e:
+        rollbar.report_exc_info()
+
+    return jsonify(briefResponses=brief_response.serialize()), 200
+
+
+'''
 @api.route('/brief/<int:brief_id>/respond', methods=["POST"])
 @login_required
 def post_brief_response(brief_id):
@@ -1267,6 +1420,7 @@ def post_brief_response(brief_id):
         user=current_user.email_address
     )
     return jsonify(briefResponses=brief_response.serialize()), 201
+'''
 
 
 @api.route('/framework/<string:framework_slug>', methods=["GET"])

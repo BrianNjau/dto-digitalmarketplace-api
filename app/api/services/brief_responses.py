@@ -11,7 +11,26 @@ class BriefResponsesService(Service):
     def __init__(self, *args, **kwargs):
         super(BriefResponsesService, self).__init__(*args, **kwargs)
 
-    def get_brief_responses(self, brief_id, supplier_code):
+    def create_brief_response(self, supplier, brief, data=None):
+        if not data:
+            data = {}
+
+        brief_response = BriefResponse(
+            data=data,
+            supplier=supplier,
+            brief=brief
+        )
+
+        db.session.add(brief_response)
+        db.session.commit()
+        return brief_response
+
+    def save_brief_response(self, brief_response):
+        db.session.add(brief_response)
+        db.session.commit()
+        return brief_response
+
+    def get_brief_responses(self, brief_id, supplier_code, submitted_only=False, include_withdrawn=False):
         query = (
             db.session.query(BriefResponse.created_at,
                              BriefResponse.id,
@@ -27,6 +46,10 @@ class BriefResponsesService(Service):
         )
         if supplier_code:
             query = query.filter(BriefResponse.supplier_code == supplier_code)
+        if submitted_only:
+            query = query.filter(BriefResponse.submitted_at.isnot(None))
+        if not include_withdrawn:
+            query = query.filter(BriefResponse.withdrawn_at.is_(None))
 
         return [r._asdict() for r in query.all()]
 
