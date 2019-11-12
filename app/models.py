@@ -2613,6 +2613,7 @@ class BriefResponse(db.Model):
             'briefId': self.brief_id,
             'supplierCode': self.supplier_code,
             'supplierName': self.supplier.name,
+            'status': self.status,
             'createdAt': self.created_at.to_iso8601_string(extended=True),
             'updatedAt': self.updated_at.to_iso8601_string(extended=True),
             'submittedAt': self.submitted_at.to_iso8601_string(extended=True) if self.submitted_at else None,
