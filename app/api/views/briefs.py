@@ -1219,6 +1219,8 @@ def update_brief_response(brief_id, brief_response_id):
     ).one_or_none()
     if not brief_response:
         not_found('Brief response not found')
+    if brief_response.status not in ['submitted', 'draft']:
+        abort('Brief response can not be edited')
 
     submit = False
     if 'submit' in brief_response_json:
