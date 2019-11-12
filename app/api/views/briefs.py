@@ -1229,65 +1229,65 @@ def update_brief_response(brief_id, brief_response_id):
         del brief_response_json['submit']
 
     brief_response.data = brief_response_json
-    try:
-        brief_response.validate()
-    except ValidationError as e:
-        brief_response_json['brief_id'] = brief_id
-        rollbar.report_exc_info(extra_data=brief_response_json)
-        message = ""
-        if 'essentialRequirements' in e.message and e.message['essentialRequirements'] == 'answer_required':
-            message = "Essential requirements must be completed"
-            del e.message['essentialRequirements']
-        if 'attachedDocumentURL' in e.message:
-            if e.message['attachedDocumentURL'] == 'answer_required':
-                message = "Documents must be uploaded"
-            if e.message['attachedDocumentURL'] == 'file_incorrect_format':
-                message = "Uploaded documents are in the wrong format"
-            del e.message['attachedDocumentURL']
-        if 'criteria' in e.message and e.message['criteria'] == 'answer_required':
-            message = "Criteria must be completed"
-
-        for field in [{
-            'name': 'specialistGivenNames',
-            'label': 'Given names'
-        }, {
-            'name': 'specialistSurname',
-            'label': 'Surname'
-        }, {
-            'name': 'dayRateExcludingGST',
-            'label': 'Daily rate (excluding GST)'
-        }, {
-            'name': 'dayRate',
-            'label': 'Daily rate'
-        }, {
-            'name': 'hourRateExcludingGST',
-            'label': 'Hourly rate (excluding GST)'
-        }, {
-            'name': 'hourRate',
-            'label': 'Hourly rate'
-        }, {
-            'name': 'visaStatus',
-            'label': 'Eligibility to work'
-        }, {
-            'name': 'securityClearance',
-            'label': 'Security clearance'
-        }, {
-            'name': 'previouslyWorked',
-            'label': 'Previously worked'
-        }]:
-            if field['name'] in e.message and e.message[field['name']] == 'answer_required':
-                message += '{} is required\n'.format(field['label'])
-                del e.message[field['name']]
-
-        if len(e.message) > 0:
-            message += json.dumps(e.message)
-        return jsonify(message=message), 400
-    except Exception as e:
-        brief_response_json['brief_id'] = brief_id
-        rollbar.report_exc_info(extra_data=brief_response_json)
-        return jsonify(message=e.message), 400
-
     if submit:
+        try:
+            brief_response.validate()
+        except ValidationError as e:
+            brief_response_json['brief_id'] = brief_id
+            rollbar.report_exc_info(extra_data=brief_response_json)
+            message = ""
+            if 'essentialRequirements' in e.message and e.message['essentialRequirements'] == 'answer_required':
+                message = "Essential requirements must be completed"
+                del e.message['essentialRequirements']
+            if 'attachedDocumentURL' in e.message:
+                if e.message['attachedDocumentURL'] == 'answer_required':
+                    message = "Documents must be uploaded"
+                if e.message['attachedDocumentURL'] == 'file_incorrect_format':
+                    message = "Uploaded documents are in the wrong format"
+                del e.message['attachedDocumentURL']
+            if 'criteria' in e.message and e.message['criteria'] == 'answer_required':
+                message = "Criteria must be completed"
+
+            for field in [{
+                'name': 'specialistGivenNames',
+                'label': 'Given names'
+            }, {
+                'name': 'specialistSurname',
+                'label': 'Surname'
+            }, {
+                'name': 'dayRateExcludingGST',
+                'label': 'Daily rate (excluding GST)'
+            }, {
+                'name': 'dayRate',
+                'label': 'Daily rate'
+            }, {
+                'name': 'hourRateExcludingGST',
+                'label': 'Hourly rate (excluding GST)'
+            }, {
+                'name': 'hourRate',
+                'label': 'Hourly rate'
+            }, {
+                'name': 'visaStatus',
+                'label': 'Eligibility to work'
+            }, {
+                'name': 'securityClearance',
+                'label': 'Security clearance'
+            }, {
+                'name': 'previouslyWorked',
+                'label': 'Previously worked'
+            }]:
+                if field['name'] in e.message and e.message[field['name']] == 'answer_required':
+                    message += '{} is required\n'.format(field['label'])
+                    del e.message[field['name']]
+
+            if len(e.message) > 0:
+                message += json.dumps(e.message)
+            return jsonify(message=message), 400
+        except Exception as e:
+            brief_response_json['brief_id'] = brief_id
+            rollbar.report_exc_info(extra_data=brief_response_json)
+            return jsonify(message=e.message), 400
+
         brief_response.submit()
         try:
             if brief.lot.slug == 'specialist':
