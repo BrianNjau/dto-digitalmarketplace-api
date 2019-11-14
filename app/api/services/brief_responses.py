@@ -33,10 +33,14 @@ class BriefResponsesService(Service):
     def get_brief_responses(self, brief_id, supplier_code, submitted_only=False, include_withdrawn=False):
         query = (
             db.session.query(BriefResponse.created_at,
+                             BriefResponse.submitted_at,
                              BriefResponse.id,
                              BriefResponse.brief_id,
                              BriefResponse.supplier_code,
+                             BriefResponse.status,
                              BriefResponse.data['respondToEmailAddress'].label('respondToEmailAddress'),
+                             BriefResponse.data['specialistGivenNames'].label('specialistGivenNames'),
+                             BriefResponse.data['specialistSurname'].label('specialistSurname'),
                              Supplier.name.label('supplier_name'))
             .join(Supplier)
             .filter(
@@ -50,6 +54,7 @@ class BriefResponsesService(Service):
             query = query.filter(BriefResponse.submitted_at.isnot(None))
         if not include_withdrawn:
             query = query.filter(BriefResponse.withdrawn_at.is_(None))
+        query = query.order_by(BriefResponse.id.asc())
 
         return [r._asdict() for r in query.all()]
 
