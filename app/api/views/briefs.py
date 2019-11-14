@@ -72,7 +72,7 @@ from ...models import (AuditEvent, Brief, BriefResponse, Framework, Supplier,
 from ...utils import get_json_from_request
 
 
-def _can_do_brief_response(brief_id):
+def _can_do_brief_response(brief_id, update_only=False):
     try:
         brief = Brief.query.get(brief_id)
     except DataError:
@@ -194,9 +194,12 @@ def _can_do_brief_response(brief_id):
         domain = domain_service.get(brief_category_id)
         if domain and domain.name not in supplier.assessed_domains:
             abort("Supplier needs to be assessed in '{}'".format(brief_category))
-        number_of_suppliers = brief.data.get('numberOfSuppliers', 0)
-        if (brief_response_count > int(number_of_suppliers)):
-            abort("There are already {} brief responses for supplier '{}'".format(number_of_suppliers, supplier.code))
+        if not update_only:
+            number_of_suppliers = brief.data.get('numberOfSuppliers', 0)
+            if (brief_response_count >= int(number_of_suppliers)):
+                abort(
+                    "There are already {} brief responses for supplier '{}'".format(number_of_suppliers, supplier.code)
+                )
     else:
         # Check if brief response already exists from this supplier when outcome for all other types
         if brief_responses_service.find(supplier_code=supplier.code,
@@ -1210,17 +1213,15 @@ def create_brief_response(brief_id):
 @role_required('supplier')
 def update_brief_response(brief_id, brief_response_id):
     brief_response_json = get_json_from_request()
-    supplier, brief = _can_do_brief_response(brief_id)
+    supplier, brief = _can_do_brief_response(brief_id, update_only=True)
     brief_response = brief_responses_service.find(
         id=brief_response_id,
         brief_id=brief.id,
         supplier_code=supplier.code,
         withdrawn_at=None
     ).one_or_none()
-    if not brief_response:
+    if not brief_response or brief_response.status not in ['submitted', 'draft']:
         not_found('Brief response not found')
-    if brief_response.status not in ['submitted', 'draft']:
-        abort('Brief response can not be edited')
 
     submit = False
     if 'submit' in brief_response_json:
