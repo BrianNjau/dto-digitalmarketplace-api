@@ -195,7 +195,7 @@ def _can_do_brief_response(brief_id):
         if domain and domain.name not in supplier.assessed_domains:
             abort("Supplier needs to be assessed in '{}'".format(brief_category))
         number_of_suppliers = brief.data.get('numberOfSuppliers', 0)
-        if (brief_response_count > number_of_suppliers):
+        if (brief_response_count > int(number_of_suppliers)):
             abort("There are already {} brief responses for supplier '{}'".format(number_of_suppliers, supplier.code))
     else:
         # Check if brief response already exists from this supplier when outcome for all other types
