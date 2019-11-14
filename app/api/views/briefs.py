@@ -1298,28 +1298,30 @@ def update_brief_response(brief_id, brief_response_id):
         except Exception as e:
             brief_response_json['brief_id'] = brief_id
             rollbar.report_exc_info(extra_data=brief_response_json)
-
-        '''audit_service.log_audit_event(
-            audit_type=AuditTypes.create_brief_response,
+    brief_responses_service.save_brief_response(brief_response)
+    try:
+        audit_service.log_audit_event(
+            audit_type=audit_types.update_brief_response,
             user=current_user.email_address,
             data={
                 'briefResponseId': brief_response.id,
                 'briefResponseJson': brief_response_json,
+                'submitted': submit
             },
-            db_object=brief_response)'''
-
-        publish_tasks.brief_response.delay(
-            publish_tasks.compress_brief_response(brief_response),
-            'submitted',
-            user=current_user.email_address
+            db_object=brief_response
         )
-    brief_responses_service.save_brief_response(brief_response)
-    try:
+
         publish_tasks.brief_response.delay(
             publish_tasks.compress_brief_response(brief_response),
             'saved',
             user=current_user.email_address
         )
+        if submit:
+            publish_tasks.brief_response.delay(
+                publish_tasks.compress_brief_response(brief_response),
+                'submitted',
+                user=current_user.email_address
+            )
     except Exception as e:
         rollbar.report_exc_info()
 
