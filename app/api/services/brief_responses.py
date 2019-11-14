@@ -63,7 +63,8 @@ class BriefResponsesService(Service):
             db.session.query(BriefResponse)
                       .join(Supplier)
                       .filter(BriefResponse.brief_id == brief_id,
-                              BriefResponse.withdrawn_at.is_(None))
+                              BriefResponse.withdrawn_at.is_(None),
+                              BriefResponse.submitted_at.isnot(None))
                       .order_by(func.lower(Supplier.name))
         )
 
@@ -83,7 +84,8 @@ class BriefResponsesService(Service):
             .join(Supplier)
             .filter(
                 BriefResponse.brief_id == brief_id,
-                BriefResponse.withdrawn_at.is_(None)
+                BriefResponse.withdrawn_at.is_(None),
+                BriefResponse.submitted_at.isnot(None)
             )
         )
 
@@ -97,7 +99,8 @@ class BriefResponsesService(Service):
             .join(Supplier)
             .filter(
                 BriefResponse.brief_id == brief_id,
-                BriefResponse.withdrawn_at.is_(None)
+                BriefResponse.withdrawn_at.is_(None),
+                BriefResponse.submitted_at.isnot(None)
             )
         )
         responses = [r._asdict() for r in query.all()]
@@ -121,7 +124,8 @@ class BriefResponsesService(Service):
             )
             .filter(
                 BriefResponse.data.isnot(None),
-                BriefResponse.withdrawn_at.is_(None)
+                BriefResponse.withdrawn_at.is_(None),
+                BriefResponse.submitted_at.isnot(None)
             )
             .scalar()
         )
