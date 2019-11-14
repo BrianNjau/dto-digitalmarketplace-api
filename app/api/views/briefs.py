@@ -1011,7 +1011,7 @@ def get_brief_responses(brief_id):
 @api.route('/brief/<int:brief_id>/respond/documents/<string:supplier_code>/<slug>', methods=['POST'])
 @login_required
 def upload_brief_response_file(brief_id, supplier_code, slug):
-    supplier, brief = _can_do_brief_response(brief_id)
+    supplier, brief = _can_do_brief_response(brief_id, update_only=True)
     return jsonify({"filename": s3_upload_file_from_request(request, slug,
                                                             os.path.join(brief.framework.slug, 'documents',
                                                                          'brief-' + str(brief_id),
