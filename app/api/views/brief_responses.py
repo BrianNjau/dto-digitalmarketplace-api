@@ -54,7 +54,8 @@ def withdraw_brief_response(brief_response_id):
                     audit_type=audit_types.update_brief_response,
                     user=current_user.email_address,
                     data={
-                        'briefResponseId': brief_response.id
+                        'briefResponseId': brief_response.id,
+                        'withdrawn': True
                     },
                     db_object=brief_response
                 )
