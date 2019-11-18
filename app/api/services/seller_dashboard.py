@@ -23,7 +23,9 @@ class SellerDashboardService(object):
                 func.count(BriefResponse.brief_id).label("responseCount")
             )
             .filter(
-                BriefResponse.supplier_code == supplier_code
+                BriefResponse.supplier_code == supplier_code,
+                BriefResponse.withdrawn_at.is_(None),
+                BriefResponse.submitted_at.isnot(None)
             )
             .group_by(BriefResponse.brief_id)
             .subquery()
