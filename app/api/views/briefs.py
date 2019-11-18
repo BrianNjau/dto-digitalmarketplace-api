@@ -202,9 +202,7 @@ def _can_do_brief_response(brief_id, update_only=False):
                 )
     else:
         # Check if brief response already exists from this supplier when outcome for all other types
-        if brief_responses_service.find(supplier_code=supplier.code,
-                                        brief_id=brief.id,
-                                        withdrawn_at=None).one_or_none():
+        if not update_only and len(brief_responses_service.get_brief_responses(brief.id, supplier.code)) > 0:
             abort("Brief response already exists for supplier '{}'".format(supplier.code))
 
     return supplier, brief
@@ -1205,7 +1203,7 @@ def create_brief_response(brief_id):
     except Exception as e:
         rollbar.report_exc_info()
 
-    return jsonify(brief_response.serialize())
+    return jsonify(brief_response.serialize()), 201
 
 
 @api.route('/brief/<int:brief_id>/respond/<int:brief_response_id>', methods=['PATCH'])

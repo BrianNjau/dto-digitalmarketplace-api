@@ -115,8 +115,7 @@ def get_brief_response(brief_response_id):
     """
 
     brief_response = brief_responses_service.find(id=brief_response_id,
-                                                  supplier_code=current_user.supplier_code,
-                                                  withdrawn_at=None).one_or_none()
+                                                  supplier_code=current_user.supplier_code).one_or_none()
 
     if brief_response:
         if brief_response.withdrawn_at is not None:
