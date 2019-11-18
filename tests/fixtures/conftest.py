@@ -365,6 +365,7 @@ def brief_responses(app, request, briefs, supplier_user):
             id=1,
             brief_id=1,
             supplier_code=supplier_user.supplier_code,
+            submitted_at=pendulum.now(),
             data=data
         ))
 

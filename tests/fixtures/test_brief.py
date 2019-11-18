@@ -136,20 +136,7 @@ def test_create_new_brief_response(brief_response,
     }), content_type='application/json')
     assert res.status_code == 200
 
-    res = client.post(
-        '/2/brief/1/respond',
-        data=json.dumps({
-            'essentialRequirements': ['ABC', 'XYZ'],
-            'availability': '01/01/2018',
-            'respondToEmailAddress': 'supplier@email.com',
-            'specialistName': 'Test Specialist Name',
-            'dayRate': '100',
-            'attachedDocumentURL': [
-                'test.pdf'
-            ]
-        }),
-        content_type='application/json'
-    )
+    res = client.post('/2/brief/1/respond')
     assert res.status_code == 201
     assert brief_response.delay.called is True
 
@@ -268,9 +255,14 @@ def test_cannot_respond_to_a_brief_with_wrong_number_of_essential_reqs(client, s
     }), content_type='application/json')
     assert res.status_code == 200
 
-    res = client.post(
-        '/2/brief/1/respond',
+    res = client.post('/2/brief/1/respond')
+    assert res.status_code == 201
+    data = json.loads(res.get_data(as_text=True))
+
+    res = client.patch(
+        '/2/brief/1/respond/%s' % data['id'],
         data=json.dumps({
+            'submit': True,
             'essentialRequirements': ['XYZ'],
             'availability': '01/01/2018',
             'respondToEmailAddress': 'supplier@email.com',
@@ -298,9 +290,14 @@ def test_create_brief_response_success_with_audit_exception(brief_response,
     }), content_type='application/json')
     assert res.status_code == 200
 
-    res = client.post(
-        '/2/brief/1/respond',
+    res = client.post('/2/brief/1/respond')
+    assert res.status_code == 201
+    data = json.loads(res.get_data(as_text=True))
+
+    res = client.patch(
+        '/2/brief/1/respond/%s' % data['id'],
         data=json.dumps({
+            'submit': True,
             'essentialRequirements': ['ABC', 'XYZ'],
             'availability': '01/01/2018',
             'respondToEmailAddress': 'supplier@email.com',
@@ -312,7 +309,7 @@ def test_create_brief_response_success_with_audit_exception(brief_response,
         }),
         content_type='application/json'
     )
-    assert res.status_code == 201
+    assert res.status_code == 200
     assert brief_response.delay.called is True
 
 
@@ -326,9 +323,14 @@ def test_create_brief_response_fail_with_incorrect_attachment(client, supplier_u
     }), content_type='application/json')
     assert res.status_code == 200
 
-    res = client.post(
-        '/2/brief/1/respond',
+    res = client.post('/2/brief/1/respond')
+    assert res.status_code == 201
+    data = json.loads(res.get_data(as_text=True))
+
+    res = client.patch(
+        '/2/brief/1/respond/%s' % data['id'],
         data=json.dumps({
+            'submit': True,
             'essentialRequirements': ['ABC', 'XYZ'],
             'availability': '01/01/2018',
             'respondToEmailAddress': 'supplier@email.com',
@@ -340,9 +342,10 @@ def test_create_brief_response_fail_with_incorrect_attachment(client, supplier_u
     )
     assert res.status_code == 400
 
-    res = client.post(
-        '/2/brief/1/respond',
+    res = client.patch(
+        '/2/brief/1/respond/%s' % data['id'],
         data=json.dumps({
+            'submit': True,
             'essentialRequirements': ['ABC', 'XYZ'],
             'availability': '01/01/2018',
             'respondToEmailAddress': 'supplier@email.com',

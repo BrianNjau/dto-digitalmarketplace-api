@@ -127,9 +127,14 @@ def test_get_brief_response(brief_response, client, supplier_user, supplier_doma
     assert res.status_code == 200
 
     for i in range(1, 3):
-        res = client.post(
-            '/2/brief/1/respond',
+        res = client.post('/2/brief/1/respond')
+        assert res.status_code == 201
+        data = json.loads(res.get_data(as_text=True))
+
+        res = client.patch(
+            '/2/brief/1/respond/%s' % data['id'],
             data=json.dumps({
+                'submit': True,
                 'essentialRequirements': ['ABC', 'XYZ'],
                 'availability': '01/01/2018',
                 'respondToEmailAddress': 'supplier@email.com',
@@ -141,7 +146,7 @@ def test_get_brief_response(brief_response, client, supplier_user, supplier_doma
             }),
             content_type='application/json'
         )
-        assert res.status_code == 201
+        assert res.status_code == 200
         assert brief_response.delay.called is True
 
         res = client.get(
@@ -168,9 +173,14 @@ def test_withdraw_brief_response(brief_response,
 
     # this should continue working because the response has been withdrawn
     for i in range(1, 10):
-        res = client.post(
-            '/2/brief/1/respond',
+        res = client.post('/2/brief/1/respond')
+        assert res.status_code == 201
+        data = json.loads(res.get_data(as_text=True))
+
+        res = client.patch(
+            '/2/brief/1/respond/%s' % data['id'],
             data=json.dumps({
+                'submit': True,
                 'essentialRequirements': ['ABC', 'XYZ'],
                 'availability': '01/01/2018',
                 'respondToEmailAddress': 'supplier@email.com',
@@ -182,7 +192,7 @@ def test_withdraw_brief_response(brief_response,
             }),
             content_type='application/json'
         )
-        assert res.status_code == 201
+        assert res.status_code == 200
         assert brief_response.delay.called is True
 
         res = client.get(
@@ -225,9 +235,14 @@ def test_withdraw_already_withdrawn_brief_response(brief_response,
     assert res.status_code == 200
 
     for i in range(1, 3):
-        res = client.post(
-            '/2/brief/1/respond',
+        res = client.post('/2/brief/1/respond')
+        assert res.status_code == 201
+        data = json.loads(res.get_data(as_text=True))
+
+        res = client.patch(
+            '/2/brief/1/respond/%s' % data['id'],
             data=json.dumps({
+                'submit': True,
                 'essentialRequirements': ['ABC', 'XYZ'],
                 'availability': '01/01/2018',
                 'respondToEmailAddress': 'supplier@email.com',
@@ -239,7 +254,7 @@ def test_withdraw_already_withdrawn_brief_response(brief_response,
             }),
             content_type='application/json'
         )
-        assert res.status_code == 201
+        assert res.status_code == 200
         assert brief_response.delay.called is True
 
         res = client.put(
@@ -351,9 +366,14 @@ def test_rfx_invited_seller_can_respond(brief_response,
     }), content_type='application/json')
     assert res.status_code == 200
 
-    res = client.post(
-        '/2/brief/1/respond',
+    res = client.post('/2/brief/1/respond')
+    assert res.status_code == 201
+    data = json.loads(res.get_data(as_text=True))
+
+    res = client.patch(
+        '/2/brief/1/respond/%s' % data['id'],
         data=json.dumps({
+            'submit': True,
             'respondToEmailAddress': 'supplier@email.com',
             'attachedDocumentURL': [
                 'test.pdf'
@@ -361,7 +381,7 @@ def test_rfx_invited_seller_can_respond(brief_response,
         }),
         content_type='application/json'
     )
-    assert res.status_code == 201
+    assert res.status_code == 200
     assert brief_response.delay.called is True
 
 
@@ -389,17 +409,7 @@ def test_rfx_non_invited_seller_can_not_respond(brief, client, suppliers, suppli
     }), content_type='application/json')
     assert res.status_code == 200
 
-    res = client.post(
-        '/2/brief/1/respond',
-        data=json.dumps({
-            'respondToEmailAddress': 'supplier@email.com',
-            'respondToPhone': '0263636363',
-            'attachedDocumentURL': [
-                'test.pdf'
-            ]
-        }),
-        content_type='application/json'
-    )
+    res = client.post('/2/brief/1/respond')
     assert res.status_code == 403
 
 
@@ -464,9 +474,14 @@ def test_atm_invited_seller_can_respond_open_to_all(brief_response, brief, clien
     }), content_type='application/json')
     assert res.status_code == 200
 
-    res = client.post(
-        '/2/brief/1/respond',
+    res = client.post('/2/brief/1/respond')
+    assert res.status_code == 201
+    data = json.loads(res.get_data(as_text=True))
+
+    res = client.patch(
+        '/2/brief/1/respond/%s' % data['id'],
         data=json.dumps({
+            'submit': True,
             'respondToEmailAddress': 'supplier@email.com',
             'criteria': {
                 'TEST': 'bla bla',
@@ -475,7 +490,7 @@ def test_atm_invited_seller_can_respond_open_to_all(brief_response, brief, clien
         }),
         content_type='application/json'
     )
-    assert res.status_code == 201
+    assert res.status_code == 200
     assert brief_response.delay.called is True
 
 
@@ -503,9 +518,14 @@ def test_atm_seller_can_respond_open_to_category(brief_response, brief, client, 
     }), content_type='application/json')
     assert res.status_code == 200
 
-    res = client.post(
-        '/2/brief/1/respond',
+    res = client.post('/2/brief/1/respond')
+    assert res.status_code == 201
+    data = json.loads(res.get_data(as_text=True))
+
+    res = client.patch(
+        '/2/brief/1/respond/%s' % data['id'],
         data=json.dumps({
+            'submit': True,
             'respondToEmailAddress': 'supplier@email.com',
             'criteria': {
                 'TEST': 'bla bla',
@@ -514,7 +534,7 @@ def test_atm_seller_can_respond_open_to_category(brief_response, brief, client, 
         }),
         content_type='application/json'
     )
-    assert res.status_code == 201
+    assert res.status_code == 200
     assert brief_response.delay.called is True
 
 
@@ -542,18 +562,7 @@ def test_atm_seller_can_not_respond_open_to_category(brief_response, brief, clie
     }), content_type='application/json')
     assert res.status_code == 200
 
-    res = client.post(
-        '/2/brief/1/respond',
-        data=json.dumps({
-            'respondToEmailAddress': 'supplier@email.com',
-            'respondToPhone': '0263636363',
-            'criteria': {
-                'TEST': 'bla bla',
-                'TEST 2': 'bla bla'
-            }
-        }),
-        content_type='application/json'
-    )
+    res = client.post('/2/brief/1/respond')
     assert res.status_code == 403
 
 
@@ -579,9 +588,14 @@ def test_atm_seller_failed_missing_criteria(brief_response, brief, client, suppl
     }), content_type='application/json')
     assert res.status_code == 200
 
-    res = client.post(
-        '/2/brief/1/respond',
+    res = client.post('/2/brief/1/respond')
+    assert res.status_code == 201
+    data = json.loads(res.get_data(as_text=True))
+
+    res = client.patch(
+        '/2/brief/1/respond/%s' % data['id'],
         data=json.dumps({
+            'submit': True,
             'respondToEmailAddress': 'supplier@email.com',
             'respondToPhone': '0263636363',
             'criteria': {
@@ -615,9 +629,14 @@ def test_atm_seller_failed_empty_criteria(brief_response, brief, client, supplie
     }), content_type='application/json')
     assert res.status_code == 200
 
-    res = client.post(
-        '/2/brief/1/respond',
+    res = client.post('/2/brief/1/respond')
+    assert res.status_code == 201
+    data = json.loads(res.get_data(as_text=True))
+
+    res = client.patch(
+        '/2/brief/1/respond/%s' % data['id'],
         data=json.dumps({
+            'submit': True,
             'respondToEmailAddress': 'supplier@email.com',
             'respondToPhone': '0263636363',
             'criteria': {
@@ -655,9 +674,14 @@ def test_atm_seller_failed_missing_file(brief_response, brief, client, suppliers
     }), content_type='application/json')
     assert res.status_code == 200
 
-    res = client.post(
-        '/2/brief/1/respond',
+    res = client.post('/2/brief/1/respond')
+    assert res.status_code == 201
+    data = json.loads(res.get_data(as_text=True))
+
+    res = client.patch(
+        '/2/brief/1/respond/%s' % data['id'],
         data=json.dumps({
+            'submit': True,
             'respondToEmailAddress': 'supplier@email.com',
             'respondToPhone': '0263636363',
             'criteria': {
@@ -694,9 +718,14 @@ def test_atm_seller_success_with_file(brief_response, brief, client, suppliers, 
     }), content_type='application/json')
     assert res.status_code == 200
 
-    res = client.post(
-        '/2/brief/1/respond',
+    res = client.post('/2/brief/1/respond')
+    assert res.status_code == 201
+    data = json.loads(res.get_data(as_text=True))
+
+    res = client.patch(
+        '/2/brief/1/respond/%s' % data['id'],
         data=json.dumps({
+            'submit': True,
             'respondToEmailAddress': 'supplier@email.com',
             'respondToPhone': '0263636363',
             'attachedDocumentURL': ['TEST.pdf'],
@@ -707,5 +736,5 @@ def test_atm_seller_success_with_file(brief_response, brief, client, suppliers, 
         }),
         content_type='application/json'
     )
-    assert res.status_code == 201
+    assert res.status_code == 200
     assert brief_response.delay.called is True
