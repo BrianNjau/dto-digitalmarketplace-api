@@ -424,10 +424,14 @@ def get_brief(brief_id):
 
     brief_response_count = len(brief_responses_service.get_brief_responses(brief_id, None))
     supplier_brief_response_count = 0
+    supplier_brief_response_id = 0
+    supplier_brief_response_is_draft = False
     if user_role == 'supplier':
-        supplier_brief_response_count = len(
-            brief_responses_service.get_brief_responses(brief_id, current_user.supplier_code)
-        )
+        supplier_brief_responses = brief_responses_service.get_brief_responses(brief_id, current_user.supplier_code)
+        supplier_brief_response_count = len(supplier_brief_responses)
+        if supplier_brief_response_count == 1:
+            supplier_brief_response_id = supplier_brief_responses[0]['id']
+            supplier_brief_response_is_draft = True if supplier_brief_responses[0]['status'] == 'draft' else False
 
     invited_seller_count = len(invited_sellers)
     open_to_all = (
@@ -508,6 +512,8 @@ def get_brief(brief_id):
                    evidence_id=evidence_id,
                    evidence_id_rejected=evidence_id_rejected,
                    supplier_brief_response_count=supplier_brief_response_count,
+                   supplier_brief_response_id=supplier_brief_response_id,
+                   supplier_brief_response_is_draft=supplier_brief_response_is_draft,
                    can_respond=can_respond,
                    has_evidence_in_draft_for_category=has_evidence_in_draft_for_category,
                    has_latest_evidence_rejected_for_category=has_latest_evidence_rejected_for_category,
@@ -1220,6 +1226,8 @@ def update_brief_response(brief_id, brief_response_id):
     ).one_or_none()
     if not brief_response or brief_response.status not in ['submitted', 'draft']:
         not_found('Brief response not found')
+    if brief.status != 'live':
+        abort('Brief responses can only be edited when the brief is still live')
 
     submit = False
     if 'submit' in brief_response_json:
