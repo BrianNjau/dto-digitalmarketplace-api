@@ -69,7 +69,8 @@ class SellerDashboardService(object):
                 BriefResponse.brief_id.label("brief_id")
             )
             .filter(
-                BriefResponse.supplier_code == supplier_code
+                BriefResponse.supplier_code == supplier_code,
+                BriefResponse.withdrawn_at.is_(None)
             )
         )
 
