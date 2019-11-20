@@ -47,6 +47,21 @@ class SellerDashboardService(object):
             .subquery()
         )
 
+        brief_response_id_query = (
+            db
+            .session
+            .query(
+                BriefResponse.brief_id.label("brief_id"),
+                func.max(BriefResponse.id).label("briefResponseId")
+            )
+            .filter(
+                BriefResponse.supplier_code == supplier_code,
+                BriefResponse.withdrawn_at.is_(None)
+            )
+            .group_by(BriefResponse.brief_id)
+            .subquery()
+        )
+
         responses_query = (
             db
             .session
@@ -79,13 +94,16 @@ class SellerDashboardService(object):
                 Brief.closed_at,
                 Brief.withdrawn_at,
                 Lot.name.label('lotName'),
+                Lot.slug.label('lotSlug'),
                 submitted_response_count_query.c.responseCount,
-                draft_response_count_query.c.draftResponseCount
+                draft_response_count_query.c.draftResponseCount,
+                brief_response_id_query.c.briefResponseId
             )
             .join(Brief, query.c.brief_id == Brief.id)
             .join(Lot)
             .outerjoin(submitted_response_count_query, submitted_response_count_query.c.brief_id == Brief.id)
             .outerjoin(draft_response_count_query, draft_response_count_query.c.brief_id == Brief.id)
+            .outerjoin(brief_response_id_query, brief_response_id_query.c.brief_id == Brief.id)
             .filter(
                 Brief.published_at.isnot(None)
             )
