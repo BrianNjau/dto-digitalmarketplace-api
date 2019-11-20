@@ -135,11 +135,16 @@ def test_get_brief_response(brief_response, client, supplier_user, supplier_doma
             '/2/brief/1/respond/%s' % data['id'],
             data=json.dumps({
                 'submit': True,
+                'specialistGivenNames': 'a',
+                'specialistSurname': 'b',
+                'previouslyWorked': 'x',
+                'visaStatus': 'y',
                 'essentialRequirements': ['ABC', 'XYZ'],
                 'availability': '01/01/2018',
                 'respondToEmailAddress': 'supplier@email.com',
                 'specialistName': 'Test Specialist Name',
                 'dayRate': '100',
+                'dayRateExcludingGST': '91',
                 'attachedDocumentURL': [
                     'test.pdf'
                 ]
@@ -181,11 +186,16 @@ def test_withdraw_brief_response(brief_response,
             '/2/brief/1/respond/%s' % data['id'],
             data=json.dumps({
                 'submit': True,
+                'specialistGivenNames': 'a',
+                'specialistSurname': 'b',
+                'previouslyWorked': 'x',
+                'visaStatus': 'y',
                 'essentialRequirements': ['ABC', 'XYZ'],
                 'availability': '01/01/2018',
                 'respondToEmailAddress': 'supplier@email.com',
                 'specialistName': 'Test Specialist Name',
                 'dayRate': '100',
+                'dayRateExcludingGST': '91',
                 'attachedDocumentURL': [
                     'test.pdf'
                 ]
@@ -209,6 +219,7 @@ def test_withdraw_brief_response(brief_response,
                 'respondToEmailAddress': 'supplier@email.com',
                 'specialistName': 'Test Specialist Name',
                 'dayRate': '100',
+                'dayRateExcludingGST': '91',
             }),
             content_type='application/json'
         )
@@ -243,11 +254,16 @@ def test_withdraw_already_withdrawn_brief_response(brief_response,
             '/2/brief/1/respond/%s' % data['id'],
             data=json.dumps({
                 'submit': True,
+                'specialistGivenNames': 'a',
+                'specialistSurname': 'b',
+                'previouslyWorked': 'x',
+                'visaStatus': 'y',
                 'essentialRequirements': ['ABC', 'XYZ'],
                 'availability': '01/01/2018',
                 'respondToEmailAddress': 'supplier@email.com',
                 'specialistName': 'Test Specialist Name',
                 'dayRate': '100',
+                'dayRateExcludingGST': '91',
                 'attachedDocumentURL': [
                     'test.pdf'
                 ]
@@ -278,6 +294,7 @@ def test_withdraw_already_withdrawn_brief_response(brief_response,
                 'respondToEmailAddress': 'supplier@email.com',
                 'specialistName': 'Test Specialist Name',
                 'dayRate': '100',
+                'dayRateExcludingGST': '91',
             }),
             content_type='application/json'
         )

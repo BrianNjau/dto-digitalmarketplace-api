@@ -14,7 +14,7 @@ from app.models import (Agency, AgencyDomain, Application, Assessment, Brief, Br
                         SupplierFramework, Team, TeamMember, ApiKey,
                         TeamMemberPermission, User, UserFramework, db, utcnow)
 from migrations import load_from_app_model, load_test_fixtures
-from tests.app.helpers import (COMPLETE_DIGITAL_SPECIALISTS_BRIEF,
+from tests.app.helpers import (COMPLETE_SPECIALIST_BRIEF,
                                WSGIApplicationWithEnvironment)
 
 fake = Faker()
@@ -336,9 +336,10 @@ def application_user(app, request, applications):
 def briefs(app, request, users):
     params = request.param if hasattr(request, 'param') else {}
     published_at = pendulum.parse(params['published_at']) if 'published_at' in params else utcnow()
-    data = params['data'] if 'data' in params else COMPLETE_DIGITAL_SPECIALISTS_BRIEF.copy()
-    lot_slug = params['lot_slug'] if 'lot_slug' in params else 'digital-professionals'
-    framework_slug = params['framework_slug'] if 'framework_slug' in params else 'digital-service-professionals'
+    data = params['data'] if 'data' in params else COMPLETE_SPECIALIST_BRIEF.copy()
+    data['sellerCategory'] = params['sellerCategory'] if 'sellerCategory' in params else 1
+    lot_slug = params['lot_slug'] if 'lot_slug' in params else 'specialist'
+    framework_slug = params['framework_slug'] if 'framework_slug' in params else 'digital-marketplace'
     with app.app_context():
         for i in range(1, 6):
             db.session.add(Brief(

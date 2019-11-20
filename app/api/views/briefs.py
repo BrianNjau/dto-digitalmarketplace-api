@@ -112,15 +112,11 @@ def _can_do_brief_response(brief_id, update_only=False):
     rfx_lot = next(iter([l for l in lots if l.slug == 'rfx']), None)
     training2_lot = next(iter([l for l in lots if l.slug == 'training2']), None)
     atm_lot = next(iter([l for l in lots if l.slug == 'atm']), None)
-    training_lot = next(iter([l for l in lots if l.slug == 'training']), None)
-    digital_professional_lot = next(iter([l for l in lots if l.slug == 'digital-professionals']), None)
     specialist_lot = next(iter([l for l in lots if l.slug == 'specialist']), None)
 
     rfx_lot_id = rfx_lot.id if rfx_lot else None
     training2_lot_id = training2_lot.id if training2_lot else None
     atm_lot_id = atm_lot.id if atm_lot else None
-    training_lot_id = training_lot.id if training_lot else None
-    digital_professional_lot_id = digital_professional_lot.id if digital_professional_lot else None
     specialist_lot_id = specialist_lot.id if specialist_lot else None
 
     is_selected = False
@@ -132,7 +128,6 @@ def _can_do_brief_response(brief_id, update_only=False):
     if brief.lot_id in [rfx_lot_id, training2_lot_id]:
         if str(current_user.supplier_code) in brief.data['sellers'].keys():
             is_selected = True
-
     elif brief.lot_id == atm_lot_id:
         if seller_selector == 'allSellers' and len(supplier.assessed_domains) > 0:
             is_selected = True
@@ -145,51 +140,21 @@ def _can_do_brief_response(brief_id, update_only=False):
             str(current_user.supplier_code) in brief.data['sellers'].keys()
         ):
             is_selected = True
-    else:
-        if not seller_selector or seller_selector == 'allSellers':
-            is_selected = True
-        elif seller_selector == 'someSellers':
-            seller_domain_list = [get_email_domain(x).lower() for x in brief.data['sellerEmailList']]
-            if current_user.email_address in brief.data['sellerEmailList'] \
-               or (current_user_domain and current_user_domain.lower() in seller_domain_list):
-                is_selected = True
-        elif seller_selector == 'oneSeller':
-            if (
-                current_user.email_address.lower() == brief.data['sellerEmail'].lower() or
-                (
-                    current_user_domain and
-                    current_user_domain.lower() == get_email_domain(brief.data['sellerEmail'].lower())
-                )
-            ):
-                is_selected = True
+
     if not is_selected:
         forbidden("Supplier not selected for this brief")
 
-    if (len(supplier.frameworks) == 0 or
-            'digital-marketplace' != supplier.frameworks[0].framework.slug):
-
+    if (len(supplier.frameworks) == 0 or 'digital-marketplace' != supplier.frameworks[0].framework.slug):
         abort("Supplier does not have Digital Marketplace framework")
 
     if len(supplier.assessed_domains) == 0:
         abort("Supplier does not have at least one assessed domain")
-    else:
-        if brief.lot_id == training_lot_id:
-            if 'Training, Learning and Development' not in supplier.assessed_domains:
-                abort("Supplier needs to be assessed in 'Training, Learning and Development'")
 
     brief_response_count = brief_responses_service.find(supplier_code=supplier.code,
                                                         brief_id=brief.id,
                                                         withdrawn_at=None).count()
 
-    if brief.lot_id == digital_professional_lot_id:
-        # Check the supplier can respond to the category
-        brief_category = brief.data.get('areaOfExpertise', None)
-        if brief_category and brief_category not in supplier.assessed_domains:
-            abort("Supplier needs to be assessed in '{}'".format(brief_category))
-        # Check if there are more than 3 brief response already from this supplier when professional aka specialists
-        if (brief_response_count > 2):  # TODO magic number
-            abort("There are already 3 brief responses for supplier '{}'".format(supplier.code))
-    elif brief.lot_id == specialist_lot_id:
+    if brief.lot_id == specialist_lot_id:
         brief_category_id = brief.data.get('sellerCategory', None)
         domain = domain_service.get(brief_category_id)
         if domain and domain.name not in supplier.assessed_domains:
