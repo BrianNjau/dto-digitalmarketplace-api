@@ -2440,7 +2440,8 @@ class BriefResponse(db.Model):
         ], else_='submitted')
 
     def submit(self):
-        self.submitted_at = pendulum.now('UTC')
+        if not self.submitted_at:
+            self.submitted_at = pendulum.now('UTC')
 
     @validates('data')
     def validates_data(self, key, data):
