@@ -92,11 +92,50 @@ class BriefResponsesService(Service):
         return [r._asdict() for r in query.all()]
 
     def get_all_attachments(self, brief_id):
+        response_template_query = (
+            db.session.query(BriefResponse.data['responseTemplate'].label('requirements'),
+                             BriefResponse.brief_id.label('brief_id'))
+            .filter(
+                BriefResponse.brief_id == brief_id,
+                BriefResponse.withdrawn_at.is_(None),
+                BriefResponse.submitted_at.isnot(None)
+            )
+            .subquery()
+        )
+
+        written_proposal_query = (
+            db.session.query(BriefResponse.data['writtenProposal'].label('proposal'),
+                             BriefResponse.brief_id.label('brief_id'))
+            .filter(
+                BriefResponse.brief_id == brief_id,
+                BriefResponse.withdrawn_at.is_(None),
+                BriefResponse.submitted_at.isnot(None)
+            )
+            .subquery()
+        )
+
+        resume_query = (
+            db.session.query(BriefResponse.data['resume'].label('resume'),
+                             BriefResponse.brief_id.label('brief_id'))
+            .filter(
+                BriefResponse.brief_id == brief_id,
+                BriefResponse.withdrawn_at.is_(None),
+                BriefResponse.submitted_at.isnot(None)
+            )
+            .subquery()
+        )
+
         query = (
             db.session.query(BriefResponse.data['attachedDocumentURL'].label('attachments'),
+                             response_template_query.c.requirements,
+                             written_proposal_query.c.proposal,
+                             resume_query.c.resume,
                              BriefResponse.supplier_code,
                              Supplier.name.label('supplier_name'))
             .join(Supplier)
+            .outerjoin(response_template_query, response_template_query.c.brief_id == brief_id)
+            .outerjoin(written_proposal_query, written_proposal_query.c.brief_id == brief_id)
+            .outerjoin(resume_query, resume_query.c.brief_id == brief_id)
             .filter(
                 BriefResponse.brief_id == brief_id,
                 BriefResponse.withdrawn_at.is_(None),
@@ -112,6 +151,20 @@ class BriefResponsesService(Service):
                         'supplier_code': response['supplier_code'],
                         'supplier_name': response['supplier_name'],
                         'file_name': attachment
+                    })
+            if 'requirements' in response and response['requirements']:
+                for requirement in response['requirements']:
+                    attachments.append({
+                        'supplier_code': response['supplier_code'],
+                        'supplier_name': response['supplier_name'],
+                        'file_name': requirement
+                    })
+            if 'proposal' in response and response['proposal']:
+                for p in response['proposal']:
+                    attachments.append({
+                        'supplier_code': response['supplier_code'],
+                        'supplier_name': response['supplier_name'],
+                        'file_name': p
                     })
         return attachments
 

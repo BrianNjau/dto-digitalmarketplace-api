@@ -2505,6 +2505,8 @@ class BriefResponse(db.Model):
                 try:
                     self.data['attachedDocumentURL'] = \
                         filter(None, clean(self.data['attachedDocumentURL']))
+                    self.data['responseTemplate'] = \
+                        filter(None, clean(self.data['responseTemplate']))
                 except KeyError:
                     pass
 
@@ -2578,14 +2580,41 @@ class BriefResponse(db.Model):
                 required_fields=required_fields
             )
 
-        if self.brief.lot.slug not in ['digital-outcome', 'atm'] or atm_must_upload_doc():
-            attachedDocumentURL = self.data.get('attachedDocumentURL', [])
-            if attachedDocumentURL:
-                for ad in attachedDocumentURL:
+        attachedDocumentURL = self.data.get('attachedDocumentURL', [])
+        if attachedDocumentURL:
+            for ad in attachedDocumentURL:
+                if not os.path.splitext(ad)[1][1:].lower() in current_app.config.get('ALLOWED_EXTENSIONS'):
+                    errs['attachedDocumentURL'] = 'file_incorrect_format'
+        if atm_must_upload_doc():
+            writtenProposal = self.data.get('writtenProposal', [])
+            if writtenProposal:
+                for ad in writtenProposal:
                     if not os.path.splitext(ad)[1][1:].lower() in current_app.config.get('ALLOWED_EXTENSIONS'):
-                        errs['attachedDocumentURL'] = 'file_incorrect_format'
+                        errs['writtenProposal'] = 'file_incorrect_format'
             else:
-                errs['attachedDocumentURL'] = 'answer_required'
+                errs['writtenProposal'] = 'answer_required'
+        if self.brief.lot.slug == 'specialist':
+            resume = self.data.get('resume', [])
+            if resume:
+                for ad in resume:
+                    if not os.path.splitext(ad)[1][1:].lower() in current_app.config.get('ALLOWED_EXTENSIONS'):
+                        errs['resume'] = 'file_incorrect_format'
+            else:
+                errs['resume'] = 'answer_required'
+        if self.brief.lot.slug == 'rfx':
+            responseTemplate = self.data.get('responseTemplate', [])
+            writtenProposal = self.data.get('writtenProposal', [])
+            if responseTemplate:
+                for ad in responseTemplate:
+                    if not os.path.splitext(ad)[1][1:].lower() in current_app.config.get('ALLOWED_EXTENSIONS'):
+                        errs['responseTemplate'] = 'file_incorrect_format'
+            if writtenProposal:
+                for ad in writtenProposal:
+                    if not os.path.splitext(ad)[1][1:].lower() in current_app.config.get('ALLOWED_EXTENSIONS'):
+                        errs['writtenProposal'] = 'file_incorrect_format'
+            if not writtenProposal and not responseTemplate:
+                errs['writtenProposal'] = 'answer_required'
+                errs['responseTemplate'] = 'answer_required'
 
         if (
             self.brief.lot.slug not in ['training', 'rfx', 'training2', 'atm'] and

@@ -145,6 +145,7 @@ def test_get_brief_response(brief_response, client, supplier_user, supplier_doma
                 'specialistName': 'Test Specialist Name',
                 'dayRate': '100',
                 'dayRateExcludingGST': '91',
+                'resume': ['resume.pdf'],
                 'attachedDocumentURL': [
                     'test.pdf'
                 ]
@@ -196,6 +197,7 @@ def test_withdraw_brief_response(brief_response,
                 'specialistName': 'Test Specialist Name',
                 'dayRate': '100',
                 'dayRateExcludingGST': '91',
+                'resume': ['resume.pdf'],
                 'attachedDocumentURL': [
                     'test.pdf'
                 ]
@@ -264,6 +266,7 @@ def test_withdraw_already_withdrawn_brief_response(brief_response,
                 'specialistName': 'Test Specialist Name',
                 'dayRate': '100',
                 'dayRateExcludingGST': '91',
+                'resume': ['resume.pdf'],
                 'attachedDocumentURL': [
                     'test.pdf'
                 ]
@@ -392,6 +395,7 @@ def test_rfx_invited_seller_can_respond(brief_response,
         data=json.dumps({
             'submit': True,
             'respondToEmailAddress': 'supplier@email.com',
+            'responseTemplate': ['response.pdf'],
             'attachedDocumentURL': [
                 'test.pdf'
             ]
@@ -745,6 +749,7 @@ def test_atm_seller_success_with_file(brief_response, brief, client, suppliers, 
             'submit': True,
             'respondToEmailAddress': 'supplier@email.com',
             'respondToPhone': '0263636363',
+            'writtenProposal': ['proposal.pdf'],
             'attachedDocumentURL': ['TEST.pdf'],
             'criteria': {
                 'TEST': 'bla bla',

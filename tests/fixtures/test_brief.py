@@ -172,6 +172,7 @@ def test_save_draft_brief_response(brief_response,
             'specialistName': 'Test Specialist Name',
             'dayRate': '100',
             'dayRateExcludingGST': '91',
+            'resume': ['resume.pdf'],
             'attachedDocumentURL': [
                 'test.pdf'
             ]
@@ -249,6 +250,7 @@ def test_cannot_respond_to_a_brief_with_wrong_number_of_essential_reqs(client, s
             'specialistName': 'Test Specialist Name',
             'dayRate': '100',
             'dayRateExcludingGST': '91',
+            'resume': ['resume.pdf'],
             'attachedDocumentURL': [
                 'test.pdf'
             ]
@@ -289,6 +291,7 @@ def test_create_brief_response_success_with_audit_exception(brief_response,
             'specialistName': 'Test Specialist Name',
             'dayRate': '100',
             'dayRateExcludingGST': '91',
+            'resume': ['resume.pdf'],
             'attachedDocumentURL': [
                 'test.pdf'
             ]
@@ -329,6 +332,7 @@ def test_create_brief_response_fail_with_incorrect_attachment(client, supplier_u
             'specialistName': 'Test Specialist Name',
             'dayRate': '100',
             'dayRateExcludingGST': '91',
+            'resume': ['resume.pdf'],
             'attachedDocumentURL': [[{}]]
         }),
         content_type='application/json'
@@ -349,6 +353,7 @@ def test_create_brief_response_fail_with_incorrect_attachment(client, supplier_u
             'specialistName': 'Test Specialist Name',
             'dayRate': '100',
             'dayRateExcludingGST': '91',
+            'resume': ['resume.pdf'],
             'attachedDocumentURL': ['test.exe']
         }),
         content_type='application/json'

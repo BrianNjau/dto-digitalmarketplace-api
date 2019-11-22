@@ -1217,6 +1217,24 @@ def update_brief_response(brief_id, brief_response_id):
                 if e.message['attachedDocumentURL'] == 'file_incorrect_format':
                     message = "Uploaded documents are in the wrong format"
                 del e.message['attachedDocumentURL']
+            if 'resume' in e.message:
+                if e.message['resume'] == 'answer_required':
+                    message = "Documents must be uploaded"
+                if e.message['resume'] == 'file_incorrect_format':
+                    message = "Uploaded documents are in the wrong format"
+                del e.message['resume']
+            if 'responseTemplate' in e.message:
+                if e.message['responseTemplate'] == 'answer_required':
+                    message = "Documents must be uploaded"
+                if e.message['responseTemplate'] == 'file_incorrect_format':
+                    message = "Uploaded documents are in the wrong format"
+                del e.message['responseTemplate']
+            if 'writtenProposal' in e.message:
+                if e.message['writtenProposal'] == 'answer_required':
+                    message = "Documents must be uploaded"
+                if e.message['writtenProposal'] == 'file_incorrect_format':
+                    message = "Uploaded documents are in the wrong format"
+                del e.message['writtenProposal']
             if 'criteria' in e.message and e.message['criteria'] == 'answer_required':
                 message = "Criteria must be completed"
 
