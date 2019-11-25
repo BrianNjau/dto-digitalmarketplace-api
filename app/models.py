@@ -2417,10 +2417,31 @@ class BriefResponse(db.Model):
     supplier_code = db.Column(db.BigInteger, db.ForeignKey('supplier.code'), nullable=False)
 
     created_at = db.Column(DateTime, index=True, nullable=False, default=utcnow)
+    updated_at = db.Column(DateTime, index=True, nullable=True, default=utcnow, onupdate=utcnow)
+    submitted_at = db.Column(DateTime, index=True, nullable=True)
     withdrawn_at = db.Column(DateTime, index=True, nullable=True)
 
     brief = db.relationship('Brief')
     supplier = db.relationship('Supplier', lazy='joined')
+
+    @hybrid_property
+    def status(self):
+        if not self.submitted_at:
+            return 'draft'
+        if self.withdrawn_at:
+            return 'withdrawn'
+        return 'submitted'
+
+    @status.expression
+    def status(cls):
+        return sql_case([
+            (cls.submitted_at.is_(None), 'draft'),
+            (cls.withdrawn_at.isnot(None), 'withdrawn'),
+        ], else_='submitted')
+
+    def submit(self):
+        if not self.submitted_at:
+            self.submitted_at = pendulum.now('UTC')
 
     @validates('data')
     def validates_data(self, key, data):
@@ -2484,6 +2505,8 @@ class BriefResponse(db.Model):
                 try:
                     self.data['attachedDocumentURL'] = \
                         filter(None, clean(self.data['attachedDocumentURL']))
+                    self.data['responseTemplate'] = \
+                        filter(None, clean(self.data['responseTemplate']))
                 except KeyError:
                     pass
 
@@ -2557,14 +2580,41 @@ class BriefResponse(db.Model):
                 required_fields=required_fields
             )
 
-        if self.brief.lot.slug not in ['digital-outcome', 'atm'] or atm_must_upload_doc():
-            attachedDocumentURL = self.data.get('attachedDocumentURL', [])
-            if attachedDocumentURL:
-                for ad in attachedDocumentURL:
+        attachedDocumentURL = self.data.get('attachedDocumentURL', [])
+        if attachedDocumentURL:
+            for ad in attachedDocumentURL:
+                if not os.path.splitext(ad)[1][1:].lower() in current_app.config.get('ALLOWED_EXTENSIONS'):
+                    errs['attachedDocumentURL'] = 'file_incorrect_format'
+        if atm_must_upload_doc():
+            writtenProposal = self.data.get('writtenProposal', [])
+            if writtenProposal:
+                for ad in writtenProposal:
                     if not os.path.splitext(ad)[1][1:].lower() in current_app.config.get('ALLOWED_EXTENSIONS'):
-                        errs['attachedDocumentURL'] = 'file_incorrect_format'
+                        errs['writtenProposal'] = 'file_incorrect_format'
             else:
-                errs['attachedDocumentURL'] = 'answer_required'
+                errs['writtenProposal'] = 'answer_required'
+        if self.brief.lot.slug == 'specialist':
+            resume = self.data.get('resume', [])
+            if resume:
+                for ad in resume:
+                    if not os.path.splitext(ad)[1][1:].lower() in current_app.config.get('ALLOWED_EXTENSIONS'):
+                        errs['resume'] = 'file_incorrect_format'
+            else:
+                errs['resume'] = 'answer_required'
+        if self.brief.lot.slug == 'rfx':
+            responseTemplate = self.data.get('responseTemplate', [])
+            writtenProposal = self.data.get('writtenProposal', [])
+            if responseTemplate:
+                for ad in responseTemplate:
+                    if not os.path.splitext(ad)[1][1:].lower() in current_app.config.get('ALLOWED_EXTENSIONS'):
+                        errs['responseTemplate'] = 'file_incorrect_format'
+            if writtenProposal:
+                for ad in writtenProposal:
+                    if not os.path.splitext(ad)[1][1:].lower() in current_app.config.get('ALLOWED_EXTENSIONS'):
+                        errs['writtenProposal'] = 'file_incorrect_format'
+            if not writtenProposal and not responseTemplate:
+                errs['writtenProposal'] = 'answer_required'
+                errs['responseTemplate'] = 'answer_required'
 
         if (
             self.brief.lot.slug not in ['training', 'rfx', 'training2', 'atm'] and
@@ -2615,7 +2665,10 @@ class BriefResponse(db.Model):
             'briefId': self.brief_id,
             'supplierCode': self.supplier_code,
             'supplierName': self.supplier.name,
+            'status': self.status,
             'createdAt': self.created_at.to_iso8601_string(extended=True),
+            'updatedAt': self.updated_at.to_iso8601_string(extended=True),
+            'submittedAt': self.submitted_at.to_iso8601_string(extended=True) if self.submitted_at else None,
             'links': {
                 'self': url_for('.get_brief_response', brief_response_id=self.id),
                 'brief': url_for('.get_brief', brief_id=self.brief_id),

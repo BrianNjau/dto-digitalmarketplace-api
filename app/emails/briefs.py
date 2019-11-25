@@ -509,7 +509,7 @@ def send_specialist_brief_closed_email(brief):
     if (audit_event > 0):
         return
 
-    responses = brief_responses_service.find(brief_id=brief.id).all()
+    responses = brief_responses_service.get_brief_responses(brief.id, None, submitted_only=True)
     to_addresses = get_brief_emails(brief)
 
     # prepare copy

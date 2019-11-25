@@ -3,7 +3,9 @@ import pytest
 import mock
 from app import encryption
 from app.models import db, utcnow, Supplier, SupplierFramework, Contact, SupplierDomain, User,\
-    Framework, UserFramework, AuditEvent
+    Framework, UserFramework, AuditEvent, BriefResponse
+from app.api.services import brief_responses_service
+from tests.app.helpers import COMPLETE_SPECIALIST_BRIEF
 from faker import Faker
 from dmapiclient.audit import AuditTypes
 import pendulum
@@ -17,7 +19,7 @@ def suppliers(app, request):
         for i in range(1, 6):
             db.session.add(Supplier(
                 abn=i,
-                code=(i),
+                code=i,
                 name='Test Supplier{}'.format(i),
                 contacts=[Contact(name='auth rep', email='auth@rep.com')],
                 data={
@@ -119,6 +121,155 @@ def supplier_user(app, request, suppliers):
         yield User.query.first()
 
 
+@pytest.fixture()
+def supplier_users(app, request, suppliers):
+    with app.app_context():
+        i = 102
+        for supplier in suppliers:
+            db.session.add(User(
+                id=i,
+                email_address='j@examplecompany%s.biz' % i,
+                name=fake.name(),
+                password=encryption.hashpw('testpassword'),
+                active=True,
+                role='supplier',
+                supplier_code=supplier.code,
+                password_changed_at=utcnow()
+            ))
+            db.session.flush()
+            framework = Framework.query.filter(Framework.slug == "digital-marketplace").first()
+            db.session.add(UserFramework(user_id=i, framework_id=framework.id))
+            i += 1
+
+        db.session.commit()
+        yield User.query.filter(User.role == 'supplier').all()
+
+
+@pytest.fixture()
+def brief_responses_specialist(app, request, supplier_users):
+    with app.app_context():
+        response_id = 1
+        for supplier_user in supplier_users:
+            for i in range(1, 4):
+                db.session.add(BriefResponse(
+                    id=response_id,
+                    brief_id=1,
+                    supplier_code=supplier_user.supplier_code,
+                    submitted_at=pendulum.now(),
+                    data={
+                        'specialistGivenNames': 'a',
+                        'specialistSurname': 'b',
+                        'previouslyWorked': 'x',
+                        'visaStatus': 'y',
+                        'essentialRequirements': ['ABC', 'XYZ'],
+                        'availability': '01/01/2018',
+                        'respondToEmailAddress': 'supplier@email.com',
+                        'specialistName': 'Test Specialist Name',
+                        'dayRate': '100',
+                        'dayRateExcludingGST': '91',
+                        'resume': ['resume-%s-%s.pdf' % (supplier_user.id, i)],
+                        'attachedDocumentURL': [
+                            'test-%s-%s.pdf' % (supplier_user.id, i), 'test-2-%s-%s.pdf' % (supplier_user.id, i)
+                        ]
+                    }
+                ))
+                i += 1
+                response_id += 1
+            db.session.flush()
+
+        db.session.commit()
+        yield BriefResponse.query.all()
+
+
+@pytest.fixture()
+def brief_responses_rfx(app, request, supplier_users):
+    with app.app_context():
+        response_id = 1
+        for supplier_user in supplier_users:
+            for i in range(1, 4):
+                db.session.add(BriefResponse(
+                    id=response_id,
+                    brief_id=1,
+                    supplier_code=supplier_user.supplier_code,
+                    submitted_at=pendulum.now(),
+                    data={
+                        'respondToEmailAddress': 'supplier@email.com',
+                        'responseTemplate': ['response-%s-%s.pdf' % (supplier_user.id, i)],
+                        'attachedDocumentURL': [
+                            'test-%s-%s.pdf' % (supplier_user.id, i),
+                            'test-2-%s-%s.pdf' % (supplier_user.id, i)
+                        ]
+                    }
+                ))
+                i += 1
+                response_id += 1
+            db.session.flush()
+
+        db.session.commit()
+        yield BriefResponse.query.all()
+
+
+@pytest.fixture()
+def brief_responses_rfx_with_proposal(app, request, supplier_users):
+    with app.app_context():
+        response_id = 1
+        for supplier_user in supplier_users:
+            for i in range(1, 4):
+                db.session.add(BriefResponse(
+                    id=response_id,
+                    brief_id=1,
+                    supplier_code=supplier_user.supplier_code,
+                    submitted_at=pendulum.now(),
+                    data={
+                        'respondToEmailAddress': 'supplier@email.com',
+                        'writtenProposal': ['proposal-%s-%s.pdf' % (supplier_user.id, i)],
+                        'attachedDocumentURL': [
+                            'test-%s-%s.pdf' % (supplier_user.id, i),
+                            'test-2-%s-%s.pdf' % (supplier_user.id, i)
+                        ]
+                    }
+                ))
+                i += 1
+                response_id += 1
+            db.session.flush()
+
+        db.session.commit()
+        yield BriefResponse.query.all()
+
+
+@pytest.fixture()
+def brief_responses_atm(app, request, supplier_users):
+    with app.app_context():
+        response_id = 1
+        for supplier_user in supplier_users:
+            for i in range(1, 4):
+                db.session.add(BriefResponse(
+                    id=response_id,
+                    brief_id=1,
+                    supplier_code=supplier_user.supplier_code,
+                    submitted_at=pendulum.now(),
+                    data={
+                        'respondToEmailAddress': 'supplier@email.com',
+                        'respondToPhone': '0263636363',
+                        'writtenProposal': ['proposal-%s-%s.pdf' % (supplier_user.id, i)],
+                        'attachedDocumentURL': [
+                            'test-%s-%s.pdf' % (supplier_user.id, i),
+                            'test-2-%s-%s.pdf' % (supplier_user.id, i)
+                        ],
+                        'criteria': {
+                            'TEST': 'bla bla',
+                            'TEST 2': 'bla bla'
+                        }
+                    }
+                ))
+                i += 1
+                response_id += 1
+            db.session.flush()
+
+        db.session.commit()
+        yield BriefResponse.query.all()
+
+
 @mock.patch('app.tasks.publish_tasks.brief_response')
 def test_get_brief_response(brief_response, client, supplier_user, supplier_domains, briefs, assessments, suppliers):
     res = client.post('/2/login', data=json.dumps({
@@ -127,21 +278,32 @@ def test_get_brief_response(brief_response, client, supplier_user, supplier_doma
     assert res.status_code == 200
 
     for i in range(1, 3):
-        res = client.post(
-            '/2/brief/1/respond',
+        res = client.post('/2/brief/1/respond')
+        assert res.status_code == 201
+        data = json.loads(res.get_data(as_text=True))
+
+        res = client.patch(
+            '/2/brief/1/respond/%s' % data['id'],
             data=json.dumps({
+                'submit': True,
+                'specialistGivenNames': 'a',
+                'specialistSurname': 'b',
+                'previouslyWorked': 'x',
+                'visaStatus': 'y',
                 'essentialRequirements': ['ABC', 'XYZ'],
                 'availability': '01/01/2018',
                 'respondToEmailAddress': 'supplier@email.com',
                 'specialistName': 'Test Specialist Name',
                 'dayRate': '100',
+                'dayRateExcludingGST': '91',
+                'resume': ['resume.pdf'],
                 'attachedDocumentURL': [
                     'test.pdf'
                 ]
             }),
             content_type='application/json'
         )
-        assert res.status_code == 201
+        assert res.status_code == 200
         assert brief_response.delay.called is True
 
         res = client.get(
@@ -168,21 +330,32 @@ def test_withdraw_brief_response(brief_response,
 
     # this should continue working because the response has been withdrawn
     for i in range(1, 10):
-        res = client.post(
-            '/2/brief/1/respond',
+        res = client.post('/2/brief/1/respond')
+        assert res.status_code == 201
+        data = json.loads(res.get_data(as_text=True))
+
+        res = client.patch(
+            '/2/brief/1/respond/%s' % data['id'],
             data=json.dumps({
+                'submit': True,
+                'specialistGivenNames': 'a',
+                'specialistSurname': 'b',
+                'previouslyWorked': 'x',
+                'visaStatus': 'y',
                 'essentialRequirements': ['ABC', 'XYZ'],
                 'availability': '01/01/2018',
                 'respondToEmailAddress': 'supplier@email.com',
                 'specialistName': 'Test Specialist Name',
                 'dayRate': '100',
+                'dayRateExcludingGST': '91',
+                'resume': ['resume.pdf'],
                 'attachedDocumentURL': [
                     'test.pdf'
                 ]
             }),
             content_type='application/json'
         )
-        assert res.status_code == 201
+        assert res.status_code == 200
         assert brief_response.delay.called is True
 
         res = client.get(
@@ -199,6 +372,7 @@ def test_withdraw_brief_response(brief_response,
                 'respondToEmailAddress': 'supplier@email.com',
                 'specialistName': 'Test Specialist Name',
                 'dayRate': '100',
+                'dayRateExcludingGST': '91',
             }),
             content_type='application/json'
         )
@@ -225,21 +399,32 @@ def test_withdraw_already_withdrawn_brief_response(brief_response,
     assert res.status_code == 200
 
     for i in range(1, 3):
-        res = client.post(
-            '/2/brief/1/respond',
+        res = client.post('/2/brief/1/respond')
+        assert res.status_code == 201
+        data = json.loads(res.get_data(as_text=True))
+
+        res = client.patch(
+            '/2/brief/1/respond/%s' % data['id'],
             data=json.dumps({
+                'submit': True,
+                'specialistGivenNames': 'a',
+                'specialistSurname': 'b',
+                'previouslyWorked': 'x',
+                'visaStatus': 'y',
                 'essentialRequirements': ['ABC', 'XYZ'],
                 'availability': '01/01/2018',
                 'respondToEmailAddress': 'supplier@email.com',
                 'specialistName': 'Test Specialist Name',
                 'dayRate': '100',
+                'dayRateExcludingGST': '91',
+                'resume': ['resume.pdf'],
                 'attachedDocumentURL': [
                     'test.pdf'
                 ]
             }),
             content_type='application/json'
         )
-        assert res.status_code == 201
+        assert res.status_code == 200
         assert brief_response.delay.called is True
 
         res = client.put(
@@ -263,6 +448,7 @@ def test_withdraw_already_withdrawn_brief_response(brief_response,
                 'respondToEmailAddress': 'supplier@email.com',
                 'specialistName': 'Test Specialist Name',
                 'dayRate': '100',
+                'dayRateExcludingGST': '91',
             }),
             content_type='application/json'
         )
@@ -351,17 +537,23 @@ def test_rfx_invited_seller_can_respond(brief_response,
     }), content_type='application/json')
     assert res.status_code == 200
 
-    res = client.post(
-        '/2/brief/1/respond',
+    res = client.post('/2/brief/1/respond')
+    assert res.status_code == 201
+    data = json.loads(res.get_data(as_text=True))
+
+    res = client.patch(
+        '/2/brief/1/respond/%s' % data['id'],
         data=json.dumps({
+            'submit': True,
             'respondToEmailAddress': 'supplier@email.com',
+            'responseTemplate': ['response.pdf'],
             'attachedDocumentURL': [
                 'test.pdf'
             ]
         }),
         content_type='application/json'
     )
-    assert res.status_code == 201
+    assert res.status_code == 200
     assert brief_response.delay.called is True
 
 
@@ -389,17 +581,7 @@ def test_rfx_non_invited_seller_can_not_respond(brief, client, suppliers, suppli
     }), content_type='application/json')
     assert res.status_code == 200
 
-    res = client.post(
-        '/2/brief/1/respond',
-        data=json.dumps({
-            'respondToEmailAddress': 'supplier@email.com',
-            'respondToPhone': '0263636363',
-            'attachedDocumentURL': [
-                'test.pdf'
-            ]
-        }),
-        content_type='application/json'
-    )
+    res = client.post('/2/brief/1/respond')
     assert res.status_code == 403
 
 
@@ -464,9 +646,14 @@ def test_atm_invited_seller_can_respond_open_to_all(brief_response, brief, clien
     }), content_type='application/json')
     assert res.status_code == 200
 
-    res = client.post(
-        '/2/brief/1/respond',
+    res = client.post('/2/brief/1/respond')
+    assert res.status_code == 201
+    data = json.loads(res.get_data(as_text=True))
+
+    res = client.patch(
+        '/2/brief/1/respond/%s' % data['id'],
         data=json.dumps({
+            'submit': True,
             'respondToEmailAddress': 'supplier@email.com',
             'criteria': {
                 'TEST': 'bla bla',
@@ -475,7 +662,7 @@ def test_atm_invited_seller_can_respond_open_to_all(brief_response, brief, clien
         }),
         content_type='application/json'
     )
-    assert res.status_code == 201
+    assert res.status_code == 200
     assert brief_response.delay.called is True
 
 
@@ -503,9 +690,14 @@ def test_atm_seller_can_respond_open_to_category(brief_response, brief, client, 
     }), content_type='application/json')
     assert res.status_code == 200
 
-    res = client.post(
-        '/2/brief/1/respond',
+    res = client.post('/2/brief/1/respond')
+    assert res.status_code == 201
+    data = json.loads(res.get_data(as_text=True))
+
+    res = client.patch(
+        '/2/brief/1/respond/%s' % data['id'],
         data=json.dumps({
+            'submit': True,
             'respondToEmailAddress': 'supplier@email.com',
             'criteria': {
                 'TEST': 'bla bla',
@@ -514,7 +706,7 @@ def test_atm_seller_can_respond_open_to_category(brief_response, brief, client, 
         }),
         content_type='application/json'
     )
-    assert res.status_code == 201
+    assert res.status_code == 200
     assert brief_response.delay.called is True
 
 
@@ -542,18 +734,7 @@ def test_atm_seller_can_not_respond_open_to_category(brief_response, brief, clie
     }), content_type='application/json')
     assert res.status_code == 200
 
-    res = client.post(
-        '/2/brief/1/respond',
-        data=json.dumps({
-            'respondToEmailAddress': 'supplier@email.com',
-            'respondToPhone': '0263636363',
-            'criteria': {
-                'TEST': 'bla bla',
-                'TEST 2': 'bla bla'
-            }
-        }),
-        content_type='application/json'
-    )
+    res = client.post('/2/brief/1/respond')
     assert res.status_code == 403
 
 
@@ -579,9 +760,14 @@ def test_atm_seller_failed_missing_criteria(brief_response, brief, client, suppl
     }), content_type='application/json')
     assert res.status_code == 200
 
-    res = client.post(
-        '/2/brief/1/respond',
+    res = client.post('/2/brief/1/respond')
+    assert res.status_code == 201
+    data = json.loads(res.get_data(as_text=True))
+
+    res = client.patch(
+        '/2/brief/1/respond/%s' % data['id'],
         data=json.dumps({
+            'submit': True,
             'respondToEmailAddress': 'supplier@email.com',
             'respondToPhone': '0263636363',
             'criteria': {
@@ -615,9 +801,14 @@ def test_atm_seller_failed_empty_criteria(brief_response, brief, client, supplie
     }), content_type='application/json')
     assert res.status_code == 200
 
-    res = client.post(
-        '/2/brief/1/respond',
+    res = client.post('/2/brief/1/respond')
+    assert res.status_code == 201
+    data = json.loads(res.get_data(as_text=True))
+
+    res = client.patch(
+        '/2/brief/1/respond/%s' % data['id'],
         data=json.dumps({
+            'submit': True,
             'respondToEmailAddress': 'supplier@email.com',
             'respondToPhone': '0263636363',
             'criteria': {
@@ -655,9 +846,14 @@ def test_atm_seller_failed_missing_file(brief_response, brief, client, suppliers
     }), content_type='application/json')
     assert res.status_code == 200
 
-    res = client.post(
-        '/2/brief/1/respond',
+    res = client.post('/2/brief/1/respond')
+    assert res.status_code == 201
+    data = json.loads(res.get_data(as_text=True))
+
+    res = client.patch(
+        '/2/brief/1/respond/%s' % data['id'],
         data=json.dumps({
+            'submit': True,
             'respondToEmailAddress': 'supplier@email.com',
             'respondToPhone': '0263636363',
             'criteria': {
@@ -694,11 +890,17 @@ def test_atm_seller_success_with_file(brief_response, brief, client, suppliers, 
     }), content_type='application/json')
     assert res.status_code == 200
 
-    res = client.post(
-        '/2/brief/1/respond',
+    res = client.post('/2/brief/1/respond')
+    assert res.status_code == 201
+    data = json.loads(res.get_data(as_text=True))
+
+    res = client.patch(
+        '/2/brief/1/respond/%s' % data['id'],
         data=json.dumps({
+            'submit': True,
             'respondToEmailAddress': 'supplier@email.com',
             'respondToPhone': '0263636363',
+            'writtenProposal': ['proposal.pdf'],
             'attachedDocumentURL': ['TEST.pdf'],
             'criteria': {
                 'TEST': 'bla bla',
@@ -707,5 +909,81 @@ def test_atm_seller_success_with_file(brief_response, brief, client, suppliers, 
         }),
         content_type='application/json'
     )
-    assert res.status_code == 201
+    assert res.status_code == 200
     assert brief_response.delay.called is True
+
+
+@mock.patch('app.tasks.publish_tasks.brief')
+@mock.patch('app.tasks.publish_tasks.brief_response')
+def test_brief_responses_get_attachments_specialist(app, client, suppliers, supplier_domains,
+                                                    specialist_brief, brief_responses_specialist, supplier_users):
+    attachments = brief_responses_service.get_all_attachments(1)
+    assert len(attachments) == 45
+    i = 1
+    for supplier_user in supplier_users:
+        user_attachments = [x['file_name'] for x in attachments if x['supplier_code'] == supplier_user.supplier_code]
+        for i in range(1, 4):
+            assert 'test-%s-%s.pdf' % (supplier_user.id, i) in user_attachments
+            assert 'test-2-%s-%s.pdf' % (supplier_user.id, i) in user_attachments
+            assert 'resume-%s-%s.pdf' % (supplier_user.id, i) in user_attachments
+
+
+@mock.patch('app.tasks.publish_tasks.brief')
+@mock.patch('app.tasks.publish_tasks.brief_response')
+def test_brief_responses_get_attachments_rfx(app, client, suppliers, supplier_domains,
+                                             rfx_brief, brief_responses_rfx, supplier_users):
+    attachments = brief_responses_service.get_all_attachments(1)
+    assert len(attachments) == 45
+    i = 1
+    for supplier_user in supplier_users:
+        user_attachments = [x['file_name'] for x in attachments if x['supplier_code'] == supplier_user.supplier_code]
+        for i in range(1, 4):
+            assert 'test-%s-%s.pdf' % (supplier_user.id, i) in user_attachments
+            assert 'test-2-%s-%s.pdf' % (supplier_user.id, i) in user_attachments
+            assert 'response-%s-%s.pdf' % (supplier_user.id, i) in user_attachments
+
+
+@mock.patch('app.tasks.publish_tasks.brief')
+@mock.patch('app.tasks.publish_tasks.brief_response')
+def test_brief_responses_get_attachments_rfx_with_proposal(app, client, suppliers, supplier_domains,
+                                                           rfx_brief, brief_responses_rfx_with_proposal,
+                                                           supplier_users):
+    attachments = brief_responses_service.get_all_attachments(1)
+    assert len(attachments) == 45
+    i = 1
+    for supplier_user in supplier_users:
+        user_attachments = [x['file_name'] for x in attachments if x['supplier_code'] == supplier_user.supplier_code]
+        for i in range(1, 4):
+            assert 'test-%s-%s.pdf' % (supplier_user.id, i) in user_attachments
+            assert 'test-2-%s-%s.pdf' % (supplier_user.id, i) in user_attachments
+            assert 'proposal-%s-%s.pdf' % (supplier_user.id, i) in user_attachments
+
+
+@mock.patch('app.tasks.publish_tasks.brief')
+@mock.patch('app.tasks.publish_tasks.brief_response')
+def test_brief_responses_get_attachments_atm(app, client, suppliers, supplier_domains,
+                                             atm_brief, brief_responses_atm, supplier_users):
+    attachments = brief_responses_service.get_all_attachments(1)
+    assert len(attachments) == 45
+    i = 1
+    for supplier_user in supplier_users:
+        user_attachments = [x['file_name'] for x in attachments if x['supplier_code'] == supplier_user.supplier_code]
+        for i in range(1, 4):
+            assert 'test-%s-%s.pdf' % (supplier_user.id, i) in user_attachments
+            assert 'test-2-%s-%s.pdf' % (supplier_user.id, i) in user_attachments
+            assert 'proposal-%s-%s.pdf' % (supplier_user.id, i) in user_attachments
+
+
+@mock.patch('app.tasks.publish_tasks.brief')
+@mock.patch('app.tasks.publish_tasks.brief_response')
+def test_brief_responses_get_attachments_training2(app, client, suppliers, supplier_domains,
+                                                   training2_brief, brief_responses_rfx, supplier_users):
+    attachments = brief_responses_service.get_all_attachments(1)
+    assert len(attachments) == 45
+    i = 1
+    for supplier_user in supplier_users:
+        user_attachments = [x['file_name'] for x in attachments if x['supplier_code'] == supplier_user.supplier_code]
+        for i in range(1, 4):
+            assert 'test-%s-%s.pdf' % (supplier_user.id, i) in user_attachments
+            assert 'test-2-%s-%s.pdf' % (supplier_user.id, i) in user_attachments
+            assert 'response-%s-%s.pdf' % (supplier_user.id, i) in user_attachments
