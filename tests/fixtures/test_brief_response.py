@@ -181,6 +181,95 @@ def brief_responses_specialist(app, request, supplier_users):
         yield BriefResponse.query.all()
 
 
+@pytest.fixture()
+def brief_responses_rfx(app, request, supplier_users):
+    with app.app_context():
+        response_id = 1
+        for supplier_user in supplier_users:
+            for i in range(1, 4):
+                db.session.add(BriefResponse(
+                    id=response_id,
+                    brief_id=1,
+                    supplier_code=supplier_user.supplier_code,
+                    submitted_at=pendulum.now(),
+                    data={
+                        'respondToEmailAddress': 'supplier@email.com',
+                        'responseTemplate': ['response-%s-%s.pdf' % (supplier_user.id, i)],
+                        'attachedDocumentURL': [
+                            'test-%s-%s.pdf' % (supplier_user.id, i),
+                            'test-2-%s-%s.pdf' % (supplier_user.id, i)
+                        ]
+                    }
+                ))
+                i += 1
+                response_id += 1
+            db.session.flush()
+
+        db.session.commit()
+        yield BriefResponse.query.all()
+
+
+@pytest.fixture()
+def brief_responses_rfx_with_proposal(app, request, supplier_users):
+    with app.app_context():
+        response_id = 1
+        for supplier_user in supplier_users:
+            for i in range(1, 4):
+                db.session.add(BriefResponse(
+                    id=response_id,
+                    brief_id=1,
+                    supplier_code=supplier_user.supplier_code,
+                    submitted_at=pendulum.now(),
+                    data={
+                        'respondToEmailAddress': 'supplier@email.com',
+                        'writtenProposal': ['proposal-%s-%s.pdf' % (supplier_user.id, i)],
+                        'attachedDocumentURL': [
+                            'test-%s-%s.pdf' % (supplier_user.id, i),
+                            'test-2-%s-%s.pdf' % (supplier_user.id, i)
+                        ]
+                    }
+                ))
+                i += 1
+                response_id += 1
+            db.session.flush()
+
+        db.session.commit()
+        yield BriefResponse.query.all()
+
+
+@pytest.fixture()
+def brief_responses_atm(app, request, supplier_users):
+    with app.app_context():
+        response_id = 1
+        for supplier_user in supplier_users:
+            for i in range(1, 4):
+                db.session.add(BriefResponse(
+                    id=response_id,
+                    brief_id=1,
+                    supplier_code=supplier_user.supplier_code,
+                    submitted_at=pendulum.now(),
+                    data={
+                        'respondToEmailAddress': 'supplier@email.com',
+                        'respondToPhone': '0263636363',
+                        'writtenProposal': ['proposal-%s-%s.pdf' % (supplier_user.id, i)],
+                        'attachedDocumentURL': [
+                            'test-%s-%s.pdf' % (supplier_user.id, i),
+                            'test-2-%s-%s.pdf' % (supplier_user.id, i)
+                        ],
+                        'criteria': {
+                            'TEST': 'bla bla',
+                            'TEST 2': 'bla bla'
+                        }
+                    }
+                ))
+                i += 1
+                response_id += 1
+            db.session.flush()
+
+        db.session.commit()
+        yield BriefResponse.query.all()
+
+
 @mock.patch('app.tasks.publish_tasks.brief_response')
 def test_get_brief_response(brief_response, client, supplier_user, supplier_domains, briefs, assessments, suppliers):
     res = client.post('/2/login', data=json.dumps({
@@ -826,7 +915,7 @@ def test_atm_seller_success_with_file(brief_response, brief, client, suppliers, 
 
 @mock.patch('app.tasks.publish_tasks.brief')
 @mock.patch('app.tasks.publish_tasks.brief_response')
-def test_brief_responses_get_attachments_specialist(app, brief_response, client, suppliers, supplier_domains,
+def test_brief_responses_get_attachments_specialist(app, client, suppliers, supplier_domains,
                                                     specialist_brief, brief_responses_specialist, supplier_users):
     attachments = brief_responses_service.get_all_attachments(1)
     assert len(attachments) == 45
@@ -837,3 +926,64 @@ def test_brief_responses_get_attachments_specialist(app, brief_response, client,
             assert 'test-%s-%s.pdf' % (supplier_user.id, i) in user_attachments
             assert 'test-2-%s-%s.pdf' % (supplier_user.id, i) in user_attachments
             assert 'resume-%s-%s.pdf' % (supplier_user.id, i) in user_attachments
+
+
+@mock.patch('app.tasks.publish_tasks.brief')
+@mock.patch('app.tasks.publish_tasks.brief_response')
+def test_brief_responses_get_attachments_rfx(app, client, suppliers, supplier_domains,
+                                             rfx_brief, brief_responses_rfx, supplier_users):
+    attachments = brief_responses_service.get_all_attachments(1)
+    assert len(attachments) == 45
+    i = 1
+    for supplier_user in supplier_users:
+        user_attachments = [x['file_name'] for x in attachments if x['supplier_code'] == supplier_user.supplier_code]
+        for i in range(1, 4):
+            assert 'test-%s-%s.pdf' % (supplier_user.id, i) in user_attachments
+            assert 'test-2-%s-%s.pdf' % (supplier_user.id, i) in user_attachments
+            assert 'response-%s-%s.pdf' % (supplier_user.id, i) in user_attachments
+
+
+@mock.patch('app.tasks.publish_tasks.brief')
+@mock.patch('app.tasks.publish_tasks.brief_response')
+def test_brief_responses_get_attachments_rfx_with_proposal(app, client, suppliers, supplier_domains,
+                                                           rfx_brief, brief_responses_rfx_with_proposal,
+                                                           supplier_users):
+    attachments = brief_responses_service.get_all_attachments(1)
+    assert len(attachments) == 45
+    i = 1
+    for supplier_user in supplier_users:
+        user_attachments = [x['file_name'] for x in attachments if x['supplier_code'] == supplier_user.supplier_code]
+        for i in range(1, 4):
+            assert 'test-%s-%s.pdf' % (supplier_user.id, i) in user_attachments
+            assert 'test-2-%s-%s.pdf' % (supplier_user.id, i) in user_attachments
+            assert 'proposal-%s-%s.pdf' % (supplier_user.id, i) in user_attachments
+
+
+@mock.patch('app.tasks.publish_tasks.brief')
+@mock.patch('app.tasks.publish_tasks.brief_response')
+def test_brief_responses_get_attachments_atm(app, client, suppliers, supplier_domains,
+                                             atm_brief, brief_responses_atm, supplier_users):
+    attachments = brief_responses_service.get_all_attachments(1)
+    assert len(attachments) == 45
+    i = 1
+    for supplier_user in supplier_users:
+        user_attachments = [x['file_name'] for x in attachments if x['supplier_code'] == supplier_user.supplier_code]
+        for i in range(1, 4):
+            assert 'test-%s-%s.pdf' % (supplier_user.id, i) in user_attachments
+            assert 'test-2-%s-%s.pdf' % (supplier_user.id, i) in user_attachments
+            assert 'proposal-%s-%s.pdf' % (supplier_user.id, i) in user_attachments
+
+
+@mock.patch('app.tasks.publish_tasks.brief')
+@mock.patch('app.tasks.publish_tasks.brief_response')
+def test_brief_responses_get_attachments_training2(app, client, suppliers, supplier_domains,
+                                                   training2_brief, brief_responses_rfx, supplier_users):
+    attachments = brief_responses_service.get_all_attachments(1)
+    assert len(attachments) == 45
+    i = 1
+    for supplier_user in supplier_users:
+        user_attachments = [x['file_name'] for x in attachments if x['supplier_code'] == supplier_user.supplier_code]
+        for i in range(1, 4):
+            assert 'test-%s-%s.pdf' % (supplier_user.id, i) in user_attachments
+            assert 'test-2-%s-%s.pdf' % (supplier_user.id, i) in user_attachments
+            assert 'response-%s-%s.pdf' % (supplier_user.id, i) in user_attachments
