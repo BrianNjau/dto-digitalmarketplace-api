@@ -94,8 +94,7 @@ class SellerDashboardService(object):
                 Brief.data['numberOfSuppliers'].astext.label('numberOfSuppliers'),
                 Brief.closed_at,
                 Brief.withdrawn_at,
-                Lot.name.label('lotName'),
-                Lot.slug.label('lotSlug'),
+                Lot.slug.label('lot'),
                 submitted_response_count_query.c.responseCount,
                 draft_response_count_query.c.draftResponseCount,
                 brief_response_id_query.c.briefResponseId
