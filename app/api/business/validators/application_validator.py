@@ -15,7 +15,7 @@ class ApplicationValidator(object):
                 self.validate_methods() +
                 self.validate_recruiter() +
                 # self.validate_services() +
-                self.validate_candidates() +
+                # self.validate_candidates() +
                 self.validate_products())
 
     def __validate_required(self, data, required_fields, step):
