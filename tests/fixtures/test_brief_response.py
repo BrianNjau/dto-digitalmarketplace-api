@@ -203,6 +203,8 @@ def brief_responses_rfx(app, request, supplier_users):
                         'test-2-%s-%s.pdf' % (supplier_user.id, i)
                     ]
                 }
+                if include_response_template:
+                    data['responseTemplate'] = ['response-%s-%s.pdf' % (supplier_user.id, i)]
                 db.session.add(BriefResponse(
                     id=response_id,
                     brief_id=1,
@@ -210,8 +212,6 @@ def brief_responses_rfx(app, request, supplier_users):
                     submitted_at=pendulum.now(),
                     data=data
                 ))
-                if include_response_template:
-                    data['responseTemplate'] = ['response-%s-%s.pdf' % (supplier_user.id, i)]
                 i += 1
                 response_id += 1
             db.session.flush()
@@ -268,6 +268,8 @@ def brief_responses_atm(app, request, supplier_users):
                         'TEST 2': 'bla bla'
                     }
                 }
+                if include_written_proposal:
+                    data['writtenProposal'] = ['proposal-%s-%s.pdf' % (supplier_user.id, i)]
                 db.session.add(BriefResponse(
                     id=response_id,
                     brief_id=1,
@@ -275,8 +277,6 @@ def brief_responses_atm(app, request, supplier_users):
                     submitted_at=pendulum.now(),
                     data=data
                 ))
-                if include_written_proposal:
-                    data['writtenProposal'] = ['proposal-%s-%s.pdf' % (supplier_user.id, i)]
                 i += 1
                 response_id += 1
             db.session.flush()
