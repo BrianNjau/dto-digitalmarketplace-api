@@ -2465,7 +2465,7 @@ class BriefResponse(db.Model):
 
         return data
 
-    def validate(self, enforce_required=True, required_fields=None, max_day_rate=None):
+    def validate(self, enforce_required=True, required_fields=None, max_day_rate=None, do_required_file_check=True):
         def clean_non_strings():
             # short term hacky fix for frontend yaml-parsing bug
 
@@ -2507,6 +2507,10 @@ class BriefResponse(db.Model):
                         filter(None, clean(self.data['attachedDocumentURL']))
                     self.data['responseTemplate'] = \
                         filter(None, clean(self.data['responseTemplate']))
+                    self.data['resume'] = \
+                        filter(None, clean(self.data['resume']))
+                    self.data['writtenProposal'] = \
+                        filter(None, clean(self.data['writtenProposal']))
                 except KeyError:
                     pass
 
@@ -2581,29 +2585,35 @@ class BriefResponse(db.Model):
             )
 
         attachedDocumentURL = self.data.get('attachedDocumentURL', [])
+        writtenProposal = self.data.get('writtenProposal', [])
+        resume = self.data.get('resume', [])
+        responseTemplate = self.data.get('responseTemplate', [])
+
         if attachedDocumentURL:
             for ad in attachedDocumentURL:
                 if not os.path.splitext(ad)[1][1:].lower() in current_app.config.get('ALLOWED_EXTENSIONS'):
                     errs['attachedDocumentURL'] = 'file_incorrect_format'
+        # only enforce the need to have attached documents if there is no other document
+        elif (
+            not writtenProposal and not resume and not responseTemplate and
+            (self.brief.lot.slug != 'atm' or atm_must_upload_doc())
+        ):
+            errs['attachedDocumentURL'] = 'answer_required'
         if atm_must_upload_doc():
-            writtenProposal = self.data.get('writtenProposal', [])
             if writtenProposal:
                 for ad in writtenProposal:
                     if not os.path.splitext(ad)[1][1:].lower() in current_app.config.get('ALLOWED_EXTENSIONS'):
                         errs['writtenProposal'] = 'file_incorrect_format'
-            else:
+            elif do_required_file_check:
                 errs['writtenProposal'] = 'answer_required'
         if self.brief.lot.slug == 'specialist':
-            resume = self.data.get('resume', [])
             if resume:
                 for ad in resume:
                     if not os.path.splitext(ad)[1][1:].lower() in current_app.config.get('ALLOWED_EXTENSIONS'):
                         errs['resume'] = 'file_incorrect_format'
-            else:
+            elif do_required_file_check:
                 errs['resume'] = 'answer_required'
         if self.brief.lot.slug == 'rfx':
-            responseTemplate = self.data.get('responseTemplate', [])
-            writtenProposal = self.data.get('writtenProposal', [])
             if responseTemplate:
                 for ad in responseTemplate:
                     if not os.path.splitext(ad)[1][1:].lower() in current_app.config.get('ALLOWED_EXTENSIONS'):
@@ -2612,7 +2622,7 @@ class BriefResponse(db.Model):
                 for ad in writtenProposal:
                     if not os.path.splitext(ad)[1][1:].lower() in current_app.config.get('ALLOWED_EXTENSIONS'):
                         errs['writtenProposal'] = 'file_incorrect_format'
-            if not writtenProposal and not responseTemplate:
+            if do_required_file_check and not writtenProposal and not responseTemplate:
                 errs['writtenProposal'] = 'answer_required'
                 errs['responseTemplate'] = 'answer_required'
 

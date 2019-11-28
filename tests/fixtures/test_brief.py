@@ -166,7 +166,10 @@ def test_save_draft_brief_response(brief_response,
             'specialistSurname': 'b',
             'previouslyWorked': 'x',
             'visaStatus': 'y',
-            'essentialRequirements': ['ABC', 'XYZ'],
+            'essentialRequirements': [
+                {'TEST': 'xxx'},
+                {'TEST 2': 'yyy'}
+            ],
             'availability': '01/01/2018',
             'respondToEmailAddress': 'supplier@email.com',
             'specialistName': 'Test Specialist Name',
@@ -244,7 +247,9 @@ def test_cannot_respond_to_a_brief_with_wrong_number_of_essential_reqs(client, s
             'specialistSurname': 'b',
             'previouslyWorked': 'x',
             'visaStatus': 'y',
-            'essentialRequirements': ['XYZ'],
+            'essentialRequirements': [
+                {'TEST 2': 'yyy'}
+            ],
             'availability': '01/01/2018',
             'respondToEmailAddress': 'supplier@email.com',
             'specialistName': 'Test Specialist Name',
@@ -285,7 +290,10 @@ def test_create_brief_response_success_with_audit_exception(brief_response,
             'specialistSurname': 'b',
             'previouslyWorked': 'x',
             'visaStatus': 'y',
-            'essentialRequirements': ['ABC', 'XYZ'],
+            'essentialRequirements': [
+                {'TEST': 'xxx'},
+                {'TEST 2': 'yyy'}
+            ],
             'availability': '01/01/2018',
             'respondToEmailAddress': 'supplier@email.com',
             'specialistName': 'Test Specialist Name',
@@ -299,7 +307,6 @@ def test_create_brief_response_success_with_audit_exception(brief_response,
         content_type='application/json'
     )
     data = json.loads(res.get_data(as_text=True))
-    print data
     assert res.status_code == 200
     assert brief_response.delay.called is True
 
@@ -326,7 +333,10 @@ def test_create_brief_response_fail_with_incorrect_attachment(client, supplier_u
             'specialistSurname': 'b',
             'previouslyWorked': 'x',
             'visaStatus': 'y',
-            'essentialRequirements': ['ABC', 'XYZ'],
+            'essentialRequirements': [
+                {'TEST': 'xxx'},
+                {'TEST 2': 'yyy'}
+            ],
             'availability': '01/01/2018',
             'respondToEmailAddress': 'supplier@email.com',
             'specialistName': 'Test Specialist Name',
@@ -347,7 +357,10 @@ def test_create_brief_response_fail_with_incorrect_attachment(client, supplier_u
             'specialistSurname': 'b',
             'previouslyWorked': 'x',
             'visaStatus': 'y',
-            'essentialRequirements': ['ABC', 'XYZ'],
+            'essentialRequirements': [
+                {'TEST': 'xxx'},
+                {'TEST 2': 'yyy'}
+            ],
             'availability': '01/01/2018',
             'respondToEmailAddress': 'supplier@email.com',
             'specialistName': 'Test Specialist Name',

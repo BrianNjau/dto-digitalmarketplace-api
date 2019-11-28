@@ -336,6 +336,7 @@ def application_user(app, request, applications):
 def briefs(app, request, users):
     params = request.param if hasattr(request, 'param') else {}
     published_at = pendulum.parse(params['published_at']) if 'published_at' in params else utcnow()
+    published_at = None if 'unpublished' in params and params['unpublished'] else published_at
     data = params['data'] if 'data' in params else COMPLETE_SPECIALIST_BRIEF.copy()
     data['sellerCategory'] = params['sellerCategory'] if 'sellerCategory' in params else 1
     lot_slug = params['lot_slug'] if 'lot_slug' in params else 'specialist'
@@ -516,8 +517,12 @@ def specialist_data():
         'comprehensiveTerms': True,
         'essentialRequirements': [
             {
-                'criteria': 'Code',
-                'weighting': '100'
+                'criteria': 'TEST',
+                'weighting': '55'
+            },
+            {
+                'criteria': 'TEST 2',
+                'weighting': '45'
             }
         ],
         'evaluationType': [
