@@ -997,13 +997,14 @@ def get_brief_responses(brief_id):
         if 'sellers' in brief.data:
             for seller_code in brief.data['sellers']:
                 supplier = suppliers.get_supplier_by_code(seller_code)
-                brief.data['sellers'][seller_code]['email'] = supplier.data.get('contact_email', None)
-                brief.data['sellers'][seller_code]['number'] = supplier.data.get('contact_phone', None)
-                brief_responses_by_seller = brief_responses_service.get_brief_responses(brief_id, seller_code)
-                brief.data['sellers'][seller_code]['has_responded'] = (
-                    True if len(brief_responses_by_seller) > 0 else False
-                )
-                brief.data['sellers'][seller_code]['response_count'] = len(brief_responses_by_seller)
+                if supplier:
+                    brief.data['sellers'][seller_code]['email'] = supplier.data.get('contact_email', None)
+                    brief.data['sellers'][seller_code]['number'] = supplier.data.get('contact_phone', None)
+                    brief_responses_by_seller = brief_responses_service.get_brief_responses(brief_id, seller_code)
+                    brief.data['sellers'][seller_code]['has_responded'] = (
+                        True if len(brief_responses_by_seller) > 0 else False
+                    )
+                    brief.data['sellers'][seller_code]['response_count'] = len(brief_responses_by_seller)
     else:
         brief_responses = brief_responses_service.get_brief_responses(brief_id, supplier_code)
 
