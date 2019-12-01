@@ -50,8 +50,8 @@ def create_evidence(domain_id, brief_id=None):
         abort('Unknown domain id')
 
     supplier = suppliers.get_supplier_by_code(current_user.supplier_code)
-    if supplier.data.get('recruiter', '') == 'yes':
-        abort('Assessment can\'t be started against a recruiter only supplier')
+    # if supplier.data.get('recruiter', '') == 'yes':
+    #     abort('Assessment can\'t be started against a recruiter only supplier')
 
     existing_evidence = evidence_service.get_latest_evidence_for_supplier_and_domain(
         domain_id,
