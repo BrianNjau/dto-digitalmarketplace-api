@@ -147,31 +147,38 @@ def supplier_users(app, request, suppliers):
 
 @pytest.fixture()
 def brief_responses_specialist(app, request, supplier_users):
+    params = request.param if hasattr(request, 'param') else {}
+    include_resume = params['include_resume'] if 'include_resume' in params else True
     with app.app_context():
         response_id = 1
         for supplier_user in supplier_users:
             for i in range(1, 4):
+                data = {
+                    'specialistGivenNames': 'a',
+                    'specialistSurname': 'b',
+                    'previouslyWorked': 'x',
+                    'visaStatus': 'y',
+                    'essentialRequirements': [
+                        {'TEST': 'xxx'},
+                        {'TEST 2': 'yyy'}
+                    ],
+                    'availability': '01/01/2018',
+                    'respondToEmailAddress': 'supplier@email.com',
+                    'specialistName': 'Test Specialist Name',
+                    'dayRate': '100',
+                    'dayRateExcludingGST': '91',
+                    'attachedDocumentURL': [
+                        'test-%s-%s.pdf' % (supplier_user.id, i), 'test-2-%s-%s.pdf' % (supplier_user.id, i)
+                    ]
+                }
+                if include_resume:
+                    data['resume'] = ['resume-%s-%s.pdf' % (supplier_user.id, i)]
                 db.session.add(BriefResponse(
                     id=response_id,
                     brief_id=1,
                     supplier_code=supplier_user.supplier_code,
                     submitted_at=pendulum.now(),
-                    data={
-                        'specialistGivenNames': 'a',
-                        'specialistSurname': 'b',
-                        'previouslyWorked': 'x',
-                        'visaStatus': 'y',
-                        'essentialRequirements': ['ABC', 'XYZ'],
-                        'availability': '01/01/2018',
-                        'respondToEmailAddress': 'supplier@email.com',
-                        'specialistName': 'Test Specialist Name',
-                        'dayRate': '100',
-                        'dayRateExcludingGST': '91',
-                        'resume': ['resume-%s-%s.pdf' % (supplier_user.id, i)],
-                        'attachedDocumentURL': [
-                            'test-%s-%s.pdf' % (supplier_user.id, i), 'test-2-%s-%s.pdf' % (supplier_user.id, i)
-                        ]
-                    }
+                    data=data
                 ))
                 i += 1
                 response_id += 1
@@ -183,23 +190,27 @@ def brief_responses_specialist(app, request, supplier_users):
 
 @pytest.fixture()
 def brief_responses_rfx(app, request, supplier_users):
+    params = request.param if hasattr(request, 'param') else {}
+    include_response_template = params['include_response_template'] if 'include_response_template' in params else True
     with app.app_context():
         response_id = 1
         for supplier_user in supplier_users:
             for i in range(1, 4):
+                data = {
+                    'respondToEmailAddress': 'supplier@email.com',
+                    'attachedDocumentURL': [
+                        'test-%s-%s.pdf' % (supplier_user.id, i),
+                        'test-2-%s-%s.pdf' % (supplier_user.id, i)
+                    ]
+                }
+                if include_response_template:
+                    data['responseTemplate'] = ['response-%s-%s.pdf' % (supplier_user.id, i)]
                 db.session.add(BriefResponse(
                     id=response_id,
                     brief_id=1,
                     supplier_code=supplier_user.supplier_code,
                     submitted_at=pendulum.now(),
-                    data={
-                        'respondToEmailAddress': 'supplier@email.com',
-                        'responseTemplate': ['response-%s-%s.pdf' % (supplier_user.id, i)],
-                        'attachedDocumentURL': [
-                            'test-%s-%s.pdf' % (supplier_user.id, i),
-                            'test-2-%s-%s.pdf' % (supplier_user.id, i)
-                        ]
-                    }
+                    data=data
                 ))
                 i += 1
                 response_id += 1
@@ -239,28 +250,32 @@ def brief_responses_rfx_with_proposal(app, request, supplier_users):
 
 @pytest.fixture()
 def brief_responses_atm(app, request, supplier_users):
+    params = request.param if hasattr(request, 'param') else {}
+    include_written_proposal = params['include_written_proposal'] if 'include_written_proposal' in params else True
     with app.app_context():
         response_id = 1
         for supplier_user in supplier_users:
             for i in range(1, 4):
+                data = {
+                    'respondToEmailAddress': 'supplier@email.com',
+                    'respondToPhone': '0263636363',
+                    'attachedDocumentURL': [
+                        'test-%s-%s.pdf' % (supplier_user.id, i),
+                        'test-2-%s-%s.pdf' % (supplier_user.id, i)
+                    ],
+                    'criteria': {
+                        'TEST': 'bla bla',
+                        'TEST 2': 'bla bla'
+                    }
+                }
+                if include_written_proposal:
+                    data['writtenProposal'] = ['proposal-%s-%s.pdf' % (supplier_user.id, i)]
                 db.session.add(BriefResponse(
                     id=response_id,
                     brief_id=1,
                     supplier_code=supplier_user.supplier_code,
                     submitted_at=pendulum.now(),
-                    data={
-                        'respondToEmailAddress': 'supplier@email.com',
-                        'respondToPhone': '0263636363',
-                        'writtenProposal': ['proposal-%s-%s.pdf' % (supplier_user.id, i)],
-                        'attachedDocumentURL': [
-                            'test-%s-%s.pdf' % (supplier_user.id, i),
-                            'test-2-%s-%s.pdf' % (supplier_user.id, i)
-                        ],
-                        'criteria': {
-                            'TEST': 'bla bla',
-                            'TEST 2': 'bla bla'
-                        }
-                    }
+                    data=data
                 ))
                 i += 1
                 response_id += 1
@@ -290,7 +305,10 @@ def test_get_brief_response(brief_response, client, supplier_user, supplier_doma
                 'specialistSurname': 'b',
                 'previouslyWorked': 'x',
                 'visaStatus': 'y',
-                'essentialRequirements': ['ABC', 'XYZ'],
+                'essentialRequirements': [
+                    {'TEST': 'xxx'},
+                    {'TEST 2': 'yyy'}
+                ],
                 'availability': '01/01/2018',
                 'respondToEmailAddress': 'supplier@email.com',
                 'specialistName': 'Test Specialist Name',
@@ -342,7 +360,10 @@ def test_withdraw_brief_response(brief_response,
                 'specialistSurname': 'b',
                 'previouslyWorked': 'x',
                 'visaStatus': 'y',
-                'essentialRequirements': ['ABC', 'XYZ'],
+                'essentialRequirements': [
+                    {'TEST': 'xxx'},
+                    {'TEST 2': 'yyy'}
+                ],
                 'availability': '01/01/2018',
                 'respondToEmailAddress': 'supplier@email.com',
                 'specialistName': 'Test Specialist Name',
@@ -367,7 +388,10 @@ def test_withdraw_brief_response(brief_response,
         res = client.put(
             '/2/brief-response/{}/withdraw'.format(i),
             data=json.dumps({
-                'essentialRequirements': ['ABC', 'XYZ'],
+                'essentialRequirements': [
+                    {'TEST': 'xxx'},
+                    {'TEST 2': 'yyy'}
+                ],
                 'availability': '01/01/2018',
                 'respondToEmailAddress': 'supplier@email.com',
                 'specialistName': 'Test Specialist Name',
@@ -411,7 +435,10 @@ def test_withdraw_already_withdrawn_brief_response(brief_response,
                 'specialistSurname': 'b',
                 'previouslyWorked': 'x',
                 'visaStatus': 'y',
-                'essentialRequirements': ['ABC', 'XYZ'],
+                'essentialRequirements': [
+                    {'TEST': 'xxx'},
+                    {'TEST 2': 'yyy'}
+                ],
                 'availability': '01/01/2018',
                 'respondToEmailAddress': 'supplier@email.com',
                 'specialistName': 'Test Specialist Name',
@@ -430,7 +457,10 @@ def test_withdraw_already_withdrawn_brief_response(brief_response,
         res = client.put(
             '/2/brief-response/{}/withdraw'.format(i),
             data=json.dumps({
-                'essentialRequirements': ['ABC', 'XYZ'],
+                'essentialRequirements': [
+                    {'TEST': 'xxx'},
+                    {'TEST 2': 'yyy'}
+                ],
                 'availability': '01/01/2018',
                 'respondToEmailAddress': 'supplier@email.com',
                 'specialistName': 'Test Specialist Name',
@@ -443,7 +473,10 @@ def test_withdraw_already_withdrawn_brief_response(brief_response,
         res = client.put(
             '/2/brief-response/{}/withdraw'.format(i),
             data=json.dumps({
-                'essentialRequirements': ['ABC', 'XYZ'],
+                'essentialRequirements': [
+                    {'TEST': 'xxx'},
+                    {'TEST 2': 'yyy'}
+                ],
                 'availability': '01/01/2018',
                 'respondToEmailAddress': 'supplier@email.com',
                 'specialistName': 'Test Specialist Name',
@@ -586,7 +619,10 @@ def test_rfx_non_invited_seller_can_not_respond(brief, client, suppliers, suppli
 
 
 @pytest.fixture()
-def atm_data():
+def atm_data(app, request):
+    params = request.param if hasattr(request, 'param') else {}
+    evaluationType = params['evaluationType'] if 'evaluationType' in params else []
+    requestMoreInfo = params['requestMoreInfo'] if 'requestMoreInfo' in params else 'no'
     yield {
         'title': 'TEST',
         'organisation': 'ABC',
@@ -596,8 +632,8 @@ def atm_data():
         ],
         'sellerCategory': '',
         'openTo': 'all',
-        'requestMoreInfo': 'no',
-        'evaluationType': [],
+        'requestMoreInfo': requestMoreInfo,
+        'evaluationType': evaluationType,
         'attachments': [
             'TEST3.pdf'
         ],
@@ -915,7 +951,191 @@ def test_atm_seller_success_with_file(brief_response, brief, client, suppliers, 
 
 @mock.patch('app.tasks.publish_tasks.brief')
 @mock.patch('app.tasks.publish_tasks.brief_response')
-def test_brief_responses_get_attachments_specialist(app, client, suppliers, supplier_domains,
+@pytest.mark.parametrize('brief_responses_specialist', [{'include_resume': False}], indirect=True)
+def test_brief_response_edit_previous_submitted_without_doc_specialist(brief_response, brief, client, suppliers,
+                                                                       supplier_user, supplier_domains,
+                                                                       briefs, brief_responses_specialist,
+                                                                       supplier_users):
+    res = client.post('/2/login', data=json.dumps({
+        'emailAddress': 'j@examplecompany.biz', 'password': 'testpassword'
+    }), content_type='application/json')
+    assert res.status_code == 200
+
+    brief_response = brief_responses_specialist[0]
+    assert brief_response.status == 'submitted'
+    assert brief_response.data.get('resume', []) == []
+
+    # success without a resume but with attachedDocumentURL
+    res = client.patch(
+        '/2/brief/1/respond/%s' % brief_response.id,
+        data=json.dumps({
+            'submit': True,
+            'specialistGivenNames': 'a',
+            'specialistSurname': 'b',
+            'previouslyWorked': 'x',
+            'visaStatus': 'y',
+            'essentialRequirements': [
+                {'TEST': 'xxx'},
+                {'TEST 2': 'yyy'}
+            ],
+            'availability': '01/01/2018',
+            'respondToEmailAddress': 'supplier@email.com',
+            'specialistName': 'Test Specialist Name',
+            'dayRate': '100',
+            'dayRateExcludingGST': '91',
+            'attachedDocumentURL': ['test-1.pdf']
+        }),
+        content_type='application/json'
+    )
+    assert res.status_code == 200
+
+    # failure without a resume or attachedDocumentURL
+    res = client.patch(
+        '/2/brief/1/respond/%s' % brief_response.id,
+        data=json.dumps({
+            'submit': True,
+            'specialistGivenNames': 'a',
+            'specialistSurname': 'b',
+            'previouslyWorked': 'x',
+            'visaStatus': 'y',
+            'essentialRequirements': [
+                {'TEST': 'xxx'},
+                {'TEST 2': 'yyy'}
+            ],
+            'availability': '01/01/2018',
+            'respondToEmailAddress': 'supplier@email.com',
+            'specialistName': 'Test Specialist Name',
+            'dayRate': '100',
+            'dayRateExcludingGST': '91',
+            'attachedDocumentURL': []
+        }),
+        content_type='application/json'
+    )
+    assert res.status_code == 400
+
+
+@mock.patch('app.tasks.publish_tasks.brief')
+@mock.patch('app.tasks.publish_tasks.brief_response')
+@pytest.mark.parametrize('brief_responses_rfx', [{'include_response_template': False}], indirect=True)
+@pytest.mark.parametrize('briefs', [{'lot_slug': 'rfx', 'unpublished': True}], indirect=True)
+def test_brief_response_edit_previous_submitted_without_doc_rfx(brief_response, brief, client, suppliers,
+                                                                supplier_user, supplier_domains, buyer_user,
+                                                                briefs, rfx_data, brief_responses_rfx,
+                                                                supplier_users):
+    res = client.post('/2/login', data=json.dumps({
+        'emailAddress': 'me@digital.gov.au', 'password': 'test'
+    }), content_type='application/json')
+    assert res.status_code == 200
+
+    data = rfx_data
+    data['publish'] = True
+    data['closedAt'] = pendulum.today(tz='Australia/Sydney').add(days=14).format('%Y-%m-%d')
+
+    res = client.patch('/2/brief/1', content_type='application/json', data=json.dumps(data))
+
+    res = client.post('/2/login', data=json.dumps({
+        'emailAddress': 'j@examplecompany.biz', 'password': 'testpassword'
+    }), content_type='application/json')
+    assert res.status_code == 200
+
+    brief_response = brief_responses_rfx[0]
+    assert brief_response.status == 'submitted'
+    assert brief_response.data.get('responseTemplate', []) == []
+
+    # success without a response template but with attachedDocumentURL
+    res = client.patch(
+        '/2/brief/1/respond/%s' % brief_response.id,
+        data=json.dumps({
+            'submit': True,
+            'respondToEmailAddress': 'supplier@email.com',
+            'attachedDocumentURL': [
+                'test.pdf'
+            ]
+        }),
+        content_type='application/json'
+    )
+    assert res.status_code == 200
+
+    # failure without a response template or attachedDocumentURL
+    res = client.patch(
+        '/2/brief/1/respond/%s' % brief_response.id,
+        data=json.dumps({
+            'submit': True,
+            'respondToEmailAddress': 'supplier@email.com',
+            'attachedDocumentURL': []
+        }),
+        content_type='application/json'
+    )
+    assert res.status_code == 400
+
+
+@mock.patch('app.tasks.publish_tasks.brief')
+@mock.patch('app.tasks.publish_tasks.brief_response')
+@pytest.mark.parametrize('brief_responses_atm', [{'include_written_proposal': False}], indirect=True)
+@pytest.mark.parametrize('briefs', [{'lot_slug': 'atm', 'unpublished': True}], indirect=True)
+@pytest.mark.parametrize('atm_data', [{'evaluationType': ['Case study'], 'requestMoreInfo': 'yes'}], indirect=True)
+def test_brief_response_edit_previous_submitted_without_doc_atm(brief_response, brief, client, suppliers,
+                                                                supplier_user, supplier_domains, buyer_user,
+                                                                briefs, atm_data, brief_responses_atm,
+                                                                supplier_users):
+    res = client.post('/2/login', data=json.dumps({
+        'emailAddress': 'me@digital.gov.au', 'password': 'test'
+    }), content_type='application/json')
+    assert res.status_code == 200
+
+    data = atm_data
+    data['publish'] = True
+    data['closedAt'] = pendulum.today(tz='Australia/Sydney').add(days=14).format('%Y-%m-%d')
+
+    res = client.patch('/2/brief/1', content_type='application/json', data=json.dumps(data))
+
+    res = client.post('/2/login', data=json.dumps({
+        'emailAddress': 'j@examplecompany.biz', 'password': 'testpassword'
+    }), content_type='application/json')
+    assert res.status_code == 200
+
+    brief_response = brief_responses_atm[0]
+    assert brief_response.status == 'submitted'
+    assert brief_response.data.get('writtenProposal', []) == []
+
+    # success without a response template but with attachedDocumentURL
+    res = client.patch(
+        '/2/brief/1/respond/%s' % brief_response.id,
+        data=json.dumps({
+            'submit': True,
+            'respondToEmailAddress': 'supplier@email.com',
+            'respondToPhone': '0263636363',
+            'attachedDocumentURL': ['TEST.pdf'],
+            'criteria': {
+                'TEST': 'bla bla',
+                'TEST 2': 'bla bla'
+            }
+        }),
+        content_type='application/json'
+    )
+    assert res.status_code == 200
+
+    # failure without a response template or attachedDocumentURL
+    res = client.patch(
+        '/2/brief/1/respond/%s' % brief_response.id,
+        data=json.dumps({
+            'submit': True,
+            'respondToEmailAddress': 'supplier@email.com',
+            'respondToPhone': '0263636363',
+            'attachedDocumentURL': [],
+            'criteria': {
+                'TEST': 'bla bla',
+                'TEST 2': 'bla bla'
+            }
+        }),
+        content_type='application/json'
+    )
+    assert res.status_code == 400
+
+
+@mock.patch('app.tasks.publish_tasks.brief')
+@mock.patch('app.tasks.publish_tasks.brief_response')
+def test_brief_responses_get_attachments_specialist(brief_response, brief, app, client, suppliers, supplier_domains,
                                                     specialist_brief, brief_responses_specialist, supplier_users):
     attachments = brief_responses_service.get_all_attachments(1)
     assert len(attachments) == 45
@@ -930,7 +1150,7 @@ def test_brief_responses_get_attachments_specialist(app, client, suppliers, supp
 
 @mock.patch('app.tasks.publish_tasks.brief')
 @mock.patch('app.tasks.publish_tasks.brief_response')
-def test_brief_responses_get_attachments_rfx(app, client, suppliers, supplier_domains,
+def test_brief_responses_get_attachments_rfx(brief_response, brief, app, client, suppliers, supplier_domains,
                                              rfx_brief, brief_responses_rfx, supplier_users):
     attachments = brief_responses_service.get_all_attachments(1)
     assert len(attachments) == 45
@@ -945,9 +1165,9 @@ def test_brief_responses_get_attachments_rfx(app, client, suppliers, supplier_do
 
 @mock.patch('app.tasks.publish_tasks.brief')
 @mock.patch('app.tasks.publish_tasks.brief_response')
-def test_brief_responses_get_attachments_rfx_with_proposal(app, client, suppliers, supplier_domains,
-                                                           rfx_brief, brief_responses_rfx_with_proposal,
-                                                           supplier_users):
+def test_brief_responses_get_attachments_rfx_with_proposal(brief_response, brief, app, client, suppliers,
+                                                           supplier_domains, rfx_brief,
+                                                           brief_responses_rfx_with_proposal, supplier_users):
     attachments = brief_responses_service.get_all_attachments(1)
     assert len(attachments) == 45
     i = 1
@@ -961,7 +1181,7 @@ def test_brief_responses_get_attachments_rfx_with_proposal(app, client, supplier
 
 @mock.patch('app.tasks.publish_tasks.brief')
 @mock.patch('app.tasks.publish_tasks.brief_response')
-def test_brief_responses_get_attachments_atm(app, client, suppliers, supplier_domains,
+def test_brief_responses_get_attachments_atm(brief_response, brief, app, client, suppliers, supplier_domains,
                                              atm_brief, brief_responses_atm, supplier_users):
     attachments = brief_responses_service.get_all_attachments(1)
     assert len(attachments) == 45
@@ -976,7 +1196,7 @@ def test_brief_responses_get_attachments_atm(app, client, suppliers, supplier_do
 
 @mock.patch('app.tasks.publish_tasks.brief')
 @mock.patch('app.tasks.publish_tasks.brief_response')
-def test_brief_responses_get_attachments_training2(app, client, suppliers, supplier_domains,
+def test_brief_responses_get_attachments_training2(brief_response, brief, app, client, suppliers, supplier_domains,
                                                    training2_brief, brief_responses_rfx, supplier_users):
     attachments = brief_responses_service.get_all_attachments(1)
     assert len(attachments) == 45

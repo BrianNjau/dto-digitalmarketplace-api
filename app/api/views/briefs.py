@@ -1212,10 +1212,21 @@ def update_brief_response(brief_id, brief_response_id):
             submit = True
         del brief_response_json['submit']
 
+    # if the current brief response is already submitted and it doesn't have the required upload file fields, then
+    # flag the required file check as unnecessary as this would be an old response before the introduction of the
+    # individual file fields in the brief response
+    do_required_file_check = True
+    if brief_response.status == 'submitted' and (
+        len(brief_response.data.get('resume', [])) == 0 and
+        len(brief_response.data.get('responseTemplate', [])) == 0 and
+        len(brief_response.data.get('writtenProposal', [])) == 0
+    ):
+        do_required_file_check = False
+
     brief_response.data = brief_response_json
     if submit:
         try:
-            brief_response.validate()
+            brief_response.validate(do_required_file_check=do_required_file_check)
         except ValidationError as e:
             brief_response_json['brief_id'] = brief_id
             rollbar.report_exc_info(extra_data=brief_response_json)
@@ -1224,26 +1235,26 @@ def update_brief_response(brief_id, brief_response_id):
                 message = "Essential requirements must be completed"
                 del e.message['essentialRequirements']
             if 'attachedDocumentURL' in e.message:
-                if e.message['attachedDocumentURL'] == 'answer_required':
+                if not do_required_file_check and e.message['attachedDocumentURL'] == 'answer_required':
                     message = "Documents must be uploaded"
                 if e.message['attachedDocumentURL'] == 'file_incorrect_format':
                     message = "Uploaded documents are in the wrong format"
                 del e.message['attachedDocumentURL']
             if 'resume' in e.message:
-                if e.message['resume'] == 'answer_required':
-                    message = "Documents must be uploaded"
+                if do_required_file_check and e.message['resume'] == 'answer_required':
+                    message = "Resume must be uploaded"
                 if e.message['resume'] == 'file_incorrect_format':
                     message = "Uploaded documents are in the wrong format"
                 del e.message['resume']
             if 'responseTemplate' in e.message:
-                if e.message['responseTemplate'] == 'answer_required':
-                    message = "Documents must be uploaded"
+                if do_required_file_check and e.message['responseTemplate'] == 'answer_required':
+                    message = "Response template must be uploaded"
                 if e.message['responseTemplate'] == 'file_incorrect_format':
                     message = "Uploaded documents are in the wrong format"
                 del e.message['responseTemplate']
             if 'writtenProposal' in e.message:
-                if e.message['writtenProposal'] == 'answer_required':
-                    message = "Documents must be uploaded"
+                if do_required_file_check and e.message['writtenProposal'] == 'answer_required':
+                    message = "Written proposal must be uploaded"
                 if e.message['writtenProposal'] == 'file_incorrect_format':
                     message = "Uploaded documents are in the wrong format"
                 del e.message['writtenProposal']
