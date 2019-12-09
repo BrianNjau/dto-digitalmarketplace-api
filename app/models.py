@@ -1096,7 +1096,7 @@ class DomainCriteria(db.Model):
     __tablename__ = 'domain_criteria'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String, nullable=False)
-    is_recruiter_criteria = db.Column(db.Boolean, nullable=False default=False)
+    is_recruiter_criteria = db.Column(db.Boolean, nullable=False, default=False)
     domain_id = db.Column(db.Integer,
                           db.ForeignKey('domain.id'),
                           nullable=False)
