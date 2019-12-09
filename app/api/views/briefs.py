@@ -1157,6 +1157,7 @@ def download_brief_response_file(brief_id, supplier_code, slug):
 
 
 @api.route('/brief/<int:brief_id>/respond', methods=['POST'])
+@exception_logger
 @login_required
 @role_required('supplier')
 def create_brief_response(brief_id):
