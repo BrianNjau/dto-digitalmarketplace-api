@@ -1327,15 +1327,9 @@ def update_brief_response(brief_id, brief_response_id):
 
         publish_tasks.brief_response.delay(
             publish_tasks.compress_brief_response(brief_response),
-            'saved',
+            'submitted' if submit else 'saved',
             user=current_user.email_address
         )
-        if submit:
-            publish_tasks.brief_response.delay(
-                publish_tasks.compress_brief_response(brief_response),
-                'submitted',
-                user=current_user.email_address
-            )
     except Exception as e:
         rollbar.report_exc_info()
 
