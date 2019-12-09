@@ -1311,7 +1311,7 @@ def update_brief_response(brief_id, brief_response_id):
         except Exception as e:
             brief_response_json['brief_id'] = brief_id
             rollbar.report_exc_info(extra_data=brief_response_json)
-    brief_responses_service.save_brief_response(brief_response)
+    brief_responses_service.save(brief_response)
     try:
         audit_service.log_audit_event(
             audit_type=audit_types.update_brief_response,

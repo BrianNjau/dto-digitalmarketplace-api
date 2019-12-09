@@ -25,11 +25,6 @@ class BriefResponsesService(Service):
         db.session.commit()
         return brief_response
 
-    def save_brief_response(self, brief_response):
-        db.session.add(brief_response)
-        db.session.commit()
-        return brief_response
-
     def get_brief_responses(self, brief_id, supplier_code, submitted_only=False, include_withdrawn=False):
         query = (
             db.session.query(BriefResponse.created_at,
