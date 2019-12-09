@@ -47,7 +47,9 @@ class BriefResponsesService(Service):
             query = query.filter(BriefResponse.supplier_code == supplier_code)
         if submitted_only:
             query = query.filter(BriefResponse.submitted_at.isnot(None))
-        if not include_withdrawn:
+        if include_withdrawn:
+            query = query.filter(BriefResponse.withdrawn_at.isnot(None))
+        else:
             query = query.filter(BriefResponse.withdrawn_at.is_(None))
         query = query.order_by(BriefResponse.id.asc())
 
