@@ -162,9 +162,13 @@ def _can_do_brief_response(brief_id, update_only=False):
         if not update_only:
             number_of_suppliers = brief.data.get('numberOfSuppliers', 0)
             if (brief_response_count >= int(number_of_suppliers)):
-                abort(
-                    "There are already {} brief responses for supplier '{}'".format(number_of_suppliers, supplier.code)
-                )
+                if number_of_suppliers == 1:
+                    message = "There is already a brief response for supplier '{}'".format(supplier.code)
+                else:
+                    message = "There are already {} brief responses for supplier '{}'".format(
+                        number_of_suppliers, supplier.code
+                    )
+                abort(message)
     else:
         # Check if brief response already exists from this supplier when outcome for all other types
         if not update_only and len(brief_responses_service.get_brief_responses(brief.id, supplier.code)) > 0:
