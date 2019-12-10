@@ -1179,6 +1179,7 @@ def create_brief_response(brief_id):
 
 
 @api.route('/brief/<int:brief_id>/respond/<int:brief_response_id>', methods=['PATCH'])
+@exception_logger
 @login_required
 @role_required('supplier')
 def update_brief_response(brief_id, brief_response_id):
