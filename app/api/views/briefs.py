@@ -895,32 +895,6 @@ def get_brief_overview(brief_id):
 @api.route('/brief/<int:brief_id>/responses', methods=['GET'])
 @login_required
 def get_brief_responses(brief_id):
-    """All brief responses (role=supplier,buyer)
-    ---
-    tags:
-      - brief
-    security:
-      - basicAuth: []
-    parameters:
-      - name: brief_id
-        in: path
-        type: number
-        required: true
-    definitions:
-      BriefResponses:
-        properties:
-          briefResponses:
-            type: array
-            items:
-              id: BriefResponse
-    responses:
-      200:
-        description: A list of brief responses
-        schema:
-          id: BriefResponses
-      404:
-        description: brief_id not found
-    """
     brief = briefs.get(brief_id)
     if not brief:
         not_found("Invalid brief id '{}'".format(brief_id))
@@ -930,10 +904,18 @@ def get_brief_responses(brief_id):
             return forbidden("Unauthorised to view brief or brief does not exist")
 
     supplier_code = getattr(current_user, 'supplier_code', None)
+    supplier_contact = None
     if current_user.role == 'supplier':
         validation_result = supplier_business.get_supplier_messages(supplier_code, True)
         if len(validation_result.errors) > 0:
             abort(validation_result.errors)
+
+        supplier = suppliers.find(code=supplier_code).one_or_none()
+        if supplier:
+            supplier_contact = {
+                'email': supplier.data.get('contact_email'),
+                'phone': supplier.data.get('contact_phone')
+            }
         # strip data from seller view
         if 'sellers' in brief.data:
             brief.data['sellers'] = {}
@@ -986,11 +968,13 @@ def get_brief_responses(brief_id):
                    briefResponses=brief_responses,
                    oldWorkOrderCreator=old_work_order_creator,
                    questionsAsked=questions_asked,
-                   briefResponseDownloaded=brief_response_downloaded)
+                   briefResponseDownloaded=brief_response_downloaded,
+                   supplierContact=supplier_contact)
 
 
 @api.route('/brief/<int:brief_id>/respond/documents/<string:supplier_code>/<slug>', methods=['POST'])
 @login_required
+@role_required('supplier')
 def upload_brief_response_file(brief_id, supplier_code, slug):
     supplier, brief = _can_do_brief_response(brief_id, update_only=True)
     return jsonify({"filename": s3_upload_file_from_request(request, slug,
@@ -1156,6 +1140,7 @@ def download_brief_response_file(brief_id, supplier_code, slug):
 
 
 @api.route('/brief/<int:brief_id>/respond', methods=['POST'])
+@exception_logger
 @login_required
 @role_required('supplier')
 def create_brief_response(brief_id):
@@ -1310,7 +1295,7 @@ def update_brief_response(brief_id, brief_response_id):
         except Exception as e:
             brief_response_json['brief_id'] = brief_id
             rollbar.report_exc_info(extra_data=brief_response_json)
-    brief_responses_service.save_brief_response(brief_response)
+    brief_responses_service.save(brief_response)
     try:
         audit_service.log_audit_event(
             audit_type=audit_types.update_brief_response,
@@ -1325,15 +1310,9 @@ def update_brief_response(brief_id, brief_response_id):
 
         publish_tasks.brief_response.delay(
             publish_tasks.compress_brief_response(brief_response),
-            'saved',
+            'submitted' if submit else 'saved',
             user=current_user.email_address
         )
-        if submit:
-            publish_tasks.brief_response.delay(
-                publish_tasks.compress_brief_response(brief_response),
-                'submitted',
-                user=current_user.email_address
-            )
     except Exception as e:
         rollbar.report_exc_info()
 

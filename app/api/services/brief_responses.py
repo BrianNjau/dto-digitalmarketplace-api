@@ -25,11 +25,6 @@ class BriefResponsesService(Service):
         db.session.commit()
         return brief_response
 
-    def save_brief_response(self, brief_response):
-        db.session.add(brief_response)
-        db.session.commit()
-        return brief_response
-
     def get_brief_responses(self, brief_id, supplier_code, submitted_only=False, include_withdrawn=False):
         query = (
             db.session.query(BriefResponse.created_at,
@@ -52,7 +47,9 @@ class BriefResponsesService(Service):
             query = query.filter(BriefResponse.supplier_code == supplier_code)
         if submitted_only:
             query = query.filter(BriefResponse.submitted_at.isnot(None))
-        if not include_withdrawn:
+        if include_withdrawn:
+            query = query.filter(BriefResponse.withdrawn_at.isnot(None))
+        else:
             query = query.filter(BriefResponse.withdrawn_at.is_(None))
         query = query.order_by(BriefResponse.id.asc())
 
