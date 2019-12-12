@@ -150,6 +150,7 @@ def user_info(user):
     try:
         supplier_code = current_user.supplier_code
         supplier= suppliers.get_supplier_by_code(supplier_code)
+        #is_recruiter in the supplier column returns a string hence casting as a bool
         is_recruiter_flag = True if supplier.is_recruiter == "true" else False
     except AttributeError:
         supplier_code = None
@@ -206,7 +207,7 @@ def user_info(user):
         "agencyId": agency_id,
         "agencyDomains": domains,
         "isRecruiterFlag":is_recruiter_flag
-        # #I added this
+
     }
 
 
