@@ -132,9 +132,10 @@ def is_current_user_in_brief(func):
 def generate_random_token(length=32):
     return hexlify(urandom(length))
 
-
+#reshma
 def user_info(user):
-    from app.api.services import agency_service
+    from app.api.services import agency_service, suppliers
+
     try:
         user_type = current_user.role
     except AttributeError:
@@ -187,6 +188,13 @@ def user_info(user):
     except AttributeError:
         agency_id = None
 
+    #I added this
+    try:
+        is_recruiter_flag = suppliers.get_type_supplier()
+    except AttributeError:
+        is_recruiter_flag = None
+
+
     return {
         "isAuthenticated": is_authenticated,
         "userType": user_type,
@@ -199,7 +207,9 @@ def user_info(user):
         "isPartOfTeam": is_part_of_team,
         "isTeamLead": is_team_lead,
         "agencyId": agency_id,
-        "agencyDomains": domains
+        "agencyDomains": domains,
+        "is_recruiter_flag":is_recruiter_flag
+        # #I added this
     }
 
 

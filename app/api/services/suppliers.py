@@ -290,3 +290,16 @@ class SuppliersService(Service):
         )
 
         return [r._asdict() for r in results]
+
+    def get_type_supplier(self):
+            subquery = (
+                db
+                .session
+                .query(
+                    Supplier.is_recruiter
+                )
+                .join(User, User.supplier_code == Supplier.code)
+                .subquery()
+            )
+
+            return subquery.serialize()
