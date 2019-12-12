@@ -1221,6 +1221,7 @@ def update_brief_response(brief_id, brief_response_id):
     ):
         do_required_file_check = False
 
+    previous_status = brief_response.status
     brief_response.data = brief_response_json
     if submit:
         try:
@@ -1329,7 +1330,9 @@ def update_brief_response(brief_id, brief_response_id):
     except Exception as e:
         rollbar.report_exc_info()
 
-    return jsonify(briefResponses=brief_response.serialize()), 200
+    response_data = brief_response.serialize()
+    response_data['previous_status'] = previous_status
+    return jsonify(response_data), 200
 
 
 @api.route('/framework/<string:framework_slug>', methods=["GET"])
