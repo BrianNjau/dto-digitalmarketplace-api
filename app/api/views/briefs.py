@@ -964,7 +964,7 @@ def get_brief_responses(brief_id):
                     )
                     brief.data['sellers'][seller_code]['response_count'] = len(brief_responses_by_seller)
     else:
-        brief_responses = brief_responses_service.get_brief_responses(brief_id, supplier_code)
+        brief_responses = brief_responses_service.get_brief_responses(brief_id, supplier_code, order_by_status=True)
 
     old_work_order_creator = use_old_work_order_creator(brief.published_at)
 
