@@ -184,7 +184,7 @@ def test_save_draft_brief_response(brief_response,
     )
     assert res.status_code == 200
     data = json.loads(res.get_data(as_text=True))
-    assert data['briefResponses']['status'] == 'draft'
+    assert data['status'] == 'draft'
 
 
 @mock.patch('app.tasks.publish_tasks.brief_response')
