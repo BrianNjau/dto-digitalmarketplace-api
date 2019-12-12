@@ -146,8 +146,11 @@ def user_info(user):
     except AttributeError:
         email_address = None
 
+    is_recruiter_flag = False
     try:
         supplier_code = current_user.supplier_code
+        supplier= suppliers.get_supplier_by_code(supplier_code)
+        is_recruiter_flag = True if supplier.is_recruiter == "true" else False
     except AttributeError:
         supplier_code = None
 
@@ -188,12 +191,6 @@ def user_info(user):
     except AttributeError:
         agency_id = None
 
-    #I added this
-    try:
-        is_recruiter_flag = suppliers.get_type_supplier()
-    except AttributeError:
-        is_recruiter_flag = None
-
 
     return {
         "isAuthenticated": is_authenticated,
@@ -208,7 +205,7 @@ def user_info(user):
         "isTeamLead": is_team_lead,
         "agencyId": agency_id,
         "agencyDomains": domains,
-        "is_recruiter_flag":is_recruiter_flag
+        "isRecruiterFlag":is_recruiter_flag
         # #I added this
     }
 
