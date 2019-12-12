@@ -163,10 +163,10 @@ def _can_do_brief_response(brief_id, update_only=False):
             number_of_suppliers = brief.data.get('numberOfSuppliers', 0)
             if (brief_response_count >= int(number_of_suppliers)):
                 if number_of_suppliers == 1:
-                    message = "There is already a brief response for supplier '{}'".format(supplier.code)
+                    message = "There is already a draft and/or response for this opportunity"
                 else:
-                    message = "There are already {} brief responses for supplier '{}'".format(
-                        number_of_suppliers, supplier.code
+                    message = "There are already {} drafts and/or responses for this opportunity".format(
+                        number_of_suppliers
                     )
                 abort(message)
     else:
