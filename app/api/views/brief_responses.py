@@ -10,7 +10,7 @@ from app.api.services import (
     audit_types,
     work_order_service
 )
-from app.emails import send_brief_response_withdrawn_email
+from app.emails import send_specialist_brief_response_withdrawn_email, send_brief_response_withdrawn_email
 from app.tasks import publish_tasks
 from ...models import AuditEvent
 from app.api.helpers import role_required
@@ -71,7 +71,10 @@ def withdraw_brief_response(brief_response_id):
                 brief = briefs.get(id=brief_response.brief_id)
                 supplier = suppliers.get_supplier_by_code(brief_response.supplier_code)
                 if brief and supplier:
-                    send_brief_response_withdrawn_email(supplier, brief, brief_response)
+                    if brief.lot.slug == 'specialist':
+                        send_specialist_brief_response_withdrawn_email(supplier, brief, brief_response)
+                    else:
+                        send_brief_response_withdrawn_email(supplier, brief, brief_response)
 
             publish_tasks.brief_response.delay(
                 publish_tasks.compress_brief_response(brief_response),
