@@ -5,10 +5,12 @@ from app.api.helpers import abort, not_found
 from app.api.services import (
     briefs,
     brief_responses_service,
+    suppliers,
     audit_service,
     audit_types,
     work_order_service
 )
+from app.emails import send_specialist_brief_response_withdrawn_email, send_brief_response_withdrawn_email
 from app.tasks import publish_tasks
 from ...models import AuditEvent
 from app.api.helpers import role_required
@@ -46,6 +48,7 @@ def withdraw_brief_response(brief_response_id):
 
     if brief_response:
         if brief_response.withdrawn_at is None:
+            status_before_withdrawn = brief_response.status
             brief_response.withdrawn_at = utcnow()
             brief_responses_service.save(brief_response)
 
@@ -63,6 +66,15 @@ def withdraw_brief_response(brief_response_id):
             except Exception as e:
                 extra_data = {'audit_type': audit_types.update_brief_response, 'briefResponseId': brief_response.id}
                 rollbar.report_exc_info(extra_data=extra_data)
+
+            if status_before_withdrawn == 'submitted':
+                brief = briefs.get(id=brief_response.brief_id)
+                supplier = suppliers.get_supplier_by_code(brief_response.supplier_code)
+                if brief and supplier:
+                    if brief.lot.slug == 'specialist':
+                        send_specialist_brief_response_withdrawn_email(supplier, brief, brief_response)
+                    else:
+                        send_brief_response_withdrawn_email(supplier, brief, brief_response)
 
             publish_tasks.brief_response.delay(
                 publish_tasks.compress_brief_response(brief_response),

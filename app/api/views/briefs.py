@@ -1303,9 +1303,15 @@ def update_brief_response(brief_id, brief_response_id):
         brief_response.submit()
         try:
             if brief.lot.slug == 'specialist':
-                send_specialist_brief_response_received_email(supplier, brief, brief_response)
+                if previous_status == 'draft':
+                    send_specialist_brief_response_received_email(supplier, brief, brief_response)
+                if previous_status == 'submitted':
+                    send_specialist_brief_response_received_email(supplier, brief, brief_response, is_update=True)
             else:
-                send_brief_response_received_email(supplier, brief, brief_response)
+                if previous_status == 'draft':
+                    send_brief_response_received_email(supplier, brief, brief_response)
+                if previous_status == 'submitted':
+                    send_brief_response_received_email(supplier, brief, brief_response, is_update=True)
         except Exception as e:
             brief_response_json['brief_id'] = brief_id
             rollbar.report_exc_info(extra_data=brief_response_json)
