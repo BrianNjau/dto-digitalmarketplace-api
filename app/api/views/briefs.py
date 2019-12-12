@@ -391,13 +391,19 @@ def get_brief(brief_id):
     if brief.status == 'draft' and not is_brief_owner:
         return forbidden("Unauthorised to view brief")
 
-    brief_response_count = len(brief_responses_service.get_brief_responses(brief_id, None))
+    brief_response_count = len(brief_responses_service.get_brief_responses(brief_id, None, submitted_only=True))
     supplier_brief_response_count = 0
+    supplier_brief_response_count_submitted = 0
+    supplier_brief_response_count_draft = 0
     supplier_brief_response_id = 0
     supplier_brief_response_is_draft = False
     if user_role == 'supplier':
         supplier_brief_responses = brief_responses_service.get_brief_responses(brief_id, current_user.supplier_code)
         supplier_brief_response_count = len(supplier_brief_responses)
+        supplier_brief_response_count_submitted = len(
+            [x for x in supplier_brief_responses if x['status'] == 'submitted']
+        )
+        supplier_brief_response_count_draft = len([x for x in supplier_brief_responses if x['status'] == 'draft'])
         if supplier_brief_response_count == 1:
             supplier_brief_response_id = supplier_brief_responses[0]['id']
             supplier_brief_response_is_draft = True if supplier_brief_responses[0]['status'] == 'draft' else False
@@ -481,6 +487,8 @@ def get_brief(brief_id):
                    evidence_id=evidence_id,
                    evidence_id_rejected=evidence_id_rejected,
                    supplier_brief_response_count=supplier_brief_response_count,
+                   supplier_brief_response_count_submitted=supplier_brief_response_count_submitted,
+                   supplier_brief_response_count_draft=supplier_brief_response_count_draft,
                    supplier_brief_response_id=supplier_brief_response_id,
                    supplier_brief_response_is_draft=supplier_brief_response_is_draft,
                    can_respond=can_respond,
