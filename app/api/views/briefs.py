@@ -162,9 +162,13 @@ def _can_do_brief_response(brief_id, update_only=False):
         if not update_only:
             number_of_suppliers = brief.data.get('numberOfSuppliers', 0)
             if (brief_response_count >= int(number_of_suppliers)):
-                abort(
-                    "There are already {} brief responses for supplier '{}'".format(number_of_suppliers, supplier.code)
-                )
+                if number_of_suppliers == 1:
+                    message = "There is already a draft and/or response for this opportunity"
+                else:
+                    message = "There are already {} drafts and/or responses for this opportunity".format(
+                        number_of_suppliers
+                    )
+                abort(message)
     else:
         # Check if brief response already exists from this supplier when outcome for all other types
         if not update_only and len(brief_responses_service.get_brief_responses(brief.id, supplier.code)) > 0:
@@ -960,7 +964,7 @@ def get_brief_responses(brief_id):
                     )
                     brief.data['sellers'][seller_code]['response_count'] = len(brief_responses_by_seller)
     else:
-        brief_responses = brief_responses_service.get_brief_responses(brief_id, supplier_code)
+        brief_responses = brief_responses_service.get_brief_responses(brief_id, supplier_code, order_by_status=True)
 
     old_work_order_creator = use_old_work_order_creator(brief.published_at)
 
@@ -1175,6 +1179,7 @@ def create_brief_response(brief_id):
 
 
 @api.route('/brief/<int:brief_id>/respond/<int:brief_response_id>', methods=['PATCH'])
+@exception_logger
 @login_required
 @role_required('supplier')
 def update_brief_response(brief_id, brief_response_id):

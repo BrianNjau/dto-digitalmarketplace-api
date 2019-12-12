@@ -25,7 +25,8 @@ class BriefResponsesService(Service):
         db.session.commit()
         return brief_response
 
-    def get_brief_responses(self, brief_id, supplier_code, submitted_only=False, include_withdrawn=False):
+    def get_brief_responses(self, brief_id, supplier_code, order_by_status=False, submitted_only=False,
+                            include_withdrawn=False):
         query = (
             db.session.query(BriefResponse.created_at,
                              BriefResponse.submitted_at,
@@ -51,7 +52,10 @@ class BriefResponsesService(Service):
             query = query.filter(BriefResponse.withdrawn_at.isnot(None))
         else:
             query = query.filter(BriefResponse.withdrawn_at.is_(None))
-        query = query.order_by(BriefResponse.id.asc())
+        if order_by_status:
+            query = query.order_by(BriefResponse.status.asc(), BriefResponse.id.asc())
+        else:
+            query = query.order_by(BriefResponse.id.asc())
 
         return [r._asdict() for r in query.all()]
 
