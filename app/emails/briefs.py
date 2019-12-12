@@ -48,7 +48,7 @@ def send_brief_response_received_email(supplier, brief, brief_response):
     )
 
 
-def send_specialist_brief_response_received_email(supplier, brief, brief_response):
+def send_specialist_brief_response_received_email(supplier, brief, brief_response, is_update=False):
     from app.api.services import audit_service, audit_types  # to circumvent circular dependency
 
     if brief.lot.slug not in ['specialist']:
@@ -122,11 +122,18 @@ def send_specialist_brief_response_received_email(supplier, brief, brief_respons
     if attachments:
         attachments = '**Other documents:**  \n\n  ' + attachments
 
-    subject = 'You submitted {} for {} ({}) successfully'.format(
-        specialist_name,
-        brief.data['title'],
-        brief.id
-    )
+    if is_update:
+        subject = "{}'s response for '{}' ({}) was updated".format(
+            specialist_name,
+            brief.data['title'],
+            brief.id
+        )
+    else:
+        subject = 'You submitted {} for {} ({}) successfully'.format(
+            specialist_name,
+            brief.data['title'],
+            brief.id
+        )
     response_security_clearance = ''
     if brief.data.get('securityClearance') == 'mustHave':
         must_have_clearance = ''
@@ -169,9 +176,13 @@ def send_specialist_brief_response_received_email(supplier, brief, brief_respons
     elif brief_response.data.get('visaStatus') == 'ForeignNationalWithAValidVisa':
         response_visa_status = 'Foreign national with a valid visa'
 
+    template_file_name = (
+        'specialist_brief_response_updated.md' if is_update else 'specialist_brief_response_submitted.md'
+    )
+
     # prepare copy
     email_body = render_email_template(
-        'specialist_brief_response_submitted.md',
+        template_file_name,
         brief_url=brief_url,
         brief_name=brief.data['title'],
         brief_organisation=brief.data['organisation'],
@@ -208,6 +219,56 @@ def send_specialist_brief_response_received_email(supplier, brief, brief_respons
             "subject": subject
         },
         db_object=brief)
+
+
+def send_brief_response_withdrawn_email(supplier, brief, brief_response):
+    from app.api.services import audit_service, audit_types  # to circumvent circular dependency
+
+    to_address = brief_response.data['respondToEmailAddress']
+
+    specialist_name = '{} {}'.format(
+        brief_response.data.get('specialistGivenNames', ''),
+        brief_response.data.get('specialistSurname', '')
+    )
+
+    subject = "{}'s response to '{}' ({}) has been withdrawn".format(
+        specialist_name,
+        brief.data['title'],
+        brief.id
+    )
+
+    brief_url = '{}/2/{}/opportunities/{}'.format(
+        current_app.config['FRONTEND_ADDRESS'],
+        brief.framework.slug,
+        brief.id
+    )
+
+    email_body = render_email_template(
+        'specialist_brief_response_withdrawn.md',
+        specialist_name=specialist_name,
+        brief_url=brief_url,
+        brief_name=brief.data['title'],
+        brief_organisation=brief.data['organisation'],
+    )
+
+    send_or_handle_error(
+        to_address,
+        email_body,
+        subject,
+        current_app.config['DM_GENERIC_NOREPLY_EMAIL'],
+        current_app.config['DM_GENERIC_SUPPORT_NAME'],
+        event_description_for_errors='brief response withdrawn'
+    )
+
+    audit_service.log_audit_event(
+        audit_type=audit_types.specialist_brief_response_withdrawn_email,
+        user='',
+        data={
+            "to_address": to_address,
+            "email_body": email_body,
+            "subject": subject
+        },
+        db_object=brief_response)
 
 
 def send_brief_closed_email(brief):
