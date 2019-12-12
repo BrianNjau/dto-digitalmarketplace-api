@@ -391,7 +391,7 @@ def get_brief(brief_id):
     if brief.status == 'draft' and not is_brief_owner:
         return forbidden("Unauthorised to view brief")
 
-    brief_response_count = len(brief_responses_service.get_brief_responses(brief_id, None))
+    brief_response_count = len(brief_responses_service.get_brief_responses(brief_id, None, submitted_only=True))
     supplier_brief_response_count = 0
     supplier_brief_response_count_submitted = 0
     supplier_brief_response_count_draft = 0
