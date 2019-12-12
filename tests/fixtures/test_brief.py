@@ -224,7 +224,7 @@ def test_cannot_respond_to_a_brief_more_than_three_times_from_the_same_supplier(
 
     res = client.post('/2/brief/1/respond')
     assert res.status_code == 400
-    assert 'There are already 3 brief responses for supplier' in res.get_data(as_text=True)
+    assert 'There are already 3 drafts and/or responses' in res.get_data(as_text=True)
 
 
 def test_cannot_respond_to_a_brief_with_wrong_number_of_essential_reqs(client, supplier_user,
