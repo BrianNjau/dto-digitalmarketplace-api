@@ -212,6 +212,12 @@ def update_evidence(evidence_id):
             data['maxDailyRate'] = int(data['maxDailyRate'])
         except ValueError as e:
             data['maxDailyRate'] = 0
+    
+    if 'maximumMarkUp' in data:
+        try:
+            data['markup'] = int(data['markup'])
+        except ValueError as e:
+            data['markup'] = 0
 
     # Validate the evidence request data
     errors = EvidenceDataValidator(data, evidence=evidence).validate(publish=publish)
