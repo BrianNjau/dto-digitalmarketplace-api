@@ -72,6 +72,13 @@ def send_specialist_brief_response_received_email(supplier, brief, brief_respons
         brief.id
     )
 
+    brief_response_url = '{}/2/brief/{}/{}/respond/{}'.format(
+        current_app.config['FRONTEND_ADDRESS'],
+        brief.id,
+        brief.lot.slug,
+        brief_response.id
+    )
+
     attachment_url = '{}/api/2/brief/{}/respond/documents/{}/'.format(
         current_app.config['FRONTEND_ADDRESS'],
         brief.id,
@@ -200,6 +207,7 @@ def send_specialist_brief_response_received_email(supplier, brief, brief_respons
         attachments=attachments,
         closing_at=brief.closed_at.to_formatted_date_string(),
         specialist_name=escape_markdown(specialist_name),
+        brief_response_url=brief_response_url,
         response_rates=response_rates,
         response_rates_excluding_gst=response_rates_excluding_gst,
         response_previously_worked=escape_markdown(brief_response.data.get('previouslyWorked')),
