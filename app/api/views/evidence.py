@@ -219,6 +219,18 @@ def update_evidence(evidence_id):
         except ValueError as e:
             data['markup'] = 0
 
+    if 'candidateSize' in data:
+        try:
+            data['database_size'] = int(data['database_size'])
+        except ValueError as e:
+            data['database_size'] = 0
+    
+    if 'candidatesPlacedIn12Months' in data:
+        try:
+            data['placed_candidates'] = int(data['placed_candidates'])
+        except ValueError as e:
+            data['placed_candidates'] = 0
+
     # Validate the evidence request data
     errors = EvidenceDataValidator(data, evidence=evidence).validate(publish=publish)
     if len(errors) > 0:
