@@ -82,7 +82,7 @@ def _can_do_brief_response(brief_id, update_only=False):
         abort("Invalid brief ID '{}'".format(brief_id))
 
     if brief.status != 'live':
-        abort("Brief must be live")
+        abort("This opportunity has closed")
 
     if brief.framework.status != 'live':
         abort("Brief framework must be live")
