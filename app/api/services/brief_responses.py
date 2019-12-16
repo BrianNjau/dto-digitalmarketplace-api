@@ -15,14 +15,12 @@ class BriefResponsesService(Service):
         if not data:
             data = {}
 
-        brief_response = BriefResponse(
+        brief_response = self.create(
             data=data,
             supplier=supplier,
             brief=brief
         )
 
-        db.session.add(brief_response)
-        db.session.commit()
         return brief_response
 
     def get_brief_responses(self, brief_id, supplier_code, order_by_status=False, submitted_only=False,
