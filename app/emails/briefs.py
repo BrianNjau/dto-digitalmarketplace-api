@@ -119,7 +119,7 @@ def send_specialist_brief_response_received_email(supplier, brief, brief_respons
 
     attachments = ''
     resume = ''
-    for attach in brief_response.data.get('attachedDocumentURL', []):
+    for attach in brief_response.data.get('resume', []):
         if not resume:
             resume = '[{}]({}{})  '.format(attach, attachment_url, attach)
         else:
