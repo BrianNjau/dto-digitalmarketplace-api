@@ -1158,9 +1158,10 @@ def download_brief_response_file(brief_id, supplier_code, slug):
 def create_brief_response(brief_id):
     supplier, brief = _can_do_brief_response(brief_id)
     try:
-        brief_response = brief_responses_service.create_brief_response(
-            supplier,
-            brief
+        brief_response = brief_responses_service.create(
+            supplier=supplier,
+            brief=brief,
+            data={}
         )
     except Exception as e:
         rollbar.report_exc_info()

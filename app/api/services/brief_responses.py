@@ -11,18 +11,6 @@ class BriefResponsesService(Service):
     def __init__(self, *args, **kwargs):
         super(BriefResponsesService, self).__init__(*args, **kwargs)
 
-    def create_brief_response(self, supplier, brief, data=None):
-        if not data:
-            data = {}
-
-        brief_response = self.create(
-            data=data,
-            supplier=supplier,
-            brief=brief
-        )
-
-        return brief_response
-
     def get_brief_responses(self, brief_id, supplier_code, order_by_status=False, submitted_only=False,
                             include_withdrawn=False):
         query = (
