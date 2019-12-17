@@ -213,19 +213,19 @@ def update_evidence(evidence_id):
         except ValueError as e:
             data['maxDailyRate'] = 0
     
-    if 'maximumMarkUp' in data:
+    if 'markup' in data:
         try:
             data['markup'] = int(data['markup'])
         except ValueError as e:
             data['markup'] = 0
 
-    if 'candidateSize' in data:
+    if 'database_size' in data:
         try:
             data['database_size'] = int(data['database_size'])
         except ValueError as e:
             data['database_size'] = 0
     
-    if 'candidatesPlacedIn12Months' in data:
+    if 'placed_candidates' in data:
         try:
             data['placed_candidates'] = int(data['placed_candidates'])
         except ValueError as e:

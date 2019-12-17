@@ -85,6 +85,28 @@ class EvidenceDataValidator(object):
             if not self.data['evidence'][criteria_id]['client'].replace(' ', ''):
                 return False
         return True
+    
+    def validate_evidence_candidate_full_name(self):
+        if 'evidence' not in self.data:
+            return False
+        used_criteria_ids = self.data['evidence'].keys()
+        for criteria_id in used_criteria_ids:
+            if 'client' not in self.data['evidence'][criteria_id]:
+                return False
+            if not self.data['evidence'][criteria_id]['client'].replace(' ', ''):
+                return False
+        return True
+
+    def validate_evidence_candidate_phone_number(self):
+        if 'evidence' not in self.data:
+            return False
+        used_criteria_ids = self.data['evidence'].keys()
+        for criteria_id in used_criteria_ids:
+            if 'client' not in self.data['evidence'][criteria_id]:
+                return False
+            if not self.data['evidence'][criteria_id]['client'].replace(' ', ''):
+                return False
+        return True
 
     def validate_evidence_background(self):
         if 'evidence' not in self.data:
@@ -161,6 +183,10 @@ class EvidenceDataValidator(object):
             errors.append('You must select which criteria you are responding to')
         if not self.validate_evidence_dates():
             errors.append('You must provide dates in your evidence and the from date must be before the to date')
+        if not self.validate_evidence_candidate_full_name():
+            errors.append('You must add the candidate full name')
+        if not self.validate_evidence_candidate_phone_number():
+            errors.append('You must add candidate phone number')
         if not self.validate_evidence_client():
             errors.append('You must add a client to your evidence')
         if not self.validate_evidence_background():
@@ -202,6 +228,11 @@ class EvidenceDataValidator(object):
                 {'name': 'id', 'type': int},
                 {'name': 'domainId', 'type': int},
                 {'name': 'maxDailyRate', 'type': int},
+                #check how this affects consultants
+                {'name': 'markup', 'type': int},
+                {'name': 'totalMaximumRate', 'type': int},
+                {'name': 'database_size', 'type': int},
+                {'name': 'placed_candidates', 'type': int},
                 {'name': 'criteria', 'type': list},
                 {'name': 'evidence', 'type': dict},
                 {'name': 'publish', 'type': bool}
@@ -217,6 +248,8 @@ class EvidenceDataValidator(object):
 
             # allowed fields and types inside each response in the evidence dict
             whitelist_evidence = [
+                {'name': 'candidateFullName', 'type': basestring},
+                {'name': 'candidatePhoneNumber', 'type': basestring},
                 {'name': 'client', 'type': basestring},
                 {'name': 'background', 'type': basestring},
                 {'name': 'response', 'type': basestring},

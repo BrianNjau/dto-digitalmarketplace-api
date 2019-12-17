@@ -48,8 +48,11 @@ class TestEvidenceService(BaseApplicationTest):
     @pytest.fixture()
     def evidence_response(self):
         yield {
+            #need to update tests
             "startDate": "2016",
-            "refereeNumber": "0412 345 678",
+            "candidateFullName": "Empress Maggie",
+            "client": "DTA",
+            "candidatePhoneNumber": "0412 737 333",
             "endDate": "2017",
             "refereeName": "Rafael Referee",
             "client": "DTA",

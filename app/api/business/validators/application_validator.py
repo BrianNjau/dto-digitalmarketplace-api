@@ -5,7 +5,7 @@ class ApplicationValidator(object):
 
     def __init__(self, application):
         self.application = application
-
+    #reshma
     def validate_all(self):
         return (self.validate_basics() +
                 self.validate_details() +
