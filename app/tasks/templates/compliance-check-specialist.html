@@ -118,6 +118,7 @@
                 <thead>
                     <tr class="au-table__header">
                         <th scope="col">Seller</th>
+                        <th scope="col">Recruiter</th>
                         <th scope="col">Candidate</th>
                         <th scope="col">Availability</th>
                         {% if brief.data.preferredFormatForRates == 'dailyRate'%}
@@ -147,6 +148,12 @@
                     {% for response in responses %}
                     <tr class="au-table__body">
                         <td>
+                            <b>{{ response.supplier.name }}</b><br />
+                            {{ response.data.get('respondToEmailAddress', 'Unknown') }}<br />
+                            {{ response.supplier.data.get('contact_phone', 'Unknown') }}
+                        </td>
+                        <td>
+                            <!-- NEEDS TO BE CHANGED ASAP -->
                             <b>{{ response.supplier.name }}</b><br />
                             {{ response.data.get('respondToEmailAddress', 'Unknown') }}<br />
                             {{ response.supplier.data.get('contact_phone', 'Unknown') }}
