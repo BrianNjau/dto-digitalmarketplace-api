@@ -1,4 +1,4 @@
-Your response for [{{brief_title}} at {{organisation}}]({{brief_url}}) was withdrawn by {{supplier_user}}.  
+Your response for [{{brief_title}}]({{brief_url}}) at {{organisation}} has been withdrawn by {{supplier_user}}.  
   
 If this was a mistake, please [contact the Marketplace]({{ frontend_url }}/contact-us) immediately.
   

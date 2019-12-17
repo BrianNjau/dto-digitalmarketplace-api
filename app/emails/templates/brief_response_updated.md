@@ -1,6 +1,6 @@
-Your response for [{{brief_title}} at {{organisation}}]({{brief_url}}) was updated by {{supplier_user}}.  
+Your response for [{{brief_title}}]({{brief_url}}) at {{organisation}} has been updated by {{supplier_user}}.  
   
-If you did not intend changes to be made, please [contact the Marketplace]({{ frontend_url }}/contact-us) immediately.  
+If you did not intend changes to be made, you can [view and update your response]({{brief_response_url}}) before the opportunity closes on {{closing_at}}.
   
 Regards,  
   
