@@ -43,6 +43,7 @@ def send_brief_response_received_email(supplier, brief, brief_response, supplier
     # prepare copy
     email_body = render_email_template(
         template_file_name,
+        brief_id=brief.id,
         brief_url=brief_url,
         brief_response_url=brief_response_url,
         ask_question_url=ask_question_url,
@@ -83,10 +84,9 @@ def send_specialist_brief_response_received_email(supplier, brief, brief_respons
         brief.id
     )
 
-    brief_response_url = '{}/2/brief/{}/{}/respond/{}'.format(
+    brief_response_url = '{}/2/brief/{}/specialist2/respond/{}'.format(
         current_app.config['FRONTEND_ADDRESS'],
         brief.id,
-        brief.lot.slug,
         brief_response.id
     )
 
@@ -209,6 +209,7 @@ def send_specialist_brief_response_received_email(supplier, brief, brief_respons
         template_file_name,
         frontend_url=current_app.config['FRONTEND_ADDRESS'],
         brief_url=brief_url,
+        brief_id=brief.id,
         brief_name=brief.data['title'],
         brief_organisation=brief.data['organisation'],
         supplier_user=supplier_user,
@@ -275,6 +276,7 @@ def send_specialist_brief_response_withdrawn_email(supplier, brief, brief_respon
         specialist_name=specialist_name,
         brief_url=brief_url,
         brief_name=brief.data['title'],
+        brief_id=brief.id,
         frontend_url=current_app.config['FRONTEND_ADDRESS'],
         brief_organisation=brief.data['organisation'],
         supplier_user=supplier_user
@@ -321,6 +323,7 @@ def send_brief_response_withdrawn_email(supplier, brief, brief_response, supplie
         frontend_url=current_app.config['FRONTEND_ADDRESS'],
         brief_url=brief_url,
         brief_title=brief.data['title'],
+        brief_id=brief.id,
         organisation=brief.data['organisation'],
         supplier_user=supplier_user
     )
