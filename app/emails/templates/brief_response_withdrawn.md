@@ -1,6 +1,6 @@
-Your response for [{{brief_title}} at {{organisation}}]({{brief_url}}) was withdrawn.  
+Your response for [{{brief_title}} at {{organisation}}]({{brief_url}}) was withdrawn by {{supplier_user}}.  
   
-If you did not make these changes, please [contact the Marketplace]({{ frontend_url }}/contact-us) immediately.  
+If this was a mistake, please [contact the Marketplace]({{ frontend_url }}/contact-us) immediately.
   
 Regards,  
   

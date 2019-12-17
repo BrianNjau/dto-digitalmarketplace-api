@@ -9,7 +9,7 @@ from .util import render_email_template, send_or_handle_error, escape_markdown
 import rollbar
 
 
-def send_brief_response_received_email(supplier, brief, brief_response, is_update=False):
+def send_brief_response_received_email(supplier, brief, brief_response, supplier_user=None, is_update=False):
     to_address = brief_response.data['respondToEmailAddress']
 
     if brief.lot.slug in ['rfx', 'atm', 'training2']:
@@ -41,7 +41,8 @@ def send_brief_response_received_email(supplier, brief, brief_response, is_updat
         brief_title=brief_title,
         supplier_name=supplier.name,
         frontend_url=current_app.config['FRONTEND_ADDRESS'],
-        organisation=brief.data['organisation']
+        organisation=brief.data['organisation'],
+        supplier_user=supplier_user
     )
 
     send_or_handle_error(
@@ -54,7 +55,8 @@ def send_brief_response_received_email(supplier, brief, brief_response, is_updat
     )
 
 
-def send_specialist_brief_response_received_email(supplier, brief, brief_response, is_update=False):
+def send_specialist_brief_response_received_email(supplier, brief, brief_response, supplier_user=None,
+                                                  is_update=False):
     from app.api.services import audit_service, audit_types  # to circumvent circular dependency
 
     if brief.lot.slug not in ['specialist']:
@@ -70,6 +72,13 @@ def send_specialist_brief_response_received_email(supplier, brief, brief_respons
         current_app.config['FRONTEND_ADDRESS'],
         brief.framework.slug,
         brief.id
+    )
+
+    brief_response_url = '{}/2/brief/{}/{}/respond/{}'.format(
+        current_app.config['FRONTEND_ADDRESS'],
+        brief.id,
+        brief.lot.slug,
+        brief_response.id
     )
 
     attachment_url = '{}/api/2/brief/{}/respond/documents/{}/'.format(
@@ -119,7 +128,7 @@ def send_specialist_brief_response_received_email(supplier, brief, brief_respons
 
     attachments = ''
     resume = ''
-    for attach in brief_response.data.get('attachedDocumentURL', []):
+    for attach in brief_response.data.get('resume', []):
         if not resume:
             resume = '[{}]({}{})  '.format(attach, attachment_url, attach)
         else:
@@ -193,6 +202,7 @@ def send_specialist_brief_response_received_email(supplier, brief, brief_respons
         brief_url=brief_url,
         brief_name=brief.data['title'],
         brief_organisation=brief.data['organisation'],
+        supplier_user=supplier_user,
         essential_requirements=ess,
         nice_to_have_requirements=nth,
         criteria_responses=criteriaResponses,
@@ -200,6 +210,7 @@ def send_specialist_brief_response_received_email(supplier, brief, brief_respons
         attachments=attachments,
         closing_at=brief.closed_at.to_formatted_date_string(),
         specialist_name=escape_markdown(specialist_name),
+        brief_response_url=brief_response_url,
         response_rates=response_rates,
         response_rates_excluding_gst=response_rates_excluding_gst,
         response_previously_worked=escape_markdown(brief_response.data.get('previouslyWorked')),
@@ -228,7 +239,7 @@ def send_specialist_brief_response_received_email(supplier, brief, brief_respons
         db_object=brief)
 
 
-def send_specialist_brief_response_withdrawn_email(supplier, brief, brief_response):
+def send_specialist_brief_response_withdrawn_email(supplier, brief, brief_response, supplier_user=None):
     from app.api.services import audit_service, audit_types  # to circumvent circular dependency
 
     to_address = brief_response.data['respondToEmailAddress']
@@ -257,6 +268,7 @@ def send_specialist_brief_response_withdrawn_email(supplier, brief, brief_respon
         brief_name=brief.data['title'],
         frontend_url=current_app.config['FRONTEND_ADDRESS'],
         brief_organisation=brief.data['organisation'],
+        supplier_user=supplier_user
     )
 
     send_or_handle_error(
@@ -279,7 +291,7 @@ def send_specialist_brief_response_withdrawn_email(supplier, brief, brief_respon
         db_object=brief_response)
 
 
-def send_brief_response_withdrawn_email(supplier, brief, brief_response):
+def send_brief_response_withdrawn_email(supplier, brief, brief_response, supplier_user=None):
     from app.api.services import audit_service, audit_types  # to circumvent circular dependency
 
     to_address = brief_response.data['respondToEmailAddress']
@@ -301,6 +313,7 @@ def send_brief_response_withdrawn_email(supplier, brief, brief_response):
         brief_url=brief_url,
         brief_title=brief.data['title'],
         organisation=brief.data['organisation'],
+        supplier_user=supplier_user
     )
 
     send_or_handle_error(

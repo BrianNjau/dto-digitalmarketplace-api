@@ -1,6 +1,6 @@
-{{specialist_name}}'s response for [{{brief_name}} at {{brief_organisation}}]({{brief_url}}) has been withdrawn.
+{{specialist_name}}'s response for [{{brief_name}}]({{brief_url}}) at {{brief_organisation}} has been withdrawn by {{supplier_user}}.
   
-If you did not make these changes, please [contact the Marketplace]({{ frontend_url }}/contact-us) immediately.  
+If this was a mistake, please [contact the Marketplace]({{ frontend_url }}/contact-us) immediately.
   
 Regards,  
   

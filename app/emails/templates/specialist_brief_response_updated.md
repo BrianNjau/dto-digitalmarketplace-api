@@ -1,6 +1,8 @@
-{{specialist_name}}'s response for [{{brief_name}} at {{brief_organisation}}]({{brief_url}}) was updated.  
+{{specialist_name}}'s response for [{{brief_name}}]({{brief_url}}) at {{brief_organisation}} was updated by {{supplier_user}}.  
   
-If you did not make these changes, please [contact the Marketplace]({{ frontend_url }}/contact-us) immediately.  
+If you did not intend changes to be made, you can [view and update {{specialist_name}}'s response]({{brief_response_url}}) before the opportunity closes on {{closing_at}}.
+  
+Please [contact the Marketplace]({{ frontend_url }}/contact-us) if there are any issues.  
   
 Regards,  
   
