@@ -1,4 +1,4 @@
-{{specialist_name}}'s response for [{{brief_name}}]({{brief_url}}) at {{brief_organisation}} was updated.  
+{{specialist_name}}'s response for [{{brief_name}}]({{brief_url}}) at {{brief_organisation}} was updated by {{supplier_user}}.  
   
 If you did not intend changes to be made, you can [view and update {{specialist_name}}'s response]({{brief_response_url}}) before the opportunity closes on {{closing_at}}.
   

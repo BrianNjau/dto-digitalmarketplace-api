@@ -1307,12 +1307,16 @@ def update_brief_response(brief_id, brief_response_id):
                 if previous_status == 'draft':
                     send_specialist_brief_response_received_email(supplier, brief, brief_response)
                 if previous_status == 'submitted':
-                    send_specialist_brief_response_received_email(supplier, brief, brief_response, is_update=True)
+                    send_specialist_brief_response_received_email(
+                        supplier, brief, brief_response, supplier_user=current_user.name, is_update=True
+                    )
             else:
                 if previous_status == 'draft':
                     send_brief_response_received_email(supplier, brief, brief_response)
                 if previous_status == 'submitted':
-                    send_brief_response_received_email(supplier, brief, brief_response, is_update=True)
+                    send_brief_response_received_email(
+                        supplier, brief, brief_response, supplier_user=current_user.name, is_update=True
+                    )
         except Exception as e:
             brief_response_json['brief_id'] = brief_id
             rollbar.report_exc_info(extra_data=brief_response_json)

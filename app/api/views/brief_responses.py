@@ -72,9 +72,13 @@ def withdraw_brief_response(brief_response_id):
                 supplier = suppliers.get_supplier_by_code(brief_response.supplier_code)
                 if brief and supplier:
                     if brief.lot.slug == 'specialist':
-                        send_specialist_brief_response_withdrawn_email(supplier, brief, brief_response)
+                        send_specialist_brief_response_withdrawn_email(
+                            supplier, brief, brief_response, supplier_user=current_user.name
+                        )
                     else:
-                        send_brief_response_withdrawn_email(supplier, brief, brief_response)
+                        send_brief_response_withdrawn_email(
+                            supplier, brief, brief_response, supplier_user=current_user.name
+                        )
 
             publish_tasks.brief_response.delay(
                 publish_tasks.compress_brief_response(brief_response),
@@ -131,7 +135,7 @@ def get_brief_response(brief_response_id):
 
     if brief_response:
         if brief_response.withdrawn_at is not None:
-            abort('Brief response {} is withdrawn'.format(brief_response_id))
+            abort('This response has been withdrawn')
     else:
         not_found('Cannot find brief response with brief_response_id :{} and supplier_code: {}'
                   .format(brief_response_id, current_user.supplier_code))
