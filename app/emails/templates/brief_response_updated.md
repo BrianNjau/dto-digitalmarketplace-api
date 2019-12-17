@@ -1,4 +1,4 @@
-Your response for [{{brief_title}}]({{brief_url}}) at {{organisation}} has been updated by {{supplier_user}}.  
+Your response for [{{brief_title}} ({{brief_id}})]({{brief_url}}) at {{organisation}} has been updated by {{supplier_user}}.  
   
 If you did not intend changes to be made, you can [view and update your response]({{brief_response_url}}) before the opportunity closes on {{closing_at}}.
   
