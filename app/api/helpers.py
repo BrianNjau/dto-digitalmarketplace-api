@@ -147,11 +147,27 @@ def user_info(user):
         email_address = None
 
     is_recruiter_flag = False
+    is_hybrid_flag = False
     try:
         supplier_code = current_user.supplier_code
         supplier= suppliers.get_supplier_by_code(supplier_code)
+        
+        is_hybrid_flag = True if supplier.data['recruiter'] == "both" else False
+
+        is_recruiter_flag = True if supplier.data['recruiter'] == "yes" else False
+
+            
+        # else if supplier.data['recruiter'] == "yes":
+        #     is_recruiter_flag = True
+
+        # else:
+        #     False
+        
+        # is_hybrid_flag = True if supplier.data['recruiter'] == "both" else False
+        # is_recruiter_flag = True if supplier.data['recruiter'] == "yes" else False
         #is_recruiter in the supplier column returns a string hence casting as a bool
-        is_recruiter_flag = True if supplier.is_recruiter == "true" else False
+        # is_recruiter_flag = True if supplier.is_recruiter == "true" else False
+        # print(supplier.data['recruiter'])
     except AttributeError:
         supplier_code = None
 
@@ -206,7 +222,8 @@ def user_info(user):
         "isTeamLead": is_team_lead,
         "agencyId": agency_id,
         "agencyDomains": domains,
-        "isRecruiterFlag":is_recruiter_flag
+        "isRecruiterFlag":is_recruiter_flag,
+        "isHybridFlag":is_hybrid_flag
 
     }
 
