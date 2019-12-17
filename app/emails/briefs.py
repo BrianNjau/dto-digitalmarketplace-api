@@ -22,6 +22,13 @@ def send_brief_response_received_email(supplier, brief, brief_response, supplier
         current_app.config['FRONTEND_ADDRESS'], brief.id
     )
 
+    brief_response_url = '{}/2/brief/{}/{}/respond/{}'.format(
+        current_app.config['FRONTEND_ADDRESS'],
+        brief.id,
+        brief.lot.slug,
+        brief_response.id
+    )
+
     if is_update:
         subject = "You've updated your response for {}"
     else:
@@ -37,7 +44,9 @@ def send_brief_response_received_email(supplier, brief, brief_response, supplier
     email_body = render_email_template(
         template_file_name,
         brief_url=brief_url,
+        brief_response_url=brief_response_url,
         ask_question_url=ask_question_url,
+        closing_at=brief.closed_at.to_formatted_date_string(),
         brief_title=brief_title,
         supplier_name=supplier.name,
         frontend_url=current_app.config['FRONTEND_ADDRESS'],
