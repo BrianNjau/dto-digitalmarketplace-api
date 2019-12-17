@@ -172,7 +172,10 @@ def _can_do_brief_response(brief_id, update_only=False):
     else:
         # Check if brief response already exists from this supplier when outcome for all other types
         if not update_only and len(brief_responses_service.get_brief_responses(brief.id, supplier.code)) > 0:
-            abort("Brief response already exists for supplier '{}'".format(supplier.code))
+            abort(
+                'A response for this opportunity already exists. Please check your dashboard to see where your \
+                response is up to.'
+            )
 
     return supplier, brief
 
