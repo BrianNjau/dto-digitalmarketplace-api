@@ -1204,7 +1204,7 @@ def update_brief_response(brief_id, brief_response_id):
         withdrawn_at=None
     ).one_or_none()
     if not brief_response or brief_response.status not in ['submitted', 'draft']:
-        not_found('Brief response not found')
+        not_found('This response does not exist or has been withdrawn')
     if brief.status != 'live':
         abort('Brief responses can only be edited when the brief is still live')
 
