@@ -172,7 +172,10 @@ def _can_do_brief_response(brief_id, update_only=False):
     else:
         # Check if brief response already exists from this supplier when outcome for all other types
         if not update_only and len(brief_responses_service.get_brief_responses(brief.id, supplier.code)) > 0:
-            abort("Brief response already exists for supplier '{}'".format(supplier.code))
+            abort(
+                'A response for this opportunity already exists. Please check your dashboard to see where your \
+                response is up to.'
+            )
 
     return supplier, brief
 
@@ -1201,7 +1204,7 @@ def update_brief_response(brief_id, brief_response_id):
         withdrawn_at=None
     ).one_or_none()
     if not brief_response or brief_response.status not in ['submitted', 'draft']:
-        not_found('Brief response not found')
+        not_found('This response does not exist or has been withdrawn')
     if brief.status != 'live':
         abort('Brief responses can only be edited when the brief is still live')
 
