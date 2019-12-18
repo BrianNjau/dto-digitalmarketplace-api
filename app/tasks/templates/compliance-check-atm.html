@@ -119,16 +119,16 @@
                     <tr class="au-table__header">
                         <th scope="col">Seller</th>
                         <th scope="col">Recruiter</th>
-                        <th scope="col">Candidate</th>
-                        <th scope="col">Availability</th>
+                        <th scope="col">Email</th>
+                        <th scope="col">Phone number</th>
                         {% if brief.data.preferredFormatForRates == 'dailyRate'%}
                             <th scope="col">Day rate</th>
                         {% endif %}
                         {% if brief.data.preferredFormatForRates == 'hourlyRate'%}
                             <th scope="col">Houly rate</th>
                         {% endif %}
-                        <th scope="col">Previously employed</th>
-                        <th scope="col">Citizenship status</th>
+                        <th scope="col">ABN</th>
+                        <th scope="col">Assessed Daily Rate</th>
                         {% if brief.data.securityClearance == 'mustHave'%}
                             <th scope="col">
                                 {% if brief.data.securityClearanceCurrent == 'baseline' %}
@@ -156,23 +156,9 @@
                             <b>{{ response.supplier.data.get('recruiter','Unknown')}}</b><br />
                         </td>
                         <td>
-                            {{ response.data.get('specialistGivenNames', 'Unknown') }}
-                            {{ ' ' }}
-                            {{ response.data.get('specialistSurname', 'Unknown') }}
+                            {{ response.data.get('respondToEmailAddress', 'Unknown') }}<br />
                         </td>
-                        <td>{{ response.data.get('availability', 'Unknown') }}</td>
-                        {% if brief.data.preferredFormatForRates == 'dailyRate'%}
-                            <td>
-                                ${{ response.data.get('dayRateExcludingGST', 'Unknown') }} (excluding GST)<br />
-                                ${{ response.data.get('dayRate', 'Unknown') }} (including GST)
-                            </td>
-                        {% endif %}
-                        {% if brief.data.preferredFormatForRates == 'hourlyRate'%}
-                            <td>
-                                ${{ response.data.get('hourRateExcludingGST', 'Unknown') }} (excluding GST)<br />
-                                ${{ response.data.get('hourRate', 'Unknown') }} (including GST)
-                            </td>
-                        {% endif %}
+                        <td>{{ response.supplier.data.get('contact_phone', 'Unknown') }}</td>
                         <td>{{ response.data.get('previouslyWorked', 'Unknown') }}</td>
                         <td>
                         {% if response.data.visaStatus == 'AustralianCitizen' %}
@@ -183,9 +169,6 @@
                             Foreign national with a valid visa
                         {% endif %}
                         </td>
-                        {% if brief.data.securityClearance == 'mustHave'%}
-                            <td>{{ response.data.get('securityClearance', 'Unknown') }}</td>
-                        {% endif %}
                     </tr>
                     {% endfor %}
                 </tbody>

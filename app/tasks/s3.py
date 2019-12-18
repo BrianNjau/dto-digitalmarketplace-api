@@ -78,20 +78,20 @@ def create_responses_zip(brief_id):
 
     with BytesIO() as archive:
         with zipfile.ZipFile(archive, mode='w', compression=zipfile.ZIP_DEFLATED) as zf:
-            for file in files:
-                s3file = file['key']
-                with BytesIO() as s3io:
-                    try:
-                        bucket.download_fileobj(s3file, s3io)
-                        zf.writestr(file['zip_name'], s3io.getvalue())
-                    except botocore.exceptions.ClientError as e:
-                        raise CreateResponsesZipException('The file "{}" failed to download'.format(s3file))
+            # for file in files:
+            #     s3file = file['key']
+            #     with BytesIO() as s3io:
+            #         try:
+            #             bucket.download_fileobj(s3file, s3io)
+            #             zf.writestr(file['zip_name'], s3io.getvalue())
+            #         except botocore.exceptions.ClientError as e:
+            #             raise CreateResponsesZipException('The file "{}" failed to download'.format(s3file))
 
-            csvdata = generate_brief_responses_csv(brief, responses)
-            csv_file_name = ('opportunity-{}-raw.csv'.format(brief_id)
-                             if brief.lot.slug == 'digital-professionals'
-                             else 'responses-to-requirements-{}.csv'.format(brief_id))
-            zf.writestr(csv_file_name, csvdata.encode('utf-8'))
+            # csvdata = generate_brief_responses_csv(brief, responses)
+            # csv_file_name = ('opportunity-{}-raw.csv'.format(brief_id)
+            #                  if brief.lot.slug == 'digital-professionals'
+            #                  else 'responses-to-requirements-{}.csv'.format(brief_id))
+            # zf.writestr(csv_file_name, csvdata.encode('utf-8'))
 
             if brief.lot.slug == 'digital-professionals':
                 compliance_check_template = template_env.get_template('compliance-check.html')
@@ -111,6 +111,38 @@ def create_responses_zip(brief_id):
                     candidates=candidates
                 )
                 zf.writestr('responses-{}.html'.format(brief_id), response_criteria_html.encode('utf-8'))
+            
+            elif brief.lot.slug == 'atm':
+                compliance_check_template = template_env.get_template('compliance-check-atm.html')
+                compliance_check_html = render_template(
+                    compliance_check_template,
+                    brief=brief,
+                    responses=responses
+                )
+                zf.writestr('Compliance check ({}).html'.format(brief_id), compliance_check_html.encode('utf-8'))
+
+                response_criteria_template = template_env.get_template('response-criteria-atm.html')
+
+                candidates = []
+                for response in responses:
+                    data = response.data
+                    candidates.append({
+                        'essential_requirement_responses': data.get('essentialRequirements', {}),
+                        'nice_to_have_requirement_responses': data.get('niceToHaveRequirements', {}),
+                        'name': '{} {}'.format(data.get('specialistGivenNames', ''), data.get('specialistSurname', '')),
+                        'seller': response.supplier.name
+                    })
+
+                response_criteria_html = render_template(
+                    response_criteria_template,
+                    brief=brief,
+                    candidates=candidates,
+                    essential_requirements=brief.data.get('essentialRequirements', {}),
+                    nice_to_have_requirements=brief.data.get('niceToHaveRequirements', {})
+                )
+
+                zf.writestr('Responses ({}).html'.format(brief_id), response_criteria_html.encode('utf-8'))
+
             elif brief.lot.slug == 'specialist':
                 compliance_check_template = template_env.get_template('compliance-check-specialist.html')
                 compliance_check_html = render_template(
@@ -141,6 +173,23 @@ def create_responses_zip(brief_id):
                 )
 
                 zf.writestr('Responses ({}).html'.format(brief_id), response_criteria_html.encode('utf-8'))
+
+                #moving this 
+            for file in files:
+                s3file = file['key']
+                with BytesIO() as s3io:
+                    try:
+                        bucket.download_fileobj(s3file, s3io)
+                        zf.writestr(file['zip_name'], s3io.getvalue())
+                    except botocore.exceptions.ClientError as e:
+                        raise CreateResponsesZipException('The file "{}" failed to download'.format(s3file))
+
+            csvdata = generate_brief_responses_csv(brief, responses)
+            csv_file_name = ('opportunity-{}-raw.csv'.format(brief_id)
+                             if brief.lot.slug == 'digital-professionals'
+                             else 'responses-to-requirements-{}.csv'.format(brief_id))
+            zf.writestr(csv_file_name, csvdata.encode('utf-8'))
+
 
         archive.seek(0)
 
