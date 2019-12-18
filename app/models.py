@@ -2417,7 +2417,7 @@ class BriefResponse(db.Model):
     supplier_code = db.Column(db.BigInteger, db.ForeignKey('supplier.code'), nullable=False)
 
     created_at = db.Column(DateTime, index=True, nullable=False, default=utcnow)
-    updated_at = db.Column(DateTime, index=True, nullable=True, default=utcnow, onupdate=utcnow)
+    updated_at = db.Column(DateTime, index=True, nullable=False, default=utcnow, onupdate=utcnow)
     submitted_at = db.Column(DateTime, index=True, nullable=True)
     withdrawn_at = db.Column(DateTime, index=True, nullable=True)
 
