@@ -18,7 +18,8 @@ class BriefResponsesService(Service):
                              BriefResponse.brief_id,
                              BriefResponse.supplier_code,
                              BriefResponse.data['respondToEmailAddress'].label('respondToEmailAddress'),
-                             Supplier.name.label('supplier_name'))
+                             Supplier.name.label('supplier_name'),
+                             Supplier.data['recruiter'].label('recruiter/hybrid/consultant'))
             .join(Supplier)
             .filter(
                 BriefResponse.brief_id == brief_id,
