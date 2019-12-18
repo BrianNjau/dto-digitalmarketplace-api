@@ -959,7 +959,7 @@ def get_brief_responses(brief_id):
     if current_user.role == 'buyer':
         if brief.status == 'closed':
             brief_response_downloaded = brief_response_download_service.get_responses_downloaded(brief.id)
-            brief_responses = brief_responses_service.get_brief_responses(brief_id, supplier_code)
+            brief_responses = brief_responses_service.get_brief_responses(brief_id, supplier_code, submitted_only=True)
         if brief.status in ['closed', 'live']:
             questions_asked = len(brief_question_service.find(brief_id=brief.id).all())
         # enrich the invited sellers data for brief owners
