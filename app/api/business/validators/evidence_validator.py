@@ -91,9 +91,9 @@ class EvidenceDataValidator(object):
             return False
         used_criteria_ids = self.data['evidence'].keys()
         for criteria_id in used_criteria_ids:
-            if 'client' not in self.data['evidence'][criteria_id]:
+            if 'candidateFullName' not in self.data['evidence'][criteria_id]:
                 return False
-            if not self.data['evidence'][criteria_id]['client'].replace(' ', ''):
+            if not self.data['evidence'][criteria_id]['candidateFullName'].replace(' ', ''):
                 return False
         return True
 
@@ -102,9 +102,9 @@ class EvidenceDataValidator(object):
             return False
         used_criteria_ids = self.data['evidence'].keys()
         for criteria_id in used_criteria_ids:
-            if 'client' not in self.data['evidence'][criteria_id]:
+            if 'candidatePhoneNumber' not in self.data['evidence'][criteria_id]:
                 return False
-            if not self.data['evidence'][criteria_id]['client'].replace(' ', ''):
+            if not self.data['evidence'][criteria_id]['candidatePhoneNumber'].replace(' ', ''):
                 return False
         return True
 
@@ -184,9 +184,9 @@ class EvidenceDataValidator(object):
         if not self.validate_evidence_dates():
             errors.append('You must provide dates in your evidence and the from date must be before the to date')
         if not self.validate_evidence_candidate_full_name():
-            errors.append('You must add the candidate full name')
+            errors.append('You must add the candidate full name in API')
         if not self.validate_evidence_candidate_phone_number():
-            errors.append('You must add candidate phone number')
+            errors.append('You must add candidate phone number in API')
         if not self.validate_evidence_client():
             errors.append('You must add a client to your evidence')
         if not self.validate_evidence_background():
