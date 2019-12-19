@@ -91,9 +91,9 @@ class EvidenceDataValidator(object):
             return False
         used_criteria_ids = self.data['evidence'].keys()
         for criteria_id in used_criteria_ids:
-            if 'client' not in self.data['evidence'][criteria_id]:
+            if 'candidateFullName' not in self.data['evidence'][criteria_id]:
                 return False
-            if not self.data['evidence'][criteria_id]['client'].replace(' ', ''):
+            if not self.data['evidence'][criteria_id]['candidateFullName'].replace(' ', ''):
                 return False
         return True
 
@@ -102,9 +102,9 @@ class EvidenceDataValidator(object):
             return False
         used_criteria_ids = self.data['evidence'].keys()
         for criteria_id in used_criteria_ids:
-            if 'client' not in self.data['evidence'][criteria_id]:
+            if 'candidatePhoneNumber' not in self.data['evidence'][criteria_id]:
                 return False
-            if not self.data['evidence'][criteria_id]['client'].replace(' ', ''):
+            if not self.data['evidence'][criteria_id]['candidatePhoneNumber'].replace(' ', ''):
                 return False
         return True
 
