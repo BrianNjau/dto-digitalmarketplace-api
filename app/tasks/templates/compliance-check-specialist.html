@@ -149,8 +149,8 @@
                     <tr class="au-table__body">
                         <td>
                             <b>{{ response.supplier.name }}</b><br />
-                            {{ response.data.get('respondToEmailAddress', 'Unknown') }}<br />
-                            {{ response.supplier.data.get('contact_phone', 'Unknown') }}
+                            {{ 'email: ' }}{{ response.data.get('respondToEmailAddress', 'Unknown') }}<br />
+                            {{ 'phone: ' }}{{ response.supplier.data.get('contact_phone', 'Unknown') }}
                         </td>
                         <td>
                             <b>{{ response.supplier.data.get('recruiter','Unknown')}}</b><br />
