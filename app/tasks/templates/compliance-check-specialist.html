@@ -127,6 +127,7 @@
                         {% if brief.data.preferredFormatForRates == 'hourlyRate'%}
                             <th scope="col">Houly rate</th>
                         {% endif %}
+                        <th scope="col">Assessed Daily Rate*</th>
                         <th scope="col">Previously employed</th>
                         <th scope="col">Citizenship status</th>
                         {% if brief.data.securityClearance == 'mustHave'%}
@@ -173,6 +174,7 @@
                                 ${{ response.data.get('hourRate', 'Unknown') }} (including GST)
                             </td>
                         {% endif %}
+                        <td>{{ 'Assessed Daily Rate to be added' }}</td>
                         <td>{{ response.data.get('previouslyWorked', 'Unknown') }}</td>
                         <td>
                         {% if response.data.visaStatus == 'AustralianCitizen' %}
