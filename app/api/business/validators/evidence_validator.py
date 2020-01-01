@@ -24,6 +24,13 @@ class EvidenceDataValidator(object):
                 pendulum.parse(key_value['data']['value'], tz='Australia/Canberra').date()
             )
 
+    # def checkCriteriaIsRecruiter(self, criteria):
+    #     self.domain_criteria = domain_criteria_service.get_criteria_by_domain_id(evidence.domain.id)
+        
+    #     print(domain_criteria)
+
+
+
     def get_criteria_needed(self):
         criteria_needed = self.domain.criteria_needed
         if self.validate_max_rate():
@@ -80,6 +87,7 @@ class EvidenceDataValidator(object):
             return False
         used_criteria_ids = self.data['evidence'].keys()
         for criteria_id in used_criteria_ids:
+
             if 'client' not in self.data['evidence'][criteria_id]:
                 return False
             if not self.data['evidence'][criteria_id]['client'].replace(' ', ''):
@@ -90,7 +98,10 @@ class EvidenceDataValidator(object):
         if 'evidence' not in self.data:
             return False
         used_criteria_ids = self.data['evidence'].keys()
+        
         for criteria_id in used_criteria_ids:
+            # if checkCriteriaIsRecruiter(criteria_id) is False 
+
             if 'candidateFullName' not in self.data['evidence'][criteria_id]:
                 return False
             if not self.data['evidence'][criteria_id]['candidateFullName'].replace(' ', ''):
@@ -102,6 +113,8 @@ class EvidenceDataValidator(object):
             return False
         used_criteria_ids = self.data['evidence'].keys()
         for criteria_id in used_criteria_ids:
+            if 'isRecruiterFlag2' in self.data['evidence'][criteria_id] is True:
+                return True 
             if 'candidatePhoneNumber' not in self.data['evidence'][criteria_id]:
                 return False
             if not self.data['evidence'][criteria_id]['candidatePhoneNumber'].replace(' ', ''):
@@ -184,9 +197,9 @@ class EvidenceDataValidator(object):
         # if not self.validate_evidence_dates():
         #     errors.append('You must provide dates in your evidence and the from date must be before the to date')
         # if not self.validate_evidence_candidate_full_name():
-        #     errors.append('You must add the candidate full name in API')
+        #     errors.append('You must add the candidate full name')
         # if not self.validate_evidence_candidate_phone_number():
-        #     errors.append('You must add candidate phone number in API')
+        #     errors.append('You must add candidate phone number')
         # if not self.validate_evidence_client():
         #     errors.append('You must add a client to your evidence')
         # if not self.validate_evidence_background():
@@ -257,7 +270,8 @@ class EvidenceDataValidator(object):
                 {'name': 'refereeNumber', 'type': basestring},
                 {'name': 'startDate', 'type': basestring},
                 {'name': 'endDate', 'type': basestring},
-                {'name': 'sameAsFirst', 'type': bool}
+                {'name': 'sameAsFirst', 'type': bool},
+                {'name': 'isRecruiterFlag2', 'type':bool}
             ]
             for criteria_id in self.data['evidence'].keys():
                 errors = errors + self.field_whitelist(whitelist_evidence, self.data['evidence'][criteria_id])

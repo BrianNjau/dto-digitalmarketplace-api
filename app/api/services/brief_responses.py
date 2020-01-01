@@ -11,15 +11,21 @@ class BriefResponsesService(Service):
     def __init__(self, *args, **kwargs):
         super(BriefResponsesService, self).__init__(*args, **kwargs)
 
-    def get_brief_responses(self, brief_id, supplier_code):
+    def get_brief_responses(self, brief_id, supplier_code, order_by_status=False, submitted_only=False,
+                            include_withdrawn=False):
         query = (
             db.session.query(BriefResponse.created_at,
+                             BriefResponse.submitted_at,
                              BriefResponse.id,
                              BriefResponse.brief_id,
                              BriefResponse.supplier_code,
+                             BriefResponse.status,
                              BriefResponse.data['respondToEmailAddress'].label('respondToEmailAddress'),
                              Supplier.name.label('supplier_name'),
                              Supplier.data['recruiter'].label('recruiter/hybrid/consultant'))
+                            #  BriefResponse.data['specialistGivenNames'].label('specialistGivenNames'),
+                            #  BriefResponse.data['specialistSurname'].label('specialistSurname'),
+                            #  Supplier.name.label('supplier_name'))
             .join(Supplier)
             .filter(
                 BriefResponse.brief_id == brief_id,
@@ -28,6 +34,16 @@ class BriefResponsesService(Service):
         )
         if supplier_code:
             query = query.filter(BriefResponse.supplier_code == supplier_code)
+        if submitted_only:
+            query = query.filter(BriefResponse.submitted_at.isnot(None))
+        if include_withdrawn:
+            query = query.filter(BriefResponse.withdrawn_at.isnot(None))
+        else:
+            query = query.filter(BriefResponse.withdrawn_at.is_(None))
+        if order_by_status:
+            query = query.order_by(BriefResponse.status.asc(), BriefResponse.id.asc())
+        else:
+            query = query.order_by(BriefResponse.id.asc())
 
         return [r._asdict() for r in query.all()]
 
@@ -36,7 +52,8 @@ class BriefResponsesService(Service):
             db.session.query(BriefResponse)
                       .join(Supplier)
                       .filter(BriefResponse.brief_id == brief_id,
-                              BriefResponse.withdrawn_at.is_(None))
+                              BriefResponse.withdrawn_at.is_(None),
+                              BriefResponse.submitted_at.isnot(None))
                       .order_by(func.lower(Supplier.name))
         )
 
@@ -56,7 +73,8 @@ class BriefResponsesService(Service):
             .join(Supplier)
             .filter(
                 BriefResponse.brief_id == brief_id,
-                BriefResponse.withdrawn_at.is_(None)
+                BriefResponse.withdrawn_at.is_(None),
+                BriefResponse.submitted_at.isnot(None)
             )
         )
 
@@ -65,12 +83,16 @@ class BriefResponsesService(Service):
     def get_all_attachments(self, brief_id):
         query = (
             db.session.query(BriefResponse.data['attachedDocumentURL'].label('attachments'),
+                             BriefResponse.data['responseTemplate'].label('requirements'),
+                             BriefResponse.data['writtenProposal'].label('proposal'),
+                             BriefResponse.data['resume'].label('resume'),
                              BriefResponse.supplier_code,
                              Supplier.name.label('supplier_name'))
             .join(Supplier)
             .filter(
                 BriefResponse.brief_id == brief_id,
-                BriefResponse.withdrawn_at.is_(None)
+                BriefResponse.withdrawn_at.is_(None),
+                BriefResponse.submitted_at.isnot(None)
             )
         )
         responses = [r._asdict() for r in query.all()]
@@ -83,6 +105,27 @@ class BriefResponsesService(Service):
                         'supplier_name': response['supplier_name'],
                         'file_name': attachment
                     })
+            if 'requirements' in response and response['requirements']:
+                for requirement in response['requirements']:
+                    attachments.append({
+                        'supplier_code': response['supplier_code'],
+                        'supplier_name': response['supplier_name'],
+                        'file_name': requirement
+                    })
+            if 'proposal' in response and response['proposal']:
+                for p in response['proposal']:
+                    attachments.append({
+                        'supplier_code': response['supplier_code'],
+                        'supplier_name': response['supplier_name'],
+                        'file_name': p
+                    })
+            if 'resume' in response and response['resume']:
+                for resume in response['resume']:
+                    attachments.append({
+                        'supplier_code': response['supplier_code'],
+                        'supplier_name': response['supplier_name'],
+                        'file_name': resume
+                    })
         return attachments
 
     def get_metrics(self):
@@ -94,7 +137,8 @@ class BriefResponsesService(Service):
             )
             .filter(
                 BriefResponse.data.isnot(None),
-                BriefResponse.withdrawn_at.is_(None)
+                BriefResponse.withdrawn_at.is_(None),
+                BriefResponse.submitted_at.isnot(None)
             )
             .scalar()
         )

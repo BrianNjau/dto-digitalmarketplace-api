@@ -231,6 +231,25 @@ def update_evidence(evidence_id):
         except ValueError as e:
             data['placed_candidates'] = 0
 
+    if 'candidateFullName' in data:
+        try:
+            data['candidateFullName'] = int(data['candidateFullName'])
+        except ValueError as e:
+            data['candidateFullName'] = 0
+    
+    if 'candidatePhoneNumber' in data:
+        try:
+            data['candidatePhoneNumber'] = int(data['candidatePhoneNumber'])
+        except ValueError as e:
+            data['candidatePhoneNumber'] = 0
+    
+    if 'isRecruiterFlag2' in data:
+        try:
+            data['isRecruiterFlag2'] = bool(data['isRecruiterFlag2'])
+        except AttributeError as e:
+            data['isRecruiterFlag2'] = None
+
+
     # Validate the evidence request data
     errors = EvidenceDataValidator(data, evidence=evidence).validate(publish=publish)
     if len(errors) > 0:
