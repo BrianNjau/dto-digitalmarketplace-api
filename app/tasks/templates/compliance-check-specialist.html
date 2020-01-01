@@ -152,6 +152,7 @@
                             <b>{{ response.supplier.name }}</b><br />
                             {{ 'email: ' }}{{ response.data.get('respondToEmailAddress', 'Unknown') }}<br />
                             {{ 'phone: ' }}{{ response.supplier.data.get('contact_phone', 'Unknown') }}
+                            {{ 'abn: ' }}{{ 'Unknown' }}
                         </td>
                         <td>
                             <b>{{ response.supplier.data.get('recruiter','Unknown')}}</b><br />
