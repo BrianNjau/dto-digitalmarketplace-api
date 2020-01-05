@@ -151,8 +151,8 @@
                         <td>
                             <b>{{ response.supplier.name }}</b><br />
                             {{ 'email: ' }}{{ response.data.get('respondToEmailAddress', 'Unknown') }}<br />
-                            {{ 'phone: ' }}{{ response.supplier.data.get('contact_phone', 'Unknown') }}
-                            {{ 'abn: ' }}{{ 'Unknown' }}
+                            {{ 'phone: ' }}{{ response.supplier.data.get('contact_phone', 'Unknown') }}<br />
+                            {{ 'abn: ' }}{{ response.supplier.abn }}
                         </td>
                         <td>
                             <b>{{ response.supplier.data.get('recruiter','Unknown')}}</b><br />
@@ -175,7 +175,7 @@
                                 ${{ response.data.get('hourRate', 'Unknown') }} (including GST)
                             </td>
                         {% endif %}
-                        <td>{{ 'Assessed Daily Rate to be added' }}</td>
+                        <td>{{ 'Unknown' }}</td>
                         <td>{{ response.data.get('previouslyWorked', 'Unknown') }}</td>
                         <td>
                         {% if response.data.visaStatus == 'AustralianCitizen' %}
