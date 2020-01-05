@@ -119,61 +119,33 @@
                     <tr class="au-table__header">
                         <th scope="col">Seller</th>
                         <th scope="col">Recruiter</th>
+                        <th scope="col">Availability</th>
                         <th scope="col">Email</th>
-                        <th scope="col">Phone number</th>
-                        {% if brief.data.preferredFormatForRates == 'dailyRate'%}
-                            <th scope="col">Day rate</th>
-                        {% endif %}
-                        {% if brief.data.preferredFormatForRates == 'hourlyRate'%}
-                            <th scope="col">Houly rate</th>
-                        {% endif %}
+                        <th scope="col">Phone Number</th>
                         <th scope="col">ABN</th>
-                        <th scope="col">Assessed Daily Rate</th>
-                        {% if brief.data.securityClearance == 'mustHave'%}
-                            <th scope="col">
-                                {% if brief.data.securityClearanceCurrent == 'baseline' %}
-                                    Baseline
-                                {% elif brief.data.securityClearanceCurrent == 'nv1' %} 
-                                    Negative vetting level 1
-                                {% elif brief.data.securityClearanceCurrent == 'nv2' %} 
-                                    Negative vetting level 2
-                                {% elif brief.data.securityClearanceCurrent == 'pv' %}
-                                    Positive vetting
-                                {% endif %}
-                            </th>
-                        {% endif %}
+                        <th scope="col">Assessed Daily Rate*</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for response in responses %}
                     <tr class="au-table__body">
-                        <td>
-                            <b>{{ response.supplier.name }}</b><br />
-                            {{ response.data.get('respondToEmailAddress', 'Unknown') }}<br />
-                            {{ response.supplier.data.get('contact_phone', 'Unknown') }}
-                        </td>
-                        <td>
-                            <b>{{ response.supplier.data.get('recruiter','Unknown')}}</b><br />
-                        </td>
-                        <td>
-                            {{ response.data.get('respondToEmailAddress', 'Unknown') }}<br />
-                        </td>
+                        <td>{{ response.supplier.name }}</td>
+                        <td>{{ response.supplier.data.get('recruiter','Unknown')}}</td>
+                        <td>{{ response.data.get('availability', 'Unknown') }}</td>
+                        <td>{{ response.data.get('respondToEmailAddress', 'Unknown') }}</td>
                         <td>{{ response.supplier.data.get('contact_phone', 'Unknown') }}</td>
-                        <td>{{ response.data.get('previouslyWorked', 'Unknown') }}</td>
-                        <td>
-                        {% if response.data.visaStatus == 'AustralianCitizen' %}
-                            Australian citizen
-                        {% elif response.data.visaStatus == 'PermanentResident' %}
-                            Permanent resident
-                        {% elif response.data.visaStatus == 'ForeignNationalWithAValidVisa' %}
-                            Foreign national with a valid visa
-                        {% endif %}
-                        </td>
+                        <td>{{ response.supplier.abn }}
+                        <td>{{ 'Unknown' }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
+    </div>
+    <div class="footnote">
+        <p>
+            * Before applying for {{ category }} opportunities, sellers must be assessed in offering value for money. They submit the maximum daily rate based on a person who demonstrates skills equivalent to SFIA Level 5 and were assessed and approved in this rate.
+        </p>
     </div>
 </body>
 
