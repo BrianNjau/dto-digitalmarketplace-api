@@ -82,7 +82,7 @@ def _can_do_brief_response(brief_id, update_only=False):
         abort("Invalid brief ID '{}'".format(brief_id))
 
     if brief.status != 'live':
-        abort("This opportunity has closed")
+        abort("Unable to respond to a {} opportunity".format(brief.status))
 
     if brief.framework.status != 'live':
         abort("Brief framework must be live")
@@ -1117,7 +1117,7 @@ def download_brief_attachment(brief_id, slug):
         (
             current_user.role == 'buyer' or (
                 current_user.role == 'supplier' and
-                _can_do_brief_response(brief_id)
+                _can_do_brief_response(brief_id, update_only=True)
             )
         )
     ):
