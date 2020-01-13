@@ -84,7 +84,8 @@ def send_evidence_assessment_rejection_notification(evidence):
     email_body = render_email_template(
         template_filename,
         domain_name=domain.name,
-        frontend_address=frontend_address
+        frontend_address=frontend_address,
+        evidence_id=evidence.id
     )
 
     subject = "Outcome of assessment for %s" % (domain.name)
