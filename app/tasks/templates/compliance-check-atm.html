@@ -123,7 +123,6 @@
                         <th scope="col">Email</th>
                         <th scope="col">Phone Number</th>
                         <th scope="col">ABN</th>
-                        <th scope="col">Assessed Daily Rate*</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -135,17 +134,11 @@
                         <td>{{ response.data.get('respondToEmailAddress', 'Unknown') }}</td>
                         <td>{{ response.supplier.data.get('contact_phone', 'Unknown') }}</td>
                         <td>{{ response.supplier.abn }}
-                        <td>{{ 'Unknown' }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
-    </div>
-    <div class="footnote">
-        <p>
-            * Before applying for {{ category }} opportunities, sellers must be assessed in offering value for money. They submit the maximum daily rate based on a person who demonstrates skills equivalent to SFIA Level 5 and were assessed and approved in this rate.
-        </p>
     </div>
 </body>
 
