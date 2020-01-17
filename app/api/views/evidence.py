@@ -224,7 +224,8 @@ def update_evidence(evidence_id):
             data['database_size'] = int(data['database_size'])
         except ValueError as e:
             data['database_size'] = 0
-    
+    #placed_candidates is the number of candidates that have been placed in a category within the last 12 months
+    #this is not the same as placingCandidates i.e in the hybrid stage for sellers (recruiter, consultant or both)
     if 'placed_candidates' in data:
         try:
             data['placed_candidates'] = int(data['placed_candidates'])
@@ -248,6 +249,12 @@ def update_evidence(evidence_id):
             data['isRecruiterFlag2'] = bool(data['isRecruiterFlag2'])
         except AttributeError as e:
             data['isRecruiterFlag2'] = None
+    
+    if 'placingCandidates' in data:
+        try:
+            data['placingCandidates'] = bool(data['placingCandidates'])
+        except AttributeError as e:
+            data['placingCandidates'] = None
 
 
     # Validate the evidence request data
