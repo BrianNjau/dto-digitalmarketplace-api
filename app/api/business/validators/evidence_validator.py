@@ -248,7 +248,7 @@ class EvidenceDataValidator(object):
                 {'name': 'domainId', 'type': int},
                 {'name': 'maxDailyRate', 'type': int},
                 #check how this affects consultants
-                {'name': 'placingCandidates', 'type': bool},
+                {'name': 'placingCandidates', 'type': basestring},
                 {'name': 'markup', 'type': int},
                 {'name': 'totalMaximumRate', 'type': int},
                 {'name': 'database_size', 'type': int},
