@@ -234,7 +234,7 @@ def update_evidence(evidence_id):
 
     if 'candidateFullName' in data:
         try:
-            data['candidateFullName'] = int(data['candidateFullName'])
+            data['candidateFullName'] = data['candidateFullName']
         except ValueError as e:
             data['candidateFullName'] = 0
     
@@ -252,7 +252,7 @@ def update_evidence(evidence_id):
     
     if 'placingCandidates' in data:
         try:
-            data['placingCandidates'] = bool(data['placingCandidates'])
+            data['placingCandidates'] = data['placingCandidates']
         except AttributeError as e:
             data['placingCandidates'] = None
 

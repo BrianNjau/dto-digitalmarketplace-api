@@ -186,6 +186,12 @@ class EvidenceDataValidator(object):
                 valid = False
         return valid
 
+    #need to change this
+    # def validate_placing_candidates(self):
+    #     if self.data['placingCandidates'] not in ['all', 'category']:
+    #         return False
+    #     return True
+
     def validate_required(self):
         errors = []
         # if not self.validate_max_rate():
@@ -242,6 +248,7 @@ class EvidenceDataValidator(object):
                 {'name': 'domainId', 'type': int},
                 {'name': 'maxDailyRate', 'type': int},
                 #check how this affects consultants
+                {'name': 'placingCandidates', 'type': bool},
                 {'name': 'markup', 'type': int},
                 {'name': 'totalMaximumRate', 'type': int},
                 {'name': 'database_size', 'type': int},
