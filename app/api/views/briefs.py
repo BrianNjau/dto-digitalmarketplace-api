@@ -71,8 +71,10 @@ from ...models import (AuditEvent, Brief, BriefResponse, Framework, Supplier,
                        BriefQuestion, BriefResponseDownload)
 from ...utils import get_json_from_request
 
+from app.api.business.errors import BriefError, NotFoundError, UnauthorisedError
 
-def _can_do_brief_response(brief_id):
+
+def _can_do_brief_response(brief_id, update_only=False):
     try:
         brief = Brief.query.get(brief_id)
     except DataError:
@@ -82,7 +84,7 @@ def _can_do_brief_response(brief_id):
         abort("Invalid brief ID '{}'".format(brief_id))
 
     if brief.status != 'live':
-        abort("Brief must be live")
+        abort("Unable to respond to a {} opportunity".format(brief.status))
 
     if brief.framework.status != 'live':
         abort("Brief framework must be live")
@@ -112,15 +114,11 @@ def _can_do_brief_response(brief_id):
     rfx_lot = next(iter([l for l in lots if l.slug == 'rfx']), None)
     training2_lot = next(iter([l for l in lots if l.slug == 'training2']), None)
     atm_lot = next(iter([l for l in lots if l.slug == 'atm']), None)
-    training_lot = next(iter([l for l in lots if l.slug == 'training']), None)
-    digital_professional_lot = next(iter([l for l in lots if l.slug == 'digital-professionals']), None)
     specialist_lot = next(iter([l for l in lots if l.slug == 'specialist']), None)
 
     rfx_lot_id = rfx_lot.id if rfx_lot else None
     training2_lot_id = training2_lot.id if training2_lot else None
     atm_lot_id = atm_lot.id if atm_lot else None
-    training_lot_id = training_lot.id if training_lot else None
-    digital_professional_lot_id = digital_professional_lot.id if digital_professional_lot else None
     specialist_lot_id = specialist_lot.id if specialist_lot else None
 
     is_selected = False
@@ -132,7 +130,6 @@ def _can_do_brief_response(brief_id):
     if brief.lot_id in [rfx_lot_id, training2_lot_id]:
         if str(current_user.supplier_code) in brief.data['sellers'].keys():
             is_selected = True
-
     elif brief.lot_id == atm_lot_id:
         if seller_selector == 'allSellers' and len(supplier.assessed_domains) > 0:
             is_selected = True
@@ -145,64 +142,42 @@ def _can_do_brief_response(brief_id):
             str(current_user.supplier_code) in brief.data['sellers'].keys()
         ):
             is_selected = True
-    else:
-        if not seller_selector or seller_selector == 'allSellers':
-            is_selected = True
-        elif seller_selector == 'someSellers':
-            seller_domain_list = [get_email_domain(x).lower() for x in brief.data['sellerEmailList']]
-            if current_user.email_address in brief.data['sellerEmailList'] \
-               or (current_user_domain and current_user_domain.lower() in seller_domain_list):
-                is_selected = True
-        elif seller_selector == 'oneSeller':
-            if (
-                current_user.email_address.lower() == brief.data['sellerEmail'].lower() or
-                (
-                    current_user_domain and
-                    current_user_domain.lower() == get_email_domain(brief.data['sellerEmail'].lower())
-                )
-            ):
-                is_selected = True
+
     if not is_selected:
         forbidden("Supplier not selected for this brief")
 
-    if (len(supplier.frameworks) == 0 or
-            'digital-marketplace' != supplier.frameworks[0].framework.slug):
-
+    if (len(supplier.frameworks) == 0 or 'digital-marketplace' != supplier.frameworks[0].framework.slug):
         abort("Supplier does not have Digital Marketplace framework")
 
     if len(supplier.assessed_domains) == 0:
         abort("Supplier does not have at least one assessed domain")
-    else:
-        if brief.lot_id == training_lot_id:
-            if 'Training, Learning and Development' not in supplier.assessed_domains:
-                abort("Supplier needs to be assessed in 'Training, Learning and Development'")
 
     brief_response_count = brief_responses_service.find(supplier_code=supplier.code,
                                                         brief_id=brief.id,
                                                         withdrawn_at=None).count()
 
-    if brief.lot_id == digital_professional_lot_id:
-        # Check the supplier can respond to the category
-        brief_category = brief.data.get('areaOfExpertise', None)
-        if brief_category and brief_category not in supplier.assessed_domains:
-            abort("Supplier needs to be assessed in '{}'".format(brief_category))
-        # Check if there are more than 3 brief response already from this supplier when professional aka specialists
-        if (brief_response_count > 2):  # TODO magic number
-            abort("There are already 3 brief responses for supplier '{}'".format(supplier.code))
-    elif brief.lot_id == specialist_lot_id:
+    if brief.lot_id == specialist_lot_id:
         brief_category_id = brief.data.get('sellerCategory', None)
         domain = domain_service.get(brief_category_id)
         if domain and domain.name not in supplier.assessed_domains:
             abort("Supplier needs to be assessed in '{}'".format(brief_category))
-        number_of_suppliers = brief.data.get('numberOfSuppliers', 0)
-        if (brief_response_count > number_of_suppliers):
-            abort("There are already {} brief responses for supplier '{}'".format(number_of_suppliers, supplier.code))
+        if not update_only:
+            number_of_suppliers = brief.data.get('numberOfSuppliers', 0)
+            if (brief_response_count >= int(number_of_suppliers)):
+                if number_of_suppliers == 1:
+                    message = "There is already a draft and/or response for this opportunity"
+                else:
+                    message = "There are already {} drafts and/or responses for this opportunity".format(
+                        number_of_suppliers
+                    )
+                abort(message)
     else:
         # Check if brief response already exists from this supplier when outcome for all other types
-        if brief_responses_service.find(supplier_code=supplier.code,
-                                        brief_id=brief.id,
-                                        withdrawn_at=None).one_or_none():
-            abort("Brief response already exists for supplier '{}'".format(supplier.code))
+        if not update_only and len(brief_responses_service.get_brief_responses(brief.id, supplier.code)) > 0:
+            abort(
+                'A response for this opportunity already exists. Please check your dashboard to see where your \
+                response is up to.'
+            )
 
     return supplier, brief
 
@@ -421,12 +396,22 @@ def get_brief(brief_id):
     if brief.status == 'draft' and not is_brief_owner:
         return forbidden("Unauthorised to view brief")
 
-    brief_response_count = len(brief_responses_service.get_brief_responses(brief_id, None))
+    brief_response_count = len(brief_responses_service.get_brief_responses(brief_id, None, submitted_only=True))
     supplier_brief_response_count = 0
+    supplier_brief_response_count_submitted = 0
+    supplier_brief_response_count_draft = 0
+    supplier_brief_response_id = 0
+    supplier_brief_response_is_draft = False
     if user_role == 'supplier':
-        supplier_brief_response_count = len(
-            brief_responses_service.get_brief_responses(brief_id, current_user.supplier_code)
+        supplier_brief_responses = brief_responses_service.get_brief_responses(brief_id, current_user.supplier_code)
+        supplier_brief_response_count = len(supplier_brief_responses)
+        supplier_brief_response_count_submitted = len(
+            [x for x in supplier_brief_responses if x['status'] == 'submitted']
         )
+        supplier_brief_response_count_draft = len([x for x in supplier_brief_responses if x['status'] == 'draft'])
+        if supplier_brief_response_count == 1:
+            supplier_brief_response_id = supplier_brief_responses[0]['id']
+            supplier_brief_response_is_draft = True if supplier_brief_responses[0]['status'] == 'draft' else False
 
     invited_seller_count = len(invited_sellers)
     open_to_all = (
@@ -507,6 +492,10 @@ def get_brief(brief_id):
                    evidence_id=evidence_id,
                    evidence_id_rejected=evidence_id_rejected,
                    supplier_brief_response_count=supplier_brief_response_count,
+                   supplier_brief_response_count_submitted=supplier_brief_response_count_submitted,
+                   supplier_brief_response_count_draft=supplier_brief_response_count_draft,
+                   supplier_brief_response_id=supplier_brief_response_id,
+                   supplier_brief_response_is_draft=supplier_brief_response_is_draft,
                    can_respond=can_respond,
                    has_evidence_in_draft_for_category=has_evidence_in_draft_for_category,
                    has_latest_evidence_rejected_for_category=has_latest_evidence_rejected_for_category,
@@ -764,6 +753,24 @@ def update_brief(brief_id):
     return jsonify(brief.serialize(with_users=False))
 
 
+@api.route('/brief/<int:brief_id>/close', methods=['POST'])
+@exception_logger
+@login_required
+@permissions_required('publish_opportunities')
+@role_required('buyer')
+def close_opportunity_early(brief_id):
+    try:
+        brief = brief_overview_business.close_opportunity_early(current_user, brief_id)
+    except NotFoundError as e:
+        not_found(e.message)
+    except UnauthorisedError as e:
+        forbidden(e.message)
+    except BriefError as e:
+        abort(e.message)
+
+    return jsonify(brief.serialize(with_users=False))
+
+
 @api.route('/brief/<int:brief_id>', methods=['DELETE'])
 @login_required
 @role_required('buyer')
@@ -923,32 +930,6 @@ def get_brief_overview(brief_id):
 @api.route('/brief/<int:brief_id>/responses', methods=['GET'])
 @login_required
 def get_brief_responses(brief_id):
-    """All brief responses (role=supplier,buyer)
-    ---
-    tags:
-      - brief
-    security:
-      - basicAuth: []
-    parameters:
-      - name: brief_id
-        in: path
-        type: number
-        required: true
-    definitions:
-      BriefResponses:
-        properties:
-          briefResponses:
-            type: array
-            items:
-              id: BriefResponse
-    responses:
-      200:
-        description: A list of brief responses
-        schema:
-          id: BriefResponses
-      404:
-        description: brief_id not found
-    """
     brief = briefs.get(brief_id)
     if not brief:
         not_found("Invalid brief id '{}'".format(brief_id))
@@ -958,10 +939,18 @@ def get_brief_responses(brief_id):
             return forbidden("Unauthorised to view brief or brief does not exist")
 
     supplier_code = getattr(current_user, 'supplier_code', None)
+    supplier_contact = None
     if current_user.role == 'supplier':
         validation_result = supplier_business.get_supplier_messages(supplier_code, True)
         if len(validation_result.errors) > 0:
             abort(validation_result.errors)
+
+        supplier = suppliers.find(code=supplier_code).one_or_none()
+        if supplier:
+            supplier_contact = {
+                'email': supplier.data.get('contact_email'),
+                'phone': supplier.data.get('contact_phone')
+            }
         # strip data from seller view
         if 'sellers' in brief.data:
             brief.data['sellers'] = {}
@@ -990,25 +979,40 @@ def get_brief_responses(brief_id):
     if current_user.role == 'buyer':
         if brief.status == 'closed':
             brief_response_downloaded = brief_response_download_service.get_responses_downloaded(brief.id)
-            brief_responses = brief_responses_service.get_brief_responses(brief_id, supplier_code)
+            brief_responses = brief_responses_service.get_brief_responses(brief_id, supplier_code, submitted_only=True)
         if brief.status in ['closed', 'live']:
             questions_asked = len(brief_question_service.find(brief_id=brief.id).all())
+        # enrich the invited sellers data for brief owners
+        if 'sellers' in brief.data:
+            for seller_code in brief.data['sellers']:
+                supplier = suppliers.get_supplier_by_code(seller_code)
+                if supplier:
+                    brief.data['sellers'][seller_code]['email'] = supplier.data.get('contact_email', None)
+                    brief.data['sellers'][seller_code]['number'] = supplier.data.get('contact_phone', None)
+                    brief_responses_by_seller = brief_responses_service.get_brief_responses(brief_id, seller_code)
+                    brief.data['sellers'][seller_code]['has_responded'] = (
+                        True if len(brief_responses_by_seller) > 0 else False
+                    )
+                    brief.data['sellers'][seller_code]['response_count'] = len(brief_responses_by_seller)
     else:
-        brief_responses = brief_responses_service.get_brief_responses(brief_id, supplier_code)
+        brief_responses = brief_responses_service.get_brief_responses(brief_id, supplier_code, order_by_status=True)
 
     old_work_order_creator = use_old_work_order_creator(brief.published_at)
 
     return jsonify(brief=brief.serialize(with_users=False, with_author=False),
                    briefResponses=brief_responses,
+                   canCloseOpportunity=brief_overview_business.can_close_opportunity_early(brief),
                    oldWorkOrderCreator=old_work_order_creator,
                    questionsAsked=questions_asked,
-                   briefResponseDownloaded=brief_response_downloaded)
+                   briefResponseDownloaded=brief_response_downloaded,
+                   supplierContact=supplier_contact)
 
 
 @api.route('/brief/<int:brief_id>/respond/documents/<string:supplier_code>/<slug>', methods=['POST'])
 @login_required
+@role_required('supplier')
 def upload_brief_response_file(brief_id, supplier_code, slug):
-    supplier, brief = _can_do_brief_response(brief_id)
+    supplier, brief = _can_do_brief_response(brief_id, update_only=True)
     return jsonify({"filename": s3_upload_file_from_request(request, slug,
                                                             os.path.join(brief.framework.slug, 'documents',
                                                                          'brief-' + str(brief_id),
@@ -1134,7 +1138,7 @@ def download_brief_attachment(brief_id, slug):
         (
             current_user.role == 'buyer' or (
                 current_user.role == 'supplier' and
-                _can_do_brief_response(brief_id)
+                _can_do_brief_response(brief_id, update_only=True)
             )
         )
     ):
@@ -1171,102 +1175,199 @@ def download_brief_response_file(brief_id, supplier_code, slug):
         return forbidden("Unauthorised to view brief or brief does not exist")
 
 
-@api.route('/brief/<int:brief_id>/respond', methods=["POST"])
+@api.route('/brief/<int:brief_id>/respond', methods=['POST'])
+@exception_logger
 @login_required
-def post_brief_response(brief_id):
-    brief_response_json = get_json_from_request()
+@role_required('supplier')
+def create_brief_response(brief_id):
     supplier, brief = _can_do_brief_response(brief_id)
     try:
-        brief_response = BriefResponse(
-            data=brief_response_json,
+        brief_response = brief_responses_service.create(
             supplier=supplier,
-            brief=brief
+            brief=brief,
+            data={}
         )
-
-        brief_response.validate()
-        db.session.add(brief_response)
-        db.session.flush()
-
-    except ValidationError as e:
-        brief_response_json['brief_id'] = brief_id
-        rollbar.report_exc_info(extra_data=brief_response_json)
-        message = ""
-        if 'essentialRequirements' in e.message and e.message['essentialRequirements'] == 'answer_required':
-            message = "Essential requirements must be completed"
-            del e.message['essentialRequirements']
-        if 'attachedDocumentURL' in e.message:
-            if e.message['attachedDocumentURL'] == 'answer_required':
-                message = "Documents must be uploaded"
-            if e.message['attachedDocumentURL'] == 'file_incorrect_format':
-                message = "Uploaded documents are in the wrong format"
-            del e.message['attachedDocumentURL']
-        if 'criteria' in e.message and e.message['criteria'] == 'answer_required':
-            message = "Criteria must be completed"
-
-        for field in [{
-            'name': 'specialistGivenNames',
-            'label': 'Given names'
-        }, {
-            'name': 'specialistSurname',
-            'label': 'Surname'
-        }, {
-            'name': 'dayRateExcludingGST',
-            'label': 'Daily rate (excluding GST)'
-        }, {
-            'name': 'dayRate',
-            'label': 'Daily rate'
-        }, {
-            'name': 'hourRateExcludingGST',
-            'label': 'Hourly rate (excluding GST)'
-        }, {
-            'name': 'hourRate',
-            'label': 'Hourly rate'
-        }, {
-            'name': 'visaStatus',
-            'label': 'Eligibility to work'
-        }, {
-            'name': 'securityClearance',
-            'label': 'Security clearance'
-        }, {
-            'name': 'previouslyWorked',
-            'label': 'Previously worked'
-        }]:
-            if field['name'] in e.message and e.message[field['name']] == 'answer_required':
-                message += '{} is required\n'.format(field['label'])
-                del e.message[field['name']]
-
-        if len(e.message) > 0:
-            message += json.dumps(e.message)
-        return jsonify(message=message), 400
     except Exception as e:
-        brief_response_json['brief_id'] = brief_id
-        rollbar.report_exc_info(extra_data=brief_response_json)
+        rollbar.report_exc_info()
         return jsonify(message=e.message), 400
 
     try:
-        if brief.lot.slug == 'specialist':
-            send_specialist_brief_response_received_email(supplier, brief, brief_response)
-        else:
-            send_brief_response_received_email(supplier, brief, brief_response)
+        audit_service.log_audit_event(
+            audit_type=AuditTypes.create_brief_response,
+            user=current_user.email_address,
+            data={
+                'briefResponseId': brief_response.id
+            },
+            db_object=brief_response
+        )
+        publish_tasks.brief_response.delay(
+            publish_tasks.compress_brief_response(brief_response),
+            'created',
+            user=current_user.email_address
+        )
     except Exception as e:
-        brief_response_json['brief_id'] = brief_id
-        rollbar.report_exc_info(extra_data=brief_response_json)
+        rollbar.report_exc_info()
 
-    audit_service.log_audit_event(
-        audit_type=AuditTypes.create_brief_response,
-        user=current_user.email_address,
-        data={
-            'briefResponseId': brief_response.id,
-            'briefResponseJson': brief_response_json,
-        },
-        db_object=brief_response)
+    return jsonify(brief_response.serialize()), 201
 
-    publish_tasks.brief_response.delay(
-        publish_tasks.compress_brief_response(brief_response),
-        'submitted',
-        user=current_user.email_address
-    )
-    return jsonify(briefResponses=brief_response.serialize()), 201
+
+@api.route('/brief/<int:brief_id>/respond/<int:brief_response_id>', methods=['PATCH'])
+@exception_logger
+@login_required
+@role_required('supplier')
+def update_brief_response(brief_id, brief_response_id):
+    brief_response_json = get_json_from_request()
+    supplier, brief = _can_do_brief_response(brief_id, update_only=True)
+    brief_response = brief_responses_service.find(
+        id=brief_response_id,
+        brief_id=brief.id,
+        supplier_code=supplier.code,
+        withdrawn_at=None
+    ).one_or_none()
+    if not brief_response or brief_response.status not in ['submitted', 'draft']:
+        not_found('This response does not exist or has been withdrawn')
+    if brief.status != 'live':
+        abort('Brief responses can only be edited when the brief is still live')
+
+    submit = False
+    if 'submit' in brief_response_json:
+        if brief_response_json['submit']:
+            submit = True
+        del brief_response_json['submit']
+
+    # if the current brief response is already submitted and it doesn't have the required upload file fields, then
+    # flag the required file check as unnecessary as this would be an old response before the introduction of the
+    # individual file fields in the brief response
+    do_required_file_check = True
+    if brief_response.status == 'submitted' and (
+        len(brief_response.data.get('resume', [])) == 0 and
+        len(brief_response.data.get('responseTemplate', [])) == 0 and
+        len(brief_response.data.get('writtenProposal', [])) == 0
+    ):
+        do_required_file_check = False
+
+    previous_status = brief_response.status
+    brief_response.data = brief_response_json
+    if submit:
+        try:
+            brief_response.validate(do_required_file_check=do_required_file_check)
+        except ValidationError as e:
+            brief_response_json['brief_id'] = brief_id
+            rollbar.report_exc_info(extra_data=brief_response_json)
+            message = ""
+            if 'essentialRequirements' in e.message and e.message['essentialRequirements'] == 'answer_required':
+                message = "Essential requirements must be completed"
+                del e.message['essentialRequirements']
+            if 'attachedDocumentURL' in e.message:
+                if not do_required_file_check and e.message['attachedDocumentURL'] == 'answer_required':
+                    message = "Documents must be uploaded"
+                if e.message['attachedDocumentURL'] == 'file_incorrect_format':
+                    message = "Uploaded documents are in the wrong format"
+                del e.message['attachedDocumentURL']
+            if 'resume' in e.message:
+                if do_required_file_check and e.message['resume'] == 'answer_required':
+                    message = "Resume must be uploaded"
+                if e.message['resume'] == 'file_incorrect_format':
+                    message = "Uploaded documents are in the wrong format"
+                del e.message['resume']
+            if 'responseTemplate' in e.message:
+                if do_required_file_check and e.message['responseTemplate'] == 'answer_required':
+                    message = "Response template must be uploaded"
+                if e.message['responseTemplate'] == 'file_incorrect_format':
+                    message = "Uploaded documents are in the wrong format"
+                del e.message['responseTemplate']
+            if 'writtenProposal' in e.message:
+                if do_required_file_check and e.message['writtenProposal'] == 'answer_required':
+                    message = "Written proposal must be uploaded"
+                if e.message['writtenProposal'] == 'file_incorrect_format':
+                    message = "Uploaded documents are in the wrong format"
+                del e.message['writtenProposal']
+            if 'criteria' in e.message and e.message['criteria'] == 'answer_required':
+                message = "Criteria must be completed"
+
+            for field in [{
+                'name': 'specialistGivenNames',
+                'label': 'Given names'
+            }, {
+                'name': 'specialistSurname',
+                'label': 'Surname'
+            }, {
+                'name': 'dayRateExcludingGST',
+                'label': 'Daily rate (excluding GST)'
+            }, {
+                'name': 'dayRate',
+                'label': 'Daily rate'
+            }, {
+                'name': 'hourRateExcludingGST',
+                'label': 'Hourly rate (excluding GST)'
+            }, {
+                'name': 'hourRate',
+                'label': 'Hourly rate'
+            }, {
+                'name': 'visaStatus',
+                'label': 'Eligibility to work'
+            }, {
+                'name': 'securityClearance',
+                'label': 'Security clearance'
+            }, {
+                'name': 'previouslyWorked',
+                'label': 'Previously worked'
+            }]:
+                if field['name'] in e.message and e.message[field['name']] == 'answer_required':
+                    message += '{} is required\n'.format(field['label'])
+                    del e.message[field['name']]
+
+            if len(e.message) > 0:
+                message += json.dumps(e.message)
+            return jsonify(message=message), 400
+        except Exception as e:
+            brief_response_json['brief_id'] = brief_id
+            rollbar.report_exc_info(extra_data=brief_response_json)
+            return jsonify(message=e.message), 400
+
+        brief_response.submit()
+        try:
+            if brief.lot.slug == 'specialist':
+                if previous_status == 'draft':
+                    send_specialist_brief_response_received_email(supplier, brief, brief_response)
+                if previous_status == 'submitted':
+                    send_specialist_brief_response_received_email(
+                        supplier, brief, brief_response, supplier_user=current_user.name, is_update=True
+                    )
+            else:
+                if previous_status == 'draft':
+                    send_brief_response_received_email(supplier, brief, brief_response)
+                if previous_status == 'submitted':
+                    send_brief_response_received_email(
+                        supplier, brief, brief_response, supplier_user=current_user.name, is_update=True
+                    )
+        except Exception as e:
+            brief_response_json['brief_id'] = brief_id
+            rollbar.report_exc_info(extra_data=brief_response_json)
+    brief_responses_service.save(brief_response)
+    try:
+        audit_service.log_audit_event(
+            audit_type=audit_types.update_brief_response,
+            user=current_user.email_address,
+            data={
+                'briefResponseId': brief_response.id,
+                'briefResponseJson': brief_response_json,
+                'submitted': submit
+            },
+            db_object=brief_response
+        )
+
+        publish_tasks.brief_response.delay(
+            publish_tasks.compress_brief_response(brief_response),
+            'submitted' if submit else 'saved',
+            user=current_user.email_address
+        )
+    except Exception as e:
+        rollbar.report_exc_info()
+
+    response_data = brief_response.serialize()
+    response_data['previous_status'] = previous_status
+    return jsonify(response_data), 200
 
 
 @api.route('/framework/<string:framework_slug>', methods=["GET"])
