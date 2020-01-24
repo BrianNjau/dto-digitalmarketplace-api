@@ -1096,6 +1096,7 @@ class DomainCriteria(db.Model):
     __tablename__ = 'domain_criteria'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String, nullable=False)
+    is_recruiter_criteria = db.Column(db.Boolean, nullable=True, default=False)
     domain_id = db.Column(db.Integer,
                           db.ForeignKey('domain.id'),
                           nullable=False)
@@ -1104,7 +1105,8 @@ class DomainCriteria(db.Model):
     def serialize(self):
         serialized = {
             "id": self.id,
-            "name": self.name
+            "name": self.name,
+            "is_recruiter_criteria": self.is_recruiter_criteria
         }
         return serialized
 

@@ -50,8 +50,6 @@ def create_evidence(domain_id, brief_id=None):
         abort('Unknown domain id')
 
     supplier = suppliers.get_supplier_by_code(current_user.supplier_code)
-    if supplier.data.get('recruiter', '') == 'yes':
-        abort('Assessment can\'t be started against a recruiter only supplier')
 
     existing_evidence = evidence_service.get_latest_evidence_for_supplier_and_domain(
         domain_id,
@@ -212,6 +210,44 @@ def update_evidence(evidence_id):
             data['maxDailyRate'] = int(data['maxDailyRate'])
         except ValueError as e:
             data['maxDailyRate'] = 0
+
+    if 'markup' in data:
+        try:
+            data['markup'] = int(data['markup'])
+        except ValueError as e:
+            data['markup'] = 0
+
+    if 'database_size' in data:
+        try:
+            data['database_size'] = int(data['database_size'])
+        except ValueError as e:
+            data['database_size'] = 0
+
+    # placed_candidates is the number of candidates that have been placed in a category within the last 12 months
+    # this is not the same as placingCandidates i.e in the hybrid stage for sellers (recruiter, consultant or both)
+    if 'placed_candidates' in data:
+        try:
+            data['placed_candidates'] = int(data['placed_candidates'])
+        except ValueError as e:
+            data['placed_candidates'] = 0
+
+    if 'candidateFullName' in data:
+        try:
+            data['candidateFullName'] = data['candidateFullName']
+        except ValueError as e:
+            data['candidateFullName'] = 0
+
+    if 'candidatePhoneNumber' in data:
+        try:
+            data['candidatePhoneNumber'] = int(data['candidatePhoneNumber'])
+        except ValueError as e:
+            data['candidatePhoneNumber'] = 0
+
+    if 'placingCandidates' in data:
+        try:
+            data['placingCandidates'] = data['placingCandidates']
+        except AttributeError as e:
+            data['placingCandidates'] = None
 
     # Validate the evidence request data
     errors = EvidenceDataValidator(data, evidence=evidence).validate(publish=publish)

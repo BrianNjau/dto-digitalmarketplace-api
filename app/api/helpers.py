@@ -134,7 +134,7 @@ def generate_random_token(length=32):
 
 
 def user_info(user):
-    from app.api.services import agency_service
+    from app.api.services import agency_service, suppliers
     try:
         user_type = current_user.role
     except AttributeError:
@@ -145,10 +145,17 @@ def user_info(user):
     except AttributeError:
         email_address = None
 
+    is_recruiter_flag = False
+    is_hybrid_flag = False
     try:
         supplier_code = current_user.supplier_code
-    except AttributeError:
+        supplier = suppliers.get_supplier_by_code(supplier_code)
+        is_hybrid_flag = True if supplier.data['recruiter'] == "both" else False
+        is_recruiter_flag = True if supplier.data['recruiter'] == "yes" else False
+
+    except (AttributeError, KeyError):
         supplier_code = None
+        is_recruiter_flag = None
 
     try:
         notification_count = current_user.notification_count
@@ -199,7 +206,9 @@ def user_info(user):
         "isPartOfTeam": is_part_of_team,
         "isTeamLead": is_team_lead,
         "agencyId": agency_id,
-        "agencyDomains": domains
+        "agencyDomains": domains,
+        "isRecruiterFlag": is_recruiter_flag,
+        "isHybridFlag": is_hybrid_flag
     }
 
 
