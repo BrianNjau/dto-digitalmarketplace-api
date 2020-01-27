@@ -229,7 +229,7 @@ class EvidenceDataValidator(object):
                 # check how this affects consultants
                 {'name': 'placingCandidates', 'type': basestring},
                 {'name': 'markup', 'type': int},
-                {'name': 'totalMaximumRate', 'type': float},
+                {'name': 'totalMaximumRate', 'type': int},
                 {'name': 'database_size', 'type': int},
                 {'name': 'placed_candidates', 'type': int},
                 {'name': 'criteria', 'type': list},
