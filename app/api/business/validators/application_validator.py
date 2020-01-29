@@ -82,7 +82,7 @@ class ApplicationValidator(object):
                     'step': 'business-details'
                 })
             if field == 'linkedin':
-                if '/company-beta' in value:
+                if value and '/company-beta' in value:
                     errors.append({
                         'field': field,
                         'message': 'Please enter a URL you can open when not logged in to LinkedIn.'.format(label),
