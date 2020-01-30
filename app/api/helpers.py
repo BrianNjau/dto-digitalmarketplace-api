@@ -157,6 +157,13 @@ def user_info(user):
         supplier_code = None
         is_recruiter_flag = None
 
+    is_seller_status_completed = False
+    try:
+        is_seller_status_completed = True if supplier.status =='limited' or supplier.status =='complete' else False
+
+    except (KeyError):
+        is_seller_status_completed = None
+
     try:
         notification_count = current_user.notification_count
     except AttributeError:
@@ -208,7 +215,8 @@ def user_info(user):
         "agencyId": agency_id,
         "agencyDomains": domains,
         "isRecruiterFlag": is_recruiter_flag,
-        "isHybridFlag": is_hybrid_flag
+        "isHybridFlag": is_hybrid_flag,
+        "isSellerStatusCompleted": is_seller_status_completed
     }
 
 
