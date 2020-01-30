@@ -95,10 +95,17 @@ def update_application(application_id):
     errors = ApplicationValidator(application).validate_all()
     agreement = get_current_agreement()
 
+    # is_seller_status_completed = False
+    # if supplier.status =='limited' or supplier.status =='complete':
+    #     is_seller_status = True
+    # else:
+    #     is_seller_status_completed = False
+
     return (
         jsonify(
             application=application.serializable,
             agreement=agreement.serialize() if agreement else None,
+            is_seller_status_completed='is_seller_status_completed',
             application_errors=errors),
         200)
 
