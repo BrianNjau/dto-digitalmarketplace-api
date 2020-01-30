@@ -21,7 +21,6 @@ from app.utils import (get_json_from_request, get_positive_int_or_400,
                        get_valid_page_or_1, json_has_required_keys,
                        pagination_links, validate_and_return_updater_request)
 
-
 def get_application_json():
     json_payload = get_json_from_request()
     json_has_required_keys(json_payload, ['application'])
@@ -95,7 +94,7 @@ def update_application(application_id):
     errors = ApplicationValidator(application).validate_all()
     agreement = get_current_agreement()
 
-    # is_seller_status_completed = False
+    is_seller_status_completed = True
     # if supplier.status =='limited' or supplier.status =='complete':
     #     is_seller_status = True
     # else:
@@ -105,7 +104,7 @@ def update_application(application_id):
         jsonify(
             application=application.serializable,
             agreement=agreement.serialize() if agreement else None,
-            is_seller_status_completed='is_seller_status_completed',
+            is_seller_status_completed=is_seller_status_completed,
             application_errors=errors),
         200)
 
