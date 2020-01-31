@@ -111,7 +111,7 @@ def create_responses_zip(brief_id):
                     candidates=candidates
                 )
                 zf.writestr('responses-{}.html'.format(brief_id), response_criteria_html.encode('utf-8'))
-            
+
             elif brief.lot.slug == 'atm':
                 compliance_check_template = template_env.get_template('compliance-check-atm.html')
                 compliance_check_html = render_template(
@@ -174,7 +174,7 @@ def create_responses_zip(brief_id):
 
                 zf.writestr('Responses ({}).html'.format(brief_id), response_criteria_html.encode('utf-8'))
 
-                #moving this 
+                # moving this
             for file in files:
                 s3file = file['key']
                 with BytesIO() as s3io:
@@ -189,7 +189,6 @@ def create_responses_zip(brief_id):
                              if brief.lot.slug == 'digital-professionals'
                              else 'responses-to-requirements-{}.csv'.format(brief_id))
             zf.writestr(csv_file_name, csvdata.encode('utf-8'))
-
 
         archive.seek(0)
 
