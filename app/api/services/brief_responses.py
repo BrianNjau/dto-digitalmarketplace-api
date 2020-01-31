@@ -21,9 +21,9 @@ class BriefResponsesService(Service):
                              BriefResponse.supplier_code,
                              BriefResponse.status,
                              BriefResponse.data['respondToEmailAddress'].label('respondToEmailAddress'),
-                             Supplier.name.label('supplier_name')),
-                             Supplier.data['recruiter'].label('recruiter/hybrid/consultant'),
-                             Evidence.data['maxDailyRate'])
+                             BriefResponse.data['specialistGivenNames'].label('specialistGivenNames'),
+                             BriefResponse.data['specialistSurname'].label('specialistSurname'),
+                             Supplier.name.label('supplier_name'))
             .join(Supplier)
             .filter(
                 BriefResponse.brief_id == brief_id,
