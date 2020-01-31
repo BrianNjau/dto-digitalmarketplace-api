@@ -154,9 +154,26 @@
                             {{ 'phone: ' }}{{ response.supplier.data.get('contact_phone', 'Unknown') }}<br />
                             {{ 'abn: ' }}{{ response.supplier.abn }}
                         </td>
+                        {% if response.data.get('candidate') == 'recruiter' %}
                         <td>
-                            <b>{{ response.supplier.data.get('recruiter','Unknown')}}</b><br />
+                            <b>{{ 'yes' }}</b><br />
                         </td>
+                        {% endif %}
+                        {% if response.data.get('candidate') == 'consultant' %}
+                        <td>
+                            <b>{{ 'no' }}</b><br />
+                        </td>
+                        {% endif %}
+                        {% if response.supplier.data.get('recruiter') == 'yes' %}
+                        <td>
+                            <b>{{ response.supplier.data.get('recruiter','Unknown') }}</b><br />
+                        </td>
+                        {% endif %}
+                        {% if response.supplier.data.get('recruiter') == 'no' %}
+                        <td> 
+                            <b> {{ response.supplier.data.get('recruiter','Unknown') }}</b><br />
+                        </td>
+                        {% endif %}
                         <td>
                             {{ response.data.get('specialistGivenNames', 'Unknown') }}
                             {{ ' ' }}
@@ -198,7 +215,9 @@
     <div class="footnote">
         <p>
             <strong>What is an 'Assessed daily rate?</strong>
+            <br/>
             Before applying for <category> opportunities, sellers are assessed to offer value for money. The seller's approved 'Assessed daily rate' is based on a person who demonstrates skills equivalent to SFIA Level 5.
+            <br/>
             For recruiters, the 'Assessed daily rate' is inclusive of margins.
         </p>
     </div>
