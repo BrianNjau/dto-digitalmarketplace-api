@@ -118,6 +118,7 @@
                 <thead>
                     <tr class="au-table__header">
                         <th scope="col">Seller</th>
+                        <th scope="col">Recruiter</th>
                         <th scope="col">Candidate</th>
                         <th scope="col">Availability</th>
                         {% if brief.data.preferredFormatForRates == 'dailyRate'%}
@@ -126,6 +127,7 @@
                         {% if brief.data.preferredFormatForRates == 'hourlyRate'%}
                             <th scope="col">Houly rate</th>
                         {% endif %}
+                        <th scope="col">Assessed Daily Rate*</th>
                         <th scope="col">Previously employed</th>
                         <th scope="col">Citizenship status</th>
                         {% if brief.data.securityClearance == 'mustHave'%}
@@ -148,9 +150,30 @@
                     <tr class="au-table__body">
                         <td>
                             <b>{{ response.supplier.name }}</b><br />
-                            {{ response.data.get('respondToEmailAddress', 'Unknown') }}<br />
-                            {{ response.supplier.data.get('contact_phone', 'Unknown') }}
+                            {{ 'email: ' }}{{ response.data.get('respondToEmailAddress', 'Unknown') }}<br />
+                            {{ 'phone: ' }}{{ response.supplier.data.get('contact_phone', 'Unknown') }}<br />
+                            {{ 'abn: ' }}{{ response.supplier.abn }}
                         </td>
+                        {% if response.data.get('candidate') == 'recruiter' %}
+                        <td>
+                            <b>{{ 'yes' }}</b><br />
+                        </td>
+                        {% endif %}
+                        {% if response.data.get('candidate') == 'consultant' %}
+                        <td>
+                            <b>{{ 'no' }}</b><br />
+                        </td>
+                        {% endif %}
+                        {% if response.supplier.data.get('recruiter') == 'yes' %}
+                        <td>
+                            <b>{{ response.supplier.data.get('recruiter','Unknown') }}</b><br />
+                        </td>
+                        {% endif %}
+                        {% if response.supplier.data.get('recruiter') == 'no' %}
+                        <td> 
+                            <b> {{ response.supplier.data.get('recruiter','Unknown') }}</b><br />
+                        </td>
+                        {% endif %}
                         <td>
                             {{ response.data.get('specialistGivenNames', 'Unknown') }}
                             {{ ' ' }}
@@ -169,6 +192,7 @@
                                 ${{ response.data.get('hourRate', 'Unknown') }} (including GST)
                             </td>
                         {% endif %}
+                        <td>{{ 'Unknown' }}</td>
                         <td>{{ response.data.get('previouslyWorked', 'Unknown') }}</td>
                         <td>
                         {% if response.data.visaStatus == 'AustralianCitizen' %}
@@ -187,6 +211,22 @@
                 </tbody>
             </table>
         </div>
+    </div>
+    <div class="footnote">
+        <p>
+            <strong>*What is an 'Assessed daily rate?</strong>
+            <br/>
+            <br/>
+            Before applying for <category> opportunities, sellers are assessed to offer value for money. The seller's approved 'Assessed daily rate' is based on a person who demonstrates skills equivalent to 
+            <a href="https://www.sfia-online.org/en/framework/sfia-7/levels-of-responsibility/level-5"
+            rel="external noopener noreferrer"
+            target="_blank" 
+            style="color: #00698F;text-decoration: underline;"
+            >SFIA Level 5.</a>
+            <br/>
+            <br/>
+            For recruiters, the 'Assessed daily rate' is inclusive of margins.
+        </p>
     </div>
 </body>
 
