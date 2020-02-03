@@ -208,8 +208,7 @@ def user_info(user):
         "agencyId": agency_id,
         "agencyDomains": domains,
         "isRecruiterFlag": is_recruiter_flag,
-        "isHybridFlag": is_hybrid_flag,
-        "isSellerStatusCompleted": is_seller_status_completed
+        "isHybridFlag": is_hybrid_flag
     }
 
 
