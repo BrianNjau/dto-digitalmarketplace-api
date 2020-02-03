@@ -1,5 +1,6 @@
 import pendulum
 from flask import abort, current_app, jsonify, request
+from flask_login import current_user
 from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload, noload
@@ -7,7 +8,7 @@ from sqlalchemy.sql.expression import true
 
 from app.api.business.agreement_business import get_current_agreement
 from app.api.business.validators import ApplicationValidator
-from app.api.services import AuditTypes, key_values_service
+from app.api.services import AuditTypes, key_values_service, suppliers
 from app.emails import (send_approval_notification,
                         send_rejection_notification, send_revert_notification,
                         send_submitted_existing_seller_notification,
@@ -20,6 +21,7 @@ from app.tasks import publish_tasks
 from app.utils import (get_json_from_request, get_positive_int_or_400,
                        get_valid_page_or_1, json_has_required_keys,
                        pagination_links, validate_and_return_updater_request)
+
 
 def get_application_json():
     json_payload = get_json_from_request()
@@ -93,18 +95,25 @@ def update_application(application_id):
     save_application(application)
     errors = ApplicationValidator(application).validate_all()
     agreement = get_current_agreement()
+    sellerTypeIsCompletedOnce = True
 
-    is_seller_status_completed = True
-    # if supplier.status =='limited' or supplier.status =='complete':
-    #     is_seller_status = True
-    # else:
-    #     is_seller_status_completed = False
+    try:
+        supplier_code = current_user.supplier_code
+        supplier = suppliers.get_supplier_by_code(supplier_code)
+        sellerTypeIsCompletedOnce = True if supplier.data['recruiter'] == "both" else False
+        sellerTypeIsCompletedOnce = True if supplier.data['recruiter'] == "yes" else False
+        sellerTypeIsCompletedOnce = True if supplier.data['recruiter'] == "no" else False
 
+    except (AttributeError, KeyError):
+        supplier_code = None
+        is_recruiter_flag = None
+
+    application = application.serializable
+    application['sellerTypeIsCompletedOnce'] = sellerTypeIsCompletedOnce
     return (
         jsonify(
-            application=application.serializable,
+            application=application,
             agreement=agreement.serialize() if agreement else None,
-            is_seller_status_completed=is_seller_status_completed,
             application_errors=errors),
         200)
 
