@@ -157,13 +157,6 @@ def user_info(user):
         supplier_code = None
         is_recruiter_flag = None
 
-    is_seller_status_completed = False
-    try:
-        is_seller_status_completed = True if supplier.status =='limited' or supplier.status =='complete' else False
-
-    except (KeyError):
-        is_seller_status_completed = None
-
     try:
         notification_count = current_user.notification_count
     except AttributeError:
