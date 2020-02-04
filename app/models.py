@@ -643,20 +643,20 @@ class SupplierDomain(db.Model):
         unique=False,
         nullable=False
     )
-     approved_seller_type = db.Column(
-        db.Enum(
-            *[
-                'consultant',
-                'recruiter',
-                'hybrid'
-            ],
-            name='supplier_domain_approved_seller_type_enum'
-        ),
-        default='null',
-        index=False,
-        unique=False,
-        nullable=True
-    )
+    #  approved_seller_type = db.Column(
+    #     db.Enum(
+    #         *[
+    #             'consultant',
+    #             'recruiter',
+    #             'hybrid'
+    #         ],
+    #         name='supplier_domain_approved_seller_type_enum'
+    #     ),
+    #     default='null',
+    #     index=False,
+    #     unique=False,
+    #     nullable=True
+    # )
 
 
 supplier_code_seq = Sequence('supplier_code_seq')
