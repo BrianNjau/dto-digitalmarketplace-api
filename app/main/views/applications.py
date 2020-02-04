@@ -66,6 +66,20 @@ def create_application():
         from_expired=True
     )
 
+    # sellerTypeIsCompletedOnce = True
+
+    # try:
+    #     supplier_code = current_user.supplier_code
+    #     supplier = suppliers.get_supplier_by_code(supplier_code)
+    #     if supplier.data['recruiter'] == "both" or supplier.data['recruiter'] == "yes" or supplier.data['recruiter'] == "no":
+    #         sellerTypeIsCompletedOnce = True
+
+    # except (AttributeError):
+    #     supplier_code = None
+
+    # application = application.serializable
+    # application['sellerTypeIsCompletedOnce'] = sellerTypeIsCompletedOnce
+
     return jsonify(application=application.serializable), 201
 
 
@@ -95,24 +109,22 @@ def update_application(application_id):
     save_application(application)
     errors = ApplicationValidator(application).validate_all()
     agreement = get_current_agreement()
-    sellerTypeIsCompletedOnce = True
+    # sellerTypeIsCompletedOnce = True
 
-    try:
-        supplier_code = current_user.supplier_code
-        supplier = suppliers.get_supplier_by_code(supplier_code)
-        sellerTypeIsCompletedOnce = True if supplier.data['recruiter'] == "both" else False
-        sellerTypeIsCompletedOnce = True if supplier.data['recruiter'] == "yes" else False
-        sellerTypeIsCompletedOnce = True if supplier.data['recruiter'] == "no" else False
+    # try:
+    #     supplier_code = current_user.supplier_code
+    #     supplier = suppliers.get_supplier_by_code(supplier_code)
+    #     if supplier.data['recruiter'] == "both" or supplier.data['recruiter'] == "yes" or supplier.data['recruiter'] == "no":
+    #         sellerTypeIsCompletedOnce = True
 
-    except (AttributeError, KeyError):
-        supplier_code = None
-        is_recruiter_flag = None
+    # except (AttributeError):
+    #     supplier_code = None
 
-    application = application.serializable
-    application['sellerTypeIsCompletedOnce'] = sellerTypeIsCompletedOnce
+    # application = application.serializable
+    # application['sellerTypeIsCompletedOnce'] = sellerTypeIsCompletedOnce
     return (
         jsonify(
-            application=application,
+            application=application.serializable,
             agreement=agreement.serialize() if agreement else None,
             application_errors=errors),
         200)
