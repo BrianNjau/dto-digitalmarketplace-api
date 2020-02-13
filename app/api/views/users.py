@@ -200,6 +200,7 @@ def signup():
                     abn=abn,
                     message='There is already a seller account with ABN %s' % (abn)
                 ), 409
+    supplier_business.validate_abn(abn)
 
     if user is not None:
         send_user_existing_password_reset_email(user.name, email_address)
