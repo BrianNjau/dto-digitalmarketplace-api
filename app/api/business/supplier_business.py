@@ -8,7 +8,16 @@ from app.api.business.agreement_business import (get_current_agreement,
 from app.api.business.validators import SupplierValidator
 from app.api.services import application_service, key_values_service, suppliers
 import requests as req
-import os, ssl
+import xml.etree.ElementTree as ET
+# from xml.etree.ElementTree import parse
+# from lxml import etree
+from lxml.etree import fromstring
+# from lxml import cssselect
+# import cssselect2
+# import xmltodict
+import re
+
+from lxml import etree, html
 
 
 def abn_is_used(abn):
@@ -26,23 +35,97 @@ def validate_abn(abn):
     authenticationGuid = '7ef41140-8406-40b4-8bf2-12582b5404ce'
     includeHistoricalDetails = 'N'
     abn = abn
-    # if (not os.environ.get('PYTHONHTTPSVERIFY', '') and
-    #     getattr(ssl, '_create_unverified_context', None)):
-    #     ssl._create_default_https_context = ssl._create_unverified_contexta
-
     includeHistoricalDetails = 'N'
-
 
     # need to import os, ssl since i get this error URLError: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed (_ssl.c:727)>
     conn = req.get('https://abr.business.gov.au/abrxmlsearch/AbrXmlSearch.asmx/SearchByABNv201205?searchString=' + abn + '&includeHistoricalDetails='+ includeHistoricalDetails +'&authenticationGuid='+ authenticationGuid)
     # conn.status_code == requests.codes.ok will print True or if you do conn.status_code will print out 200
-    print('HELLOOOOOOOOO')
-    print(conn.text)
-    # returnedXML = conn.get_data()
-    # f = open('output.xml', 'wb')
-    # f.write(returnedXML)
-    # f.close
-    # print(returnedXML)
+
+    a = conn.content
+    print(a)
+    # b = etree.fromstring(a)
+
+    regex = r'<organisationName>(.*)</organisationName>'
+    x = re.search("<organisationName>(.*)</organisationName>", a)
+    print x.group()
+
+    raise Exception('spam', 'eggs')
+    
+
+
+    #conn
+    # tree = html.fromstring(a)
+    # tree = etree.ElementTree(tree)
+    # result = tree.xpath('//organisationName/text()')
+    # print("this will work")
+    # print(result)
+
+    # parser = etree.HTMLParser()
+    # html = etree.parse(a,parser)
+    # result = html.xpath('//organisationName/text()')
+    # print(result)
+    
+    
+    # print b.findall('//organisationName/text()')
+    # print etree.XPath('//organisationName/text()')(b)
+
+    # print(a)
+
+
+    # print('ATTTEMPT xpath selector 3')
+    # #print(b.xpath('//request'))
+    # #print(cssselect2('#collapsible10 > div.expanded > div.collapsible-content > div:nth-child(2) > span.text',b)) print(b.xpath('//*[@id="collapsible10"]/div[1]/div[2]/div[1]/span[2]'))
+    #print(b.xpath('/html/body/div[3]/div/div[1]/div[2]/div[2]/div[1]/div[2]/div[4]/div[1]/div[2]/div[7]/div[1]/div[2]/div[1]/span[2]'))
+    # print(b.xpath('//*[@id="collapsible2"]/div[1]/div[1]/span[2]'))
+   
+
+
+    # print(a)
+    # b = etree.fromstring(a)
+    
+
+    # req = requests.get("http://www.nbp.pl/kursy/xml/LastC.xml", stream=True)
+    # req.raw.decode_content = True  # ensure transfer encoding is honoured
+    # b = etree.parse(req.raw)
+
+    # xml_doc= parse(conn)
+    # for item in xmldoc.iterfind('')
+
+    # data.xmltodict.parse(data)
+    
+
+    
+    # print('Organisation_Name:', tree.find('organisationName'))
+    # root = conn.getroot()
+    # for x in root:
+    #     print x.find("organisationName").text
+    # print("this is the whole XML output")
+    # print(conn.content)
+    # returnXML = conn.content
+    # root = ET.fromstring(returnXML)
+
+    # print("PLEASE WORK")
+    # result = root.find("organisationName").text
+
+    # result = root.findall("./mainName[organisationName]")
+    # print(result)
+
+    #a = xml.find('{http://abr.business.gov.au/ABRXMLSearch/}).attrib['organisationName']
+    # a = returnXML.getElementsByTagName("organisationName")[0]
+    # print(a)
+    
+    # print(PLEASE WORK)
+    # a = getElementsByTagName('organusationName')
+    # print(a)
+
+    # for child in root.iter('*'):
+    #     print(child.tag)
+
+
+    # print('ATTEMPTINGT TO PRINT BUSINESS NAME')
+    # for child in root.iter('{http://abr.business.gov.au/ABRXMLSearch/}organisationName'):
+    #     print(child.tag, child.attrib)
+
 
 def get_supplier_messages(code, skip_application_check):
     applications = application_service.find(
