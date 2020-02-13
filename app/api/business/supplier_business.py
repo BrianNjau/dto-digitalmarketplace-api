@@ -46,40 +46,12 @@ def validate_abn(abn):
     # b = etree.fromstring(a)
 
     regex = r'<organisationName>(.*)</organisationName>'
-    x = re.search("<organisationName>(.*)</organisationName>", a)
-    print x.group()
+    x = re.search("<organisationName>(.*?)</organisationName>", a)
+    c = re.findall(r'<organisationName>(.*?)</organisationName>', a)
+    # print x.group()
+    print(c[0])
 
-    raise Exception('spam', 'eggs')
     
-
-
-    #conn
-    # tree = html.fromstring(a)
-    # tree = etree.ElementTree(tree)
-    # result = tree.xpath('//organisationName/text()')
-    # print("this will work")
-    # print(result)
-
-    # parser = etree.HTMLParser()
-    # html = etree.parse(a,parser)
-    # result = html.xpath('//organisationName/text()')
-    # print(result)
-    
-    
-    # print b.findall('//organisationName/text()')
-    # print etree.XPath('//organisationName/text()')(b)
-
-    # print(a)
-
-
-    # print('ATTTEMPT xpath selector 3')
-    # #print(b.xpath('//request'))
-    # #print(cssselect2('#collapsible10 > div.expanded > div.collapsible-content > div:nth-child(2) > span.text',b)) print(b.xpath('//*[@id="collapsible10"]/div[1]/div[2]/div[1]/span[2]'))
-    #print(b.xpath('/html/body/div[3]/div/div[1]/div[2]/div[2]/div[1]/div[2]/div[4]/div[1]/div[2]/div[7]/div[1]/div[2]/div[1]/span[2]'))
-    # print(b.xpath('//*[@id="collapsible2"]/div[1]/div[1]/span[2]'))
-   
-
-
     # print(a)
     # b = etree.fromstring(a)
     
