@@ -4,7 +4,7 @@ from helpers import notify_team
 from app.tasks import publish_tasks
 
 
-def create_application(email_address=None, name=None, abn=None):
+def create_application(email_address=None, name=None, abn=None, o=None):
     application = Application(
         status='saved',
         data={

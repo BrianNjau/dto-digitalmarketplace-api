@@ -14,6 +14,7 @@ from app.models import (Application, AuditEvent, AuditTypes, Framework, User,
                         UserFramework)
 from app.tasks import publish_tasks
 from app.api.helpers import get_email_domain
+from app.api.business import supplier_business
 
 
 def add_user(data):
@@ -248,7 +249,8 @@ def create_user(
             user_data['role'] = 'supplier'
         else:
             try:
-                application = create_application(email_address=email_address, name=name, abn=abn)
+                o= supplier_business.validate_abn(abn)
+                application = create_application(email_address=email_address, name=name, abn=abn, o=o)
                 user_data['application_id'] = application.id
 
             except (InvalidRequestError, IntegrityError):

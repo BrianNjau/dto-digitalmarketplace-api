@@ -31,7 +31,9 @@ def validate_abn(abn):
     a = conn.content
     c = re.findall(r'<organisationName>(.*?)</organisationName>', a)
     # Just finding the first one
-    print(c[0])
+    # print(c[0])
+    organisationName = c[0]
+    return organisationName
 
 def get_supplier_messages(code, skip_application_check):
     applications = application_service.find(
