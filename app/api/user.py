@@ -249,8 +249,11 @@ def create_user(
             user_data['role'] = 'supplier'
         else:
             try:
-                o= supplier_business.validate_abn(abn)
-                application = create_application(email_address=email_address, name=name, abn=abn, o=o)
+                
+                organisationName= supplier_business.validate_abn(abn)
+                check_status = supplier_business.check_status_abr(abn)
+                
+                application = create_application(email_address=email_address, name=name, abn=abn, organisationName=organisationName)
                 user_data['application_id'] = application.id
 
             except (InvalidRequestError, IntegrityError):

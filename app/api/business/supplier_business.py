@@ -27,13 +27,25 @@ def validate_abn(abn):
     abn = abn
     includeHistoricalDetails = 'N'
     conn = req.get('https://abr.business.gov.au/abrxmlsearch/AbrXmlSearch.asmx/SearchByABNv201205?searchString=' + abn + '&includeHistoricalDetails='+ includeHistoricalDetails +'&authenticationGuid='+ authenticationGuid)
-    # conn.status_code == requests.codes.ok will print True or if you do conn.status_code will print out 200
     a = conn.content
     c = re.findall(r'<organisationName>(.*?)</organisationName>', a)
     # Just finding the first one
-    # print(c[0])
     organisationName = c[0]
     return organisationName
+
+
+def check_status_abr(abn):
+    # GUID
+    authenticationGuid = '7ef41140-8406-40b4-8bf2-12582b5404ce'
+    includeHistoricalDetails = 'N'
+    abn = abn
+    includeHistoricalDetails = 'N'
+    
+    conn = req.get('https://abr.business.gov.au/abrxmlsearch/AbrXmlSearch.asmx/SearchByABNv201205?searchString=' + abn + '&includeHistoricalDetails='+ includeHistoricalDetails +'&authenticationGuid='+ authenticationGuid)
+    # conn.status_code == requests.codes.ok will print True or if you do conn.status_code will print out 200
+    print("I AM GOING TO CHECK THE STATUS")
+    abrWebsiteStatus = req.status_code
+    return abrWebsiteStatus
 
 def get_supplier_messages(code, skip_application_check):
     applications = application_service.find(

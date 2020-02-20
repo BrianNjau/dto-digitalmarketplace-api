@@ -1,9 +1,11 @@
 import json
 import boto3
 
-
 class Publish(object):
 
+    def abn(self, abn, check_status, event_type, **kwargs):
+        return self.__generic('abn','check_status', event_type, abn=abn, **kwargs)
+ 
     def agency(self, agency, event_type, **kwargs):
         return self.__generic('agency', event_type, agency=agency, **kwargs)
 

@@ -1,9 +1,20 @@
 from app.api.services import (
     publish
 )
+
 from . import celery
 
+@celery.task
+def abr_failed(abn, check_status, event_type, **kwargs):
+    publish.abr_failed(abn, check_status, event_type, **kwargs)
 
+
+# def compress_abn(abn):
+#     return{
+#         'status': supplier_business.check_status_abr(abn)
+#     }
+
+    
 @celery.task
 def agency(agency, event_type, **kwargs):
     publish.agency(agency, event_type, **kwargs)
