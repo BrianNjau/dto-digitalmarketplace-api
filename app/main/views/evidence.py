@@ -181,8 +181,8 @@ def evidence_reject(evidence_id):
 @role_required('supplier')
 def get_domain_and_evidence(evidence_id):
     evidence = evidence_service.get_evidence_by_id(evidence_id)
-    if not evidence or current_user.supplier_code != evidence.supplier_code:
-        not_found("No evidence for id '%s' found" % (evidence_id))
+    # if not evidence or current_user.supplier_code != evidence.supplier_code:
+    #     not_found("No evidence for id '%s' found" % (evidence_id))
 
     data = {}
     data = evidence.serialize()
@@ -197,4 +197,3 @@ def get_domain_and_evidence(evidence_id):
 
     data['domain_criteria'] = criteria_from_domain
     return jsonify(data)
-    
