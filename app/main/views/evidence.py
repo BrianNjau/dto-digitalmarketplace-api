@@ -174,3 +174,27 @@ def evidence_reject(evidence_id):
         current_app.logger.warn('Failed to send rejection email for evidence id: {}, {}'.format(evidence_id, e))
 
     return jsonify(evidence_assessment=evidence_assessment.serialize()), 200
+
+
+@api.route('/evidence/<int:evidence_id>/view', methods=['GET'])
+@login_required
+@role_required('supplier')
+def get_domain_and_evidence(evidence_id):
+    evidence = evidence_service.get_evidence_by_id(evidence_id)
+    if not evidence or current_user.supplier_code != evidence.supplier_code:
+        not_found("No evidence for id '%s' found" % (evidence_id))
+
+    data = {}
+    data = evidence.serialize()
+    domain_name = evidence.domain.name
+    data['domain_name'] = domain_name
+
+    domain_criteria = domain_criteria_service.get_criteria_by_domain_id(evidence.domain.id)
+    criteria_from_domain = {}
+
+    for criteria in domain_criteria:
+        criteria_from_domain[criteria.id] = {'name': criteria.name}
+
+    data['domain_criteria'] = criteria_from_domain
+    return jsonify(data)
+    
