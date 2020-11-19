@@ -106,20 +106,14 @@ class ApplicationValidator(object):
         )
         seller_type = self.application.data.get('seller_type', None)
         # abn validation
-        print("age of abn that comes from the abr service")
         # age of abn is YYYY-MM-DD format
         date_of_abn = self.application.data.get('age_of_abn', None)
         if date_of_abn is not None:
-            match = re.search('\d{4}-\d{2}-\d{2}', date_of_abn)
-            date_of_abn = datetime.datetime.strptime(match.group(), '%Y-%m-%d').date()
-
-            current_date = date.today()
-            time_difference = relativedelta(current_date, date_of_abn)
-            start_up_age = int(time_difference.years)
+            print("in application validation")
 
             if (
                 seller_type and 'start-up' in seller_type and seller_type['start_up'] and
-                start_up_age > 5
+                date_of_abn == '5'
             ):
                 errors.append({
                     'field': 'start-up',

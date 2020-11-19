@@ -18,6 +18,10 @@ from app.api.services import abr_service
 import json
 from app.api.business.errors import AbrError
 import abn as abn_package
+from dateutil.relativedelta import relativedelta
+from datetime import date
+import datetime as dt
+import re
 
 
 def add_user(data):
@@ -256,9 +260,6 @@ def create_user(
             state = ''
             postcode = ''
             age_of_abn = ''
-            # abn_package will return a false statement if there is a trailing whitespace in a valid abn.
-            #validated_abn = abn_package.validate(abn.strip())
-            # if validated_abn:
             try:
                     # extracts business info using the abn
                 business_info_values = abr_service.get_url(abn)
@@ -268,6 +269,13 @@ def create_user(
                 state = business_info_values["state"]
                 postcode = business_info_values["postcode"]
                 age_of_abn = business_info_values["age_abn"]
+
+                match = re.search('\d{4}-\d{2}-\d{2}', age_of_abn)
+                date_of_abn = dt.datetime.strptime(match.group(), '%Y-%m-%d').date()
+
+                current_date = date.today()
+                time_difference = relativedelta(current_date, date_of_abn)
+                age_of_abn = str(time_difference.years)
 
                 # If ABR API is down, it will publish a slack message
             except AbrError:
