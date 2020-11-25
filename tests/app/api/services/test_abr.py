@@ -18,7 +18,7 @@ class TestAbrService(unittest.TestCase):
         @mock.patch("app.api.services.abr_service.fetch_data")
         def test_fetch(self, mocked_fetch_data):
             expected_parsed_data = '{"state": "NSW", "organisation_name": "yay", '\
-            + '"age_abn": "2005-04-27", "postcode": "2750"}'
+                                   + '"age_abn": "2005-04-27", "postcode": "2750"}'
             data = abr_service.get_data(self.mocked_fetch_data())
             self.assertEqual(data, expected_parsed_data)
 
