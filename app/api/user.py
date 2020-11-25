@@ -261,7 +261,6 @@ def create_user(
             postcode = ''
             age_of_abn = ''
             try:
-                    # extracts business info using the abn
                 business_info_values = abr_service.get_url(abn)
                 business_info_values = json.loads(business_info_values)
 
