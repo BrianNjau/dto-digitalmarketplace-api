@@ -2,7 +2,8 @@ import pendulum
 from app.api.helpers import state_to_long_name
 from dateutil.relativedelta import relativedelta
 from datetime import date
-import datetime, re
+import datetime
+import re
 
 
 class ApplicationValidator(object):
@@ -131,7 +132,7 @@ class ApplicationValidator(object):
                 'severity': 'error',
                 'step': 'business-info'
             })
-        
+
         return errors
 
     def validate_contacts(self):
