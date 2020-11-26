@@ -114,7 +114,7 @@ class ApplicationValidator(object):
 
             if (
                 seller_type and 'start-up' in seller_type and seller_type['start_up'] and
-                date_of_abn == '5'
+                int(date_of_abn) > 5
             ):
                 errors.append({
                     'field': 'start-up',
