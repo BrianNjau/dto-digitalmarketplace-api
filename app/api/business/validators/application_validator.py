@@ -110,8 +110,6 @@ class ApplicationValidator(object):
         # age of abn is YYYY-MM-DD format
         date_of_abn = self.application.data.get('age_of_abn', None)
         if date_of_abn is not None:
-            print("in application validation")
-
             if (
                 seller_type and 'start-up' in seller_type and seller_type['start_up'] and
                 int(date_of_abn) > 5
