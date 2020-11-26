@@ -85,14 +85,14 @@ class AbrService(Service):
 
             # find age of abn
             search_xml_age_abn = re.findall(r'<effectiveFrom>(.*?)</effectiveFrom>', xmlText)
-            abn_age = search_xml_age_abn[0]
-            print('age of abn' + abn_age)
+            age_of_abn = search_xml_age_abn[0]
+            print('age of abn' + age_of_abn)
 
             return json.dumps({
                 'organisation_name': organisation_name,
                 'postcode': postcode,
                 'state': state,
-                'age_abn': abn_age
+                'age_of_abn': age_of_abn
             })
 
         # Payload exceptions: https://abr.business.gov.au/Documentation/Exceptions

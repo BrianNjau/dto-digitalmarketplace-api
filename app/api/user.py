@@ -267,7 +267,7 @@ def create_user(
                 organisation_name = business_info_values["organisation_name"]
                 state = business_info_values["state"]
                 postcode = business_info_values["postcode"]
-                age_of_abn = business_info_values["age_abn"]
+                age_of_abn = business_info_values["age_of_abn"]
 
                 match = re.search('\d{4}-\d{2}-\d{2}', age_of_abn)
                 date_of_abn = dt.datetime.strptime(match.group(), '%Y-%m-%d').date()
