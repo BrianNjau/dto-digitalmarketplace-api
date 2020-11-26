@@ -108,18 +108,18 @@ class ApplicationValidator(object):
         seller_type = self.application.data.get('seller_type', None)
         # abn validation
         # age of abn is YYYY-MM-DD format
-        date_of_abn = self.application.data.get('age_of_abn', None)
-        if date_of_abn is not None:
-            if (
-                seller_type and 'start-up' in seller_type and seller_type['start_up'] and
-                int(date_of_abn) > 5
-            ):
-                errors.append({
-                    'field': 'start-up',
-                    'message': 'abn is old',
-                    'severity': 'error',
-                    'step': 'business-info'
-                })
+        # date_of_abn = self.application.data.get('age_of_abn', None)
+        # if date_of_abn is not None:
+        #     if (
+        #         seller_type and 'start-up' in seller_type and seller_type['start_up'] and
+        #         int(date_of_abn) > 5
+        #     ):
+        #         errors.append({
+        #             'field': 'start-up',
+        #             'message': 'abn is old',
+        #             'severity': 'error',
+        #             'step': 'business-info'
+        #         })
         if (
             seller_type and 'sme' in seller_type and seller_type['sme'] and
             self.application.data.get('number_of_employees', None) == '200+'
