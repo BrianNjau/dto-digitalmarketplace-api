@@ -36,8 +36,8 @@ class CaseStudyService(Service):
         console.log("HI")
         console.log(db.session.query(subquery))
         # return {} if subquery is None else
-        if subquery:
-            result = (
+        # if subquery:
+        result = (
                 db
                 .session
                 .query(
@@ -50,8 +50,8 @@ class CaseStudyService(Service):
                     ).label('cs_data')
                 )
                 .group_by(subquery.c.category_name)
-            )
-            results = result.one_or_none()._asdict()
-            return results if results else {}
-        else:
-            return {}
+        )
+        results = result.one_or_none()._asdict()
+        return results if results else {}
+        # else:
+        #     return {}
