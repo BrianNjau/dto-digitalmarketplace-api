@@ -38,18 +38,18 @@ class CaseStudyService(Service):
         # return {} if subquery is None else
         # if subquery:
         result = (
-                db
-                .session
-                .query(
-                    subquery.c.category_name,
-                    func.json_agg(
-                        func.json_build_object(
-                            'id', subquery.c.cs_id,
-                            'data', subquery.c.case_study_data
-                        )
-                    ).label('cs_data')
-                )
-                .group_by(subquery.c.category_name)
+            db
+            .session
+            .query(
+                subquery.c.category_name,
+                func.json_agg(
+                    func.json_build_object(
+                        'id', subquery.c.cs_id,
+                        'data', subquery.c.case_study_data
+                    )
+                ).label('cs_data')
+            )
+            .group_by(subquery.c.category_name)
         )
         results = result.one_or_none()._asdict()
         return results if results else {}
