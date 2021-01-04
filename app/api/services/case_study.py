@@ -32,26 +32,23 @@ class CaseStudyService(Service):
         This occurs when a category is approved in the supplier_domain
         but has no relevant data in the case_study or evidence table
         """
-        # sub_result = subquery.first()
-        console.log("HI")
-        console.log(db.session.query(subquery))
-        # return {} if subquery is None else
-        # if subquery:
-        result = (
-            db
-            .session
-            .query(
-                subquery.c.category_name,
-                func.json_agg(
-                    func.json_build_object(
-                        'id', subquery.c.cs_id,
-                        'data', subquery.c.case_study_data
-                    )
-                ).label('cs_data')
+        sub_result = db.session.query(subquery)
+        if sub_result:
+            result = (
+                db
+                .session
+                .query(
+                    subquery.c.category_name,
+                    func.json_agg(
+                        func.json_build_object(
+                            'id', subquery.c.cs_id,
+                            'data', subquery.c.case_study_data
+                        )
+                    ).label('cs_data')
+                )
+                .group_by(subquery.c.category_name)
             )
-            .group_by(subquery.c.category_name)
-        )
-        results = result.one_or_none()._asdict()
-        return results if results else {}
-        # else:
-        #     return {}
+            results = result.one_or_none()._asdict()
+            return results if results else {}
+        else:
+            return {}
