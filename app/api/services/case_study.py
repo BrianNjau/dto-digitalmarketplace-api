@@ -32,8 +32,11 @@ class CaseStudyService(Service):
         This occurs when a category is approved in the supplier_domain
         but has no relevant data in the case_study or evidence table
         """
-        sub_result = subquery.first()
-        if sub_result:
+        # sub_result = subquery.first()
+        console.log("HI")
+        console.log(db.session.query(subquery))
+        # return {} if subquery is None else
+        if subquery:
             result = (
                 db
                 .session
