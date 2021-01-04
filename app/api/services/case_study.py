@@ -32,7 +32,9 @@ class CaseStudyService(Service):
         This occurs when a category is approved in the supplier_domain
         but has no relevant data in the case_study or evidence table
         """
-        sub_result = db.session.query(subquery)
+        sub_result = (db.session.query(subquery))
+        print('HI')
+        print(sub_result)
         if sub_result:
             result = (
                 db
@@ -52,3 +54,4 @@ class CaseStudyService(Service):
             return results if results else {}
         else:
             return {}
+
