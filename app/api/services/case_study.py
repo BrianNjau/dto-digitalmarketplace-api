@@ -54,4 +54,3 @@ class CaseStudyService(Service):
             return results if results else {}
         else:
             return {}
-
