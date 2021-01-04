@@ -24,13 +24,15 @@ class CaseStudyService(Service):
             .filter(CaseStudy.supplier_code == supplier_code,
                     CaseStudy.status == 'approved',
                     Domain.id == domain_id)
-            .one_or_none()
-        )
+            .subquery()
+        ) is not None
+        # x = db.session.query(CaseStudy).filter(CaseStudy.supplier_code == supplier_code, CaseStudy.status == 'approved',Domain.id == domain_id)).first() is not None
         """
         Handles scenario when subquery returns none
         This occurs when a category is approved in the supplier_domain
         but has no relevant data in the case_study or evidence table
         """
+
         if test is None:
             return {}
 
