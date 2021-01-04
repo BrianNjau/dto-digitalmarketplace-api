@@ -12,7 +12,7 @@ class CaseStudyService(Service):
         super(CaseStudyService, self).__init__(*args, **kwargs)
 
     def get_approved_case_studies_by_supplier_code(self, supplier_code, domain_id):
-        subquery = (
+        test = (
             db
             .session
             .query(
@@ -24,18 +24,32 @@ class CaseStudyService(Service):
             .filter(CaseStudy.supplier_code == supplier_code,
                     CaseStudy.status == 'approved',
                     Domain.id == domain_id)
-            .subquery()
+            .one_or_none()
         )
-
         """
         Handles scenario when subquery returns none
         This occurs when a category is approved in the supplier_domain
         but has no relevant data in the case_study or evidence table
         """
-        sub_result = (db.session.query(subquery))
-        print('HI')
-        print(sub_result)
-        if sub_result:
+        if test is None:
+            return {}
+
+        else:
+            subquery = (
+                db
+                .session
+                .query(
+                    CaseStudy.id.label('cs_id'),
+                    CaseStudy.data.label('case_study_data'),
+                    Domain.name.label('category_name')
+                )
+                .join(Domain, Domain.name == CaseStudy.data['service'].astext)
+                .filter(CaseStudy.supplier_code == supplier_code,
+                        CaseStudy.status == 'approved',
+                        Domain.id == domain_id)
+                .subquery()
+            )
+
             result = (
                 db
                 .session
@@ -52,5 +66,3 @@ class CaseStudyService(Service):
             )
             results = result.one_or_none()._asdict()
             return results if results else {}
-        else:
-            return {}
