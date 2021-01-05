@@ -13,28 +13,26 @@ class CaseStudyService(Service):
 
     def get_approved_case_studies_by_supplier_code(self, supplier_code, domain_id):
         test = (
-            db
-            .session
-            .query(
-                CaseStudy.id.label('cs_id'),
-                CaseStudy.data.label('case_study_data'),
-                Domain.name.label('category_name')
-            )
-            .join(Domain, Domain.name == CaseStudy.data['service'].astext)
-            .filter(CaseStudy.supplier_code == supplier_code,
-                    CaseStudy.status == 'approved',
-                    Domain.id == domain_id)
-            .subquery()
-        ) is None
-        # x = db.session.query(CaseStudy)
-        # .filter(CaseStudy.supplier_code == supplier_code,
-        # CaseStudy.status == 'approved',Domain.id == domain_id)).first() is not None
+                db
+                .session
+                .query(
+                    CaseStudy.id.label('cs_id'),
+                    CaseStudy.data.label('case_study_data'),
+                    Domain.name.label('category_name')
+                )
+                .join(Domain, Domain.name == CaseStudy.data['service'].astext)
+                .filter(CaseStudy.supplier_code == supplier_code,
+                        CaseStudy.status == 'approved',
+                        Domain.id == domain_id)
+                .subquery()
+                .all()
+            ) is not None
         """
         Handles scenario when subquery returns none
         This occurs when a category is approved in the supplier_domain
         but has no relevant data in the case_study or evidence table
         """
-        if not test:
+        if test:
             subquery = (
                 db
                 .session
