@@ -20,12 +20,9 @@ class CaseStudyService(Service):
                 CaseStudy.supplier_code == supplier_code,
                 CaseStudy.status == 'approved',
                 Domain.id == domain_id)
-            .scalar())is not None
-        """
-        Handles scenario when subquery returns none
-        This occurs when a category is approved in the supplier_domain
-        but has no relevant data in the case_study or evidence table
-        """
+            .scalar()
+        ) is not None
+
         if exists:
             subquery = (
                 db
