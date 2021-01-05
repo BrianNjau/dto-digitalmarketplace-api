@@ -25,7 +25,7 @@ class CaseStudyService(Service):
                     CaseStudy.status == 'approved',
                     Domain.id == domain_id)
             # .subquery()
-        ) is not None
+        ) is None
         # x = db.session.query(CaseStudy)
         # .filter(CaseStudy.supplier_code == supplier_code,
         # CaseStudy.status == 'approved',Domain.id == domain_id)).first() is not None
@@ -34,7 +34,7 @@ class CaseStudyService(Service):
         This occurs when a category is approved in the supplier_domain
         but has no relevant data in the case_study or evidence table
         """
-        if test:
+        if test is False:
             subquery = (
                 db
                 .session
