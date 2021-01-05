@@ -47,12 +47,6 @@ class CaseStudyService(Service):
                 .session
                 .query(
                     subquery.c.category_name,
-                      # case(
-                #     whens=[
-                #         (Domain.name.is_(None), '{}')
-                #     ],
-                #     else_=Domain.name
-                # ).label('category_name')
                     func.json_agg(
                         func.json_build_object(
                             'id', subquery.c.cs_id,
