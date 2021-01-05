@@ -12,6 +12,7 @@ class CaseStudyService(Service):
         super(CaseStudyService, self).__init__(*args, **kwargs)
 
     def get_approved_case_studies_by_supplier_code(self, supplier_code, domain_id):
+        # check if the case study id exists
         exists = (
             db
             .session
