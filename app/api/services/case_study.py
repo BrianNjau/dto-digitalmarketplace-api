@@ -34,7 +34,7 @@ class CaseStudyService(Service):
         This occurs when a category is approved in the supplier_domain
         but has no relevant data in the case_study or evidence table
         """
-        if test == False:
+        if not test:
             subquery = (
                 db
                 .session
