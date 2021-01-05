@@ -34,11 +34,7 @@ class CaseStudyService(Service):
         This occurs when a category is approved in the supplier_domain
         but has no relevant data in the case_study or evidence table
         """
-
-        if test is None:
-            return {}
-
-        else:
+        if test:
             subquery = (
                 db
                 .session
@@ -70,3 +66,6 @@ class CaseStudyService(Service):
             )
             results = result.one_or_none()._asdict()
             return results if results else {}
+
+        else:
+            return {}
