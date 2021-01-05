@@ -12,26 +12,21 @@ class CaseStudyService(Service):
         super(CaseStudyService, self).__init__(*args, **kwargs)
 
     def get_approved_case_studies_by_supplier_code(self, supplier_code, domain_id):
-        test = (
+        exists = (
             db
             .session
-            .query(
-                CaseStudy.id.label('cs_id'),
-                CaseStudy.data.label('case_study_data'),
-                Domain.name.label('category_name')
-            )
-            .join(Domain, Domain.name == CaseStudy.data['service'].astext)
-            .filter(CaseStudy.supplier_code == supplier_code,
-                    CaseStudy.status == 'approved',
-                    Domain.id == domain_id)
-            # .subquery()
-            .all()) is not None
+            .query(CaseStudy.id)
+            .filter(
+                CaseStudy.supplier_code == supplier_code,
+                CaseStudy.status == 'approved',
+                Domain.id == domain_id)
+            .scalar())is not None
         """
         Handles scenario when subquery returns none
         This occurs when a category is approved in the supplier_domain
         but has no relevant data in the case_study or evidence table
         """
-        if test:
+        if exists:
             subquery = (
                 db
                 .session
@@ -52,6 +47,12 @@ class CaseStudyService(Service):
                 .session
                 .query(
                     subquery.c.category_name,
+                      # case(
+                #     whens=[
+                #         (Domain.name.is_(None), '{}')
+                #     ],
+                #     else_=Domain.name
+                # ).label('category_name')
                     func.json_agg(
                         func.json_build_object(
                             'id', subquery.c.cs_id,
