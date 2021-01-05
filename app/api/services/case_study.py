@@ -24,7 +24,7 @@ class CaseStudyService(Service):
             .filter(CaseStudy.supplier_code == supplier_code,
                     CaseStudy.status == 'approved',
                     Domain.id == domain_id)
-            .subquery()
+            # .subquery()
         ) is not None
         # x = db.session.query(CaseStudy)
         # .filter(CaseStudy.supplier_code == supplier_code,
