@@ -27,7 +27,8 @@ class CaseStudyService(Service):
             .subquery()
         ) is not None
         # x = db.session.query(CaseStudy)
-        # .filter(CaseStudy.supplier_code == supplier_code, CaseStudy.status == 'approved',Domain.id == domain_id)).first() is not None
+        # .filter(CaseStudy.supplier_code == supplier_code, 
+        # CaseStudy.status == 'approved',Domain.id == domain_id)).first() is not None
         """
         Handles scenario when subquery returns none
         This occurs when a category is approved in the supplier_domain
