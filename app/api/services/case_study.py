@@ -27,7 +27,7 @@ class CaseStudyService(Service):
             .subquery()
         ) is not None
         # x = db.session.query(CaseStudy)
-        # .filter(CaseStudy.supplier_code == supplier_code, 
+        # .filter(CaseStudy.supplier_code == supplier_code,
         # CaseStudy.status == 'approved',Domain.id == domain_id)).first() is not None
         """
         Handles scenario when subquery returns none
