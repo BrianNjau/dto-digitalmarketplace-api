@@ -24,7 +24,7 @@ class CaseStudyService(Service):
             .filter(CaseStudy.supplier_code == supplier_code,
                     CaseStudy.status == 'approved',
                     Domain.id == domain_id)
-            .subquery()
+            # .subquery()
             .all()) is not None
         """
         Handles scenario when subquery returns none
