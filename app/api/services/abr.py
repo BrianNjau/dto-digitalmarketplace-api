@@ -26,7 +26,7 @@ class AbrService(Service):
     def build_url(self, abn):
         api_key = current_app.config['ABR_API_KEY']
         include_historical_details = 'N'
-        link = 'https://abr.business.gov.au/abrxmlsearch/AbrXmlSearch.asmx/SearchByABNv201205?searchString='
+        link = current_app.config['ABR_API_LINK']
         url = link + abn + '&includeHistoricalDetails=' + include_historical_details + '&authenticationGuid=' + api_key
         return url
 
