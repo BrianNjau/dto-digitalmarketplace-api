@@ -83,8 +83,6 @@ class Config:
         'TRANSACTION_ISOLATION': False
     }
     ABR_API_KEY = ''
-    ABR_API_LINK = 'https://abr.business.gov.au/abrxmlsearch/AbrXmlSearch.asmx/SearchByABNv201205?searchString='
-    DM_API_APPLICATIONS_PAGE_SIZE = 1000
     DM_API_SERVICES_PAGE_SIZE = 100
     DM_API_SUPPLIERS_PAGE_SIZE = 10
     DM_API_BRIEFS_PAGE_SIZE = 100
