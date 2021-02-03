@@ -189,7 +189,7 @@ def sync_jira_application_approvals():
         type: string
         description: string
     """
-    res = sync_application_approvals_with_jira.delay()
+    # res = sync_application_approvals_with_jira.delay()
     return jsonify(res.id)
 
 
