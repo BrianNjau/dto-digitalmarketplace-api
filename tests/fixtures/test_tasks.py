@@ -290,16 +290,6 @@ def application(app, applications):
         yield application
 
 
-def test_sync_jira_application_approvals_task_creates_audit_event_on_approval(app, application,
-                                                                              mock_jira_application_response):
-    with app.app_context():
-        audit_event = (db.session.query(AuditEvent).filter(
-            AuditEvent.type == AuditTypes.approve_application.value,
-            AuditEvent.object_id == application.id).first())
-
-        assert audit_event.data['jira_issue_key'] == 'MARADMIN-123'
-
-
 @pytest.fixture
 def mock_jira_assessment_response(mocker):
     marketplace_jira = MagicMock()
