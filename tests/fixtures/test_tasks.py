@@ -293,8 +293,6 @@ def application(app, applications):
 def test_sync_jira_application_approvals_task_creates_audit_event_on_approval(app, application,
                                                                               mock_jira_application_response):
     with app.app_context():
-        sync_application_approvals_with_jira()
-
         audit_event = (db.session.query(AuditEvent).filter(
             AuditEvent.type == AuditTypes.approve_application.value,
             AuditEvent.object_id == application.id).first())
