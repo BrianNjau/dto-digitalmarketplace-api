@@ -291,18 +291,6 @@ def application(app, applications):
         yield application
 
 
-def test_sync_jira_application_approvals_task_updates_applications(app, application, mocker,
-                                                                   mock_jira_application_response):
-    with app.app_context():
-        approval_notification = mocker.patch('app.tasks.jira.send_approval_notification', autospec=True)
-
-        sync_application_approvals_with_jira()
-
-        updated_application = db.session.query(Application).filter(Application.id == 1).first()
-        assert updated_application.status == 'approved'
-        assert approval_notification.called
-
-
 def test_sync_jira_application_approvals_task_creates_audit_event_on_approval(app, application,
                                                                               mock_jira_application_response):
     with app.app_context():
