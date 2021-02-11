@@ -10,7 +10,6 @@ from app import db
 from app.api.services import AuditTypes as audit_types
 from app.models import (Application, Assessment, AuditEvent, Supplier,
                         SupplierDomain)
-from app.tasks.jira import sync_application_approvals_with_jira
 from app.tasks.mailchimp import (MailChimpConfigException,
                                  send_document_expiry_campaign,
                                  send_document_expiry_reminder,
