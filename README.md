@@ -33,7 +33,7 @@ Some system-level libraries are required for the following packages to work. On 
 
 	apt install gcc python-dev libffi-dev libpq-dev
 
-### Docker ts
+### Docker
 
 It is easier to have all services (Postgres, Localstack) running using docker-compose.
 
